@@ -7,3 +7,6 @@ test-results/
 !.env.example
 *.tsbuildinfo
 .DS_Store
+src/generated/prisma/
+.runtime/
+docs/

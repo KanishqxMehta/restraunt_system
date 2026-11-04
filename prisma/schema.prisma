@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  KITCHEN_STAFF
+  CENTRAL_ADMIN
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  NEW
+  PREPARING
+  READY
+  HANDED_OFF
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+}
+
+// Better Auth owns credentials and sessions. App roles cannot be set by signup.
+model User {
+  id               String   @id
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  role             Role     @default(CUSTOMER)
+  marketingOptIn   Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  memberships      OutletMembership[]
+  orders           Order[]
+}
+
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Account {
+  id                    String   @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([identifier])
+}
+
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+model Outlet {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  name               String
+  city               String
+  address            String
+  latitude           Float
+  longitude          Float
+  deliveryRadiusKm   Float
+  fssaiLicense       String
+  isCloudKitchen     Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  minimumPrepMinutes Int      @default(20)
+  packingMinutes     Int      @default(5)
+  kitchenCapacity    Int      @default(3)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  memberships        OutletMembership[]
+  availability       OutletAvailability[]
+  orders             Order[]
+}
+
+model OutletMembership {
+  userId   String
+  outletId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  @@id([userId, outletId])
+  @@index([outletId])
+}
+
+model MenuItem {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  description      String
+  category         String
+  imageUrl         String?
+  isVeg            Boolean
+  allergens        String[]
+  spiceLevel       Int      @default(1)
+  basePrepMinutes  Int
+  prepStation      String   @default("MAIN")
+  batchCapacity    Int      @default(1)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  portions         MenuPortion[]
+  addons           MenuAddon[]
+  availability     OutletAvailability[]
+}
+
+model MenuPortion {
+  id                  String   @id @default(cuid())
+  itemId              String
+  item                MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name                String
+  prepMinutesOverride Int?
+  prices              CityPrice[]
+  @@unique([itemId, name])
+}
+
+model CityPrice {
+  id          String      @id @default(cuid())
+  portionId   String
+  portion     MenuPortion @relation(fields: [portionId], references: [id], onDelete: Cascade)
+  city        String
+  pricePaise  Int
+  @@unique([portionId, city])
+}
+
+model MenuAddon {
+  id               String   @id @default(cuid())
+  itemId           String
+  item             MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name             String
+  pricePaise       Int
+  extraPrepMinutes Int      @default(0)
+  @@unique([itemId, name])
+}
+
+model OutletAvailability {
+  outletId    String
+  itemId      String
+  outlet      Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  item        MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  isAvailable Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+  @@id([outletId, itemId])
+  @@index([itemId])
+}
+
+// Purchased names and prices are snapshots: later menu edits cannot change receipts.
+model Order {
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
+  customerId        String
+  customer          User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  outletId          String
+  outlet            Outlet        @relation(fields: [outletId], references: [id], onDelete: Restrict)
+  status            OrderStatus   @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod
+  totalPaise        Int
+  includedTaxPaise  Int
+  promisedReadyAt   DateTime
+  originalPromiseAt DateTime
+  estimateSource    String        @default("PROVISIONAL")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  items             OrderItem[]
+  events            OrderEvent[]
+  @@index([outletId, status, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model OrderItem {
+  id               String @id @default(cuid())
+  orderId          String
+  order            Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name             String
+  portionName      String
+  quantity         Int
+  unitPricePaise   Int
+  prepMinutes      Int
+  isVeg            Boolean
+  allergens        String[]
+  @@index([orderId])
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  createdAt DateTime    @default(now())
+  @@index([orderId, createdAt])
+}

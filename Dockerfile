@@ -1,15 +1,19 @@
 FROM node:22-bookworm-slim AS dependencies
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM dependencies AS development
+FROM dependencies AS source
 COPY . .
+RUN npm run db:generate
+
+FROM source AS development
 EXPOSE 3000
+ENTRYPOINT ["sh", "/app/scripts/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
-FROM dependencies AS builder
-COPY . .
+FROM source AS builder
 RUN npm run build
 
 FROM node:22-bookworm-slim AS production

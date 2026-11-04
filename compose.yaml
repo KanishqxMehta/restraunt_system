@@ -22,9 +22,14 @@ services:
       - "127.0.0.1:3000:3000"
     environment:
       DATABASE_URL: postgresql://isocode:isocode_local@db:5432/isocode
+      BETTER_AUTH_URL: http://localhost:3000
+      ENABLE_DEMO_DATA: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - auth_runtime:/app/.runtime
     depends_on:
       db:
         condition: service_healthy
 volumes:
   postgres_data:
+  auth_runtime:
