@@ -53,6 +53,31 @@ export function WorkspaceShell({
                 </Link>
               </nav>
             )}
+            {viewer.role === "CENTRAL_ADMIN" && (
+              <nav
+                aria-label="Admin navigation"
+                className="flex items-center gap-4 text-sm"
+              >
+                <Link
+                  href="/admin/dashboard"
+                  className="font-semibold text-[#133d34] transition hover:text-[#0c2a23] hover:underline"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/admin/menu"
+                  className="font-semibold text-[#4a1d5a] transition hover:text-[#2d1136] hover:underline"
+                >
+                  Menu & Stock
+                </Link>
+                <Link
+                  href="/kitchen"
+                  className="text-[#635b50] transition hover:text-[#133d34] hover:underline"
+                >
+                  Kitchen KDS
+                </Link>
+              </nav>
+            )}
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-[#25221e]">{viewer.name}</p>
               <span className="inline-block mt-0.5 rounded-full border border-[#e2d0ee] bg-[#f5effa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
