@@ -171,11 +171,11 @@ The design philosophy adheres to the client brief: *"good, minimal design: clean
 
 | Screen | Design Rationale & Key Elements |
 | --- | --- |
-| **Customer Menu (`/order`)** | Restrained palette of deep forest green (`#173e37`), warm white (`#fbfaf8`), and subtle amber accents. High-resolution food photography leads each card. Fixed desktop cart panel; sticky mobile bottom bar with total and checkout CTA. Category pills and instant search allow sub-60-second ordering. |
+| **Customer Menu (`/order`)** | Restrained heritage palette of primary cardamom emerald green (`#133d34`), warm cream canvas (`#faf8f5`), and tertiary Nizam plum/amethyst (`#3b1747`) for visual gravitas. High-resolution food photography leads each card. Fixed desktop cart panel; sticky mobile bottom bar with total and checkout CTA. Category pills and instant search allow sub-60-second ordering. |
 | **Dish Configurator Modal** | Accessible native `<dialog>` element. Clear radio selection for portions with calculated price differentials. Optional add-ons display explicit price and allergen impacts before basket placement. |
 | **Checkout (`/checkout`)** | Distraction-free single-column checkout. Explicit breakdown of item subtotals, coupon savings, and 5% included GST (CGST/SGST). Single-click mock UPI / Card payment selection. |
-| **Customer Tracking (`/orders/[id]`)** | Prominent dark-green status banner with live countdown timer, 4-stage progress tracker, and FSSAI number. Live SSE connection pill displays "Live" status. Empathetic alerts appear if orders are delayed. |
-| **Kitchen Display (`/kitchen`)** | Designed for cheap Android tablets in hot, steamy, noisy kitchens. High-contrast typography readable from two metres. Bold lane counts, elapsed timers, station badges, 10+ min late alerts, supervisor promise override controls, and one-tap stock pause drawer. |
+| **Customer Tracking (`/orders/[id]`)** | Prominent dark-green status banner with live countdown timer, 4-stage progress tracker, and FSSAI number. Live SSE connection pill displays "Live" status. Empathetic alerts appear if orders are delayed. Includes **Virtual Device Outbox** drawer to inspect simulated SMS & WhatsApp order updates, and one-click WhatsApp sharing (`wa.me`). |
+| **Kitchen Display (`/kitchen`)** | Designed for cheap Android tablets in hot, steamy, noisy kitchens. High-contrast typography readable from two metres. Bold cream lane containers, elapsed timers, station badges, 10+ min late alerts, supervisor promise override controls, and one-tap stock pause drawer. |
 | **Central Menu CMS (`/admin/menu`)** | Desktop command center for culinary directors. Live chain stats banner (active dishes, veg/non-veg count, outlet pauses). Instant search, category filters, dish creation modal, city-tiered price manager, and per-outlet stock switches. |
 
 ---
