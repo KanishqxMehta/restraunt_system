@@ -197,6 +197,18 @@ function KitchenTicket({
         </div>
       )}
 
+      {/* Catering Banner */}
+      {ticket.isCatering && (
+        <div className="mb-3 flex items-center justify-between rounded-lg border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-1.5 text-xs font-bold text-[#3b1747] shadow-xs">
+          <span>🎉 Bulk Catering · {ticket.guestCount ?? 20} Guests</span>
+          {ticket.eventDate && (
+            <span className="font-semibold text-[#6b21a8]">
+              Slot: {formatTime(new Date(ticket.eventDate))}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="break-all text-xl font-black text-[#133d34] tracking-tight">
@@ -223,6 +235,12 @@ function KitchenTicket({
       {ticket.managerOverrideReason && (
         <p className="mt-2 text-xs text-[#3b1747] bg-[#faf6fd] rounded-lg p-2 border border-[#e4d3f1]">
           <strong className="text-[#4a1d5a]">Supervisor note:</strong> {ticket.managerOverrideReason}
+        </p>
+      )}
+
+      {ticket.specialInstructions && (
+        <p className="mt-2 text-xs text-[#522960] bg-[#faf6fd] rounded-lg p-2 border border-[#e4d3f1]">
+          <strong className="text-[#3b1747]">Event note:</strong> {ticket.specialInstructions}
         </p>
       )}
 

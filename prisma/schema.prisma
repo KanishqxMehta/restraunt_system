@@ -224,6 +224,10 @@ model Order {
   subtotalPaise     Int           @default(0)
   discountPaise     Int           @default(0)
   couponCode        String?
+  isCatering        Boolean       @default(false)
+  guestCount        Int?
+  eventDate         DateTime?
+  specialInstructions String?
   deliveryAddress   String?
   deliveryLatitude  Float?
   deliveryLongitude Float?

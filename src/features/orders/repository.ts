@@ -23,6 +23,10 @@ const orderSelection = {
   aiEstimatedMinutes: true,
   aiExplanation: true,
   managerOverrideReason: true,
+  isCatering: true,
+  guestCount: true,
+  eventDate: true,
+  specialInstructions: true,
   createdAt: true,
   outlet: { select: { id: true, name: true, fssaiLicense: true } },
   items: {

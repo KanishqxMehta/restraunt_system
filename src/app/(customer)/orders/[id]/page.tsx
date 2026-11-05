@@ -56,6 +56,29 @@ export default async function CustomerOrderPage({
         </div>
       </header>
 
+      {order.isCatering && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e4d3f1] bg-[#faf6fd] p-4 text-xs font-bold text-[#3b1747] shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3b1747] text-white">
+              🎉
+            </span>
+            <div>
+              <p className="text-sm font-bold text-[#133d34]">
+                Bulk Party Catering · {order.guestCount ?? 20} Guests
+              </p>
+              {order.specialInstructions && (
+                <p className="text-xs font-normal text-[#522960] mt-0.5">
+                  &ldquo;{order.specialInstructions}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+          <span className="rounded-full bg-[#f5effa] px-3 py-1 text-[#4a1d5a] border border-[#dcc8ea]">
+            Sealed Dum Handis Confirmed
+          </span>
+        </div>
+      )}
+
       {isCriticalLate && (
         <div
           role="alert"

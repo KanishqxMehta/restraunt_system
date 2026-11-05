@@ -40,6 +40,12 @@ export function WorkspaceShell({
                   Order food
                 </Link>
                 <Link
+                  href="/party-orders"
+                  className="font-semibold text-[#4a1d5a] transition hover:text-[#2d1136] hover:underline"
+                >
+                  Party catering
+                </Link>
+                <Link
                   href="/account"
                   className="text-[#635b50] transition hover:text-[#4a1d5a] hover:underline"
                 >
