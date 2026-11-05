@@ -85,7 +85,7 @@ If running directly on macOS / Linux:
    ```bash
    npm run typecheck    # TypeScript compiler check (0 errors)
    npm run lint         # ESLint check (0 warnings/errors)
-   npm run test         # Vitest unit test suites (48 tests passing)
+   npm run test         # Vitest unit test suites (64 tests passing across 11 test suites)
    ```
 
 ---
@@ -119,8 +119,8 @@ All synthetic demo accounts share a standard local development password:
 
 | Role | Email | Assigned Outlet / Access | Key Flows to Review |
 | --- | --- | --- | --- |
-| **Customer (Primary)** | `customer@demo.example` | Public / Customer ordering | Browse menu with photos, portions, add-ons, 5% inclusive GST; apply coupon `DIRECT10`; complete mock UPI payment; live order tracking with countdown and lateness notices; AI reorder suggestions. |
-| **Customer (Secondary)** | `customer2@demo.example` | Public / Customer ordering | Clean customer account for testing fresh registration, location picker, and zero-history states. |
-| **Kitchen Staff** | `kondapur@demo.example` | **Kondapur Outlet** (`outlet-kondapur`) | Outlet kitchen display with live SSE updates; New → Preparing → Ready → Handoff stages; 2-metre readable status; 10+ min late manager alert banner; "Adjust promise" supervisor override; "Outlet Stock" one-tap item pausing. |
+| **Customer (Primary)** | `customer@demo.example` | Public / Customer ordering | Browse menu with photos, portions, add-ons, 5% inclusive GST; apply coupon `DIRECT10`; complete mock UPI payment; live order tracking with countdown and lateness notices; AI reorder suggestions; **Virtual Outbox** drawer for simulated SMS and WhatsApp receipts; **Party Catering** wizard at `/party-orders` with 15–500 guest slider and automatic 5kg/10kg/20kg dum handi allocation. |
+| **Customer (Secondary)** | `customer2@demo.example` | Public / Customer ordering | Clean customer account for testing fresh registration, location picker, zero-history states, and party catering bookings. |
+| **Kitchen Staff** | `kondapur@demo.example` | **Kondapur Outlet** (`outlet-kondapur`) | Outlet kitchen display with live SSE updates; New → Preparing → Ready → Handoff stages; 2-metre readable status; 10+ min late manager alert banner; "Adjust promise" supervisor override; "Outlet Stock" one-tap item pausing; prominent **🎉 Bulk Catering** badges with guest counts and event delivery slots. |
 | **Kitchen Staff** | `gachibowli@demo.example` | **Gachibowli Cloud Kitchen** (`outlet-gachibowli`) | Demonstrates strict tenant isolation (cannot read or mutate Kondapur tickets or stock). |
-| **Central Admin** | `admin@demo.example` | **Central Chain-wide** | Authoritative Central Menu CMS at `/admin/menu`; add new dishes; manage city-tiered pricing; toggle stock availability across all outlets; set time-based service windows (e.g. Haleem dinner hours). |
+| **Central Admin** | `admin@demo.example` | **Central Chain-wide** | **Executive Commission Savings & Operations Analytics** at `/admin/dashboard`: real-time tracker for the ₹1.14 Cr recovery target, 15% direct commission savings ticker, 30% catering margin captured, DPDP customer database metrics, kitchen SLA % and multi-outlet leaderboard; Authoritative **Central Menu CMS** at `/admin/menu`: add new dishes, manage city-tiered pricing, toggle stock availability across all outlets, and set time-based service windows. |
