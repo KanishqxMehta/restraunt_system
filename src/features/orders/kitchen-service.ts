@@ -3,6 +3,7 @@ import { orderScope, requireRole, type Viewer } from "@/features/auth/policy";
 import { serializable } from "@/server/db/transaction";
 import { HttpError } from "@/server/http/errors";
 import { stageActions, type KitchenStage } from "./stages";
+import { dispatchOrderNotifications } from "@/features/notifications/dispatcher";
 
 export async function advanceKitchenStage(
   viewer: Viewer,
@@ -12,7 +13,7 @@ export async function advanceKitchenStage(
   requireRole(viewer, ["KITCHEN_STAFF"]);
   const next = stageActions[expectedStage].next;
 
-  return serializable(async (transaction) => {
+  const result = await serializable(async (transaction) => {
     const where = { id, ...orderScope(viewer), paymentStatus: "PAID" as const };
     const order = await transaction.order.findFirst({
       where,
@@ -35,6 +36,16 @@ export async function advanceKitchenStage(
     });
     return { id, status: next };
   });
+
+  if (result.status === "PREPARING") {
+    void dispatchOrderNotifications(id, "COOKING_STARTED");
+  } else if (result.status === "READY") {
+    void dispatchOrderNotifications(id, "READY_FOR_PICKUP");
+  } else if (result.status === "HANDED_OFF") {
+    void dispatchOrderNotifications(id, "ORDER_HANDED_OFF");
+  }
+
+  return result;
 }
 
 export async function overrideOrderPromise(
@@ -52,7 +63,7 @@ export async function overrideOrderPromise(
     throw new HttpError(400, "A reason for overriding the promise is required.");
   }
 
-  return serializable(async (transaction) => {
+  const result = await serializable(async (transaction) => {
     const where = { id, ...orderScope(viewer), paymentStatus: "PAID" as const };
     const order = await transaction.order.findFirst({
       where,
@@ -82,4 +93,11 @@ export async function overrideOrderPromise(
       managerOverrideReason: reason.trim(),
     };
   });
+
+  void dispatchOrderNotifications(id, "PROMISE_EXTENDED", {
+    extraMinutes,
+    reason: reason.trim(),
+  });
+
+  return result;
 }

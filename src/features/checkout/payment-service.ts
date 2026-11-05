@@ -11,13 +11,15 @@ import {
   fetchOutletKitchenLoad,
   predictKitchenPrepTime,
 } from "@/features/orders/ai-estimation";
+import { dispatchOrderNotifications } from "@/features/notifications/dispatcher";
+
 export async function processMockPayment(
   viewer: Viewer,
   orderId: string,
   input: z.infer<typeof mockPaymentSchema>,
 ) {
   requireRole(viewer, ["CUSTOMER"]);
-  return serializable(async (transaction) => {
+  const result = await serializable(async (transaction) => {
     const order = await transaction.order.findFirst({
       where: { id: orderId, customerId: viewer.id },
       include: { quote: true },
@@ -145,4 +147,10 @@ export async function processMockPayment(
       outcome: input.outcome,
     };
   });
+
+  if (result.paid) {
+    void dispatchOrderNotifications(orderId, "ORDER_CONFIRMED");
+  }
+
+  return result;
 }

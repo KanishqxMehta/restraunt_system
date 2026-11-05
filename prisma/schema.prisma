@@ -234,6 +234,7 @@ model Order {
   updatedAt         DateTime      @updatedAt
   items             OrderItem[]
   events            OrderEvent[]
+  notifications     OrderNotification[]
   @@index([outletId, status, createdAt])
   @@index([customerId, createdAt])
   @@unique([customerId, idempotencyKey])
@@ -326,3 +327,33 @@ model PaymentAttempt {
   createdAt      DateTime @default(now())
   @@unique([orderId, idempotencyKey])
 }
+
+enum NotificationChannel {
+  WHATSAPP
+  SMS
+}
+
+enum NotificationEvent {
+  ORDER_CONFIRMED
+  COOKING_STARTED
+  READY_FOR_PICKUP
+  PROMISE_EXTENDED
+  ORDER_HANDED_OFF
+}
+
+model OrderNotification {
+  id               String              @id @default(cuid())
+  orderId          String
+  order            Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  channel          NotificationChannel
+  event            NotificationEvent
+  recipient        String
+  title            String
+  body             String
+  whatsappDeepLink String?
+  gatewayMessageId String
+  sentAt           DateTime            @default(now())
+
+  @@index([orderId, sentAt])
+}
+

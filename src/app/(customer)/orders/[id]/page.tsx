@@ -1,9 +1,10 @@
 import { customerStages } from "@/features/orders/stages";
 import Link from "next/link";
-import { Check, Clock3, MapPin, AlertTriangle } from "lucide-react";
+import { Check, Clock3, MapPin, AlertTriangle, Share2 } from "lucide-react";
 import { requirePageViewer } from "@/features/auth/session";
 import { loadOrderPage } from "@/features/orders/page-loader";
 import { RefreshStatus } from "@/features/orders/components/refresh-status";
+import { OutboxButton } from "@/features/notifications/components/outbox-button";
 import { snapshotAddons } from "@/features/orders/snapshots";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { PriceBreakdown } from "@/features/checkout/components/price-breakdown";
@@ -23,6 +24,9 @@ export default async function CustomerOrderPage({
   );
 
   const isCriticalLate = order.isCriticalLate;
+  const shareWhatsAppText = encodeURIComponent(
+    `🍽️ Tracking my Biryani order #${order.orderNumber} from Company A Hyderabad (${order.outlet.name})! Track here: http://localhost:3000/orders/${order.id}`,
+  );
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -40,7 +44,16 @@ export default async function CustomerOrderPage({
             {order.outlet.name} · FSSAI {order.outlet.fssaiLicense}
           </p>
         </div>
-        <RefreshStatus key={order.id} orderId={order.id} />
+        <div className="flex items-center gap-2.5">
+          {paid && (
+            <OutboxButton
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              outletName={order.outlet.name}
+            />
+          )}
+          <RefreshStatus key={order.id} orderId={order.id} />
+        </div>
       </header>
 
       {isCriticalLate && (
@@ -188,13 +201,22 @@ export default async function CustomerOrderPage({
           </div>
         )}
       </section>
-      <div className="mt-6 flex flex-wrap gap-5 text-sm font-semibold text-[#133d34]">
+      <div className="mt-6 flex flex-wrap items-center gap-5 text-sm font-semibold text-[#133d34]">
         <Link href="/order" className="underline underline-offset-4 hover:text-[#0c2a23]">
           Order something else
         </Link>
         <Link href="/account" className="text-[#4a1d5a] underline underline-offset-4 hover:text-[#2d1136]">
           All my orders
         </Link>
+        <a
+          href={`https://wa.me/?text=${shareWhatsAppText}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-[#075e54] underline underline-offset-4 hover:text-[#00a884]"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          Share tracking via WhatsApp
+        </a>
       </div>
     </div>
   );
