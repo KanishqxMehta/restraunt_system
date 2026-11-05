@@ -54,7 +54,7 @@ for (const account of [
   {
     email: "kondapur@demo.example",
     path: "/kitchen",
-    heading: "Kitchen foundation",
+    heading: "Kitchen display",
     expected: "WEB-778120",
     hidden: "WEB-778131",
   },

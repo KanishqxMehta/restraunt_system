@@ -1,3 +1,4 @@
+import { customerStages } from "@/features/orders/stages";
 import Link from "next/link";
 import { Check, Clock3, MapPin } from "lucide-react";
 import { requirePageViewer } from "@/features/auth/session";
@@ -17,13 +18,7 @@ export default async function CustomerOrderPage({
   const viewer = await requirePageViewer(["CUSTOMER"]);
   const order = await loadOrderPage(viewer, (await params).id);
   const paid = order.paymentStatus === "PAID";
-  const stages = [
-    { status: "NEW", label: "Order received" },
-    { status: "PREPARING", label: "In the kitchen" },
-    { status: "READY", label: "Ready for pickup" },
-    { status: "HANDED_OFF", label: "With delivery partner" },
-  ];
-  const currentStage = stages.findIndex(
+  const currentStage = customerStages.findIndex(
     (stage) => stage.status === order.status,
   );
   return (
@@ -42,7 +37,7 @@ export default async function CustomerOrderPage({
             {order.outlet.name} · FSSAI {order.outlet.fssaiLicense}
           </p>
         </div>
-        <RefreshStatus />
+        <RefreshStatus key={order.id} orderId={order.id} />
       </header>
       <section className="mb-6 rounded-3xl bg-[#173e37] p-6 text-white sm:p-8">
         <div className="flex items-center gap-3">
@@ -62,8 +57,11 @@ export default async function CustomerOrderPage({
         </div>
         {paid && (
           <ol className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-4">
-            {stages.map((stage, index) => (
-              <li key={stage.status}>
+            {customerStages.map((stage, index) => (
+              <li
+                key={stage.status}
+                aria-current={index === currentStage ? "step" : undefined}
+              >
                 <span
                   className={cn(
                     "mb-3 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold",

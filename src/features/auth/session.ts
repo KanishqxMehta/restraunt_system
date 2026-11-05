@@ -7,8 +7,14 @@ import { HttpError } from "@/server/http/errors";
 import { requireRole, type Viewer } from "./policy";
 import { homeForRole, type Role } from "./roles";
 
-export async function getViewer(): Promise<Viewer | null> {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+export async function getViewer(
+  requestHeaders?: Headers,
+): Promise<Viewer | null> {
+  const incomingHeaders = requestHeaders ?? (await headers());
+  const session = await getAuth().api.getSession({
+    headers: incomingHeaders,
+    query: requestHeaders ? { disableRefresh: true } : undefined,
+  });
   if (!session) return null;
   // Read current permissions from the database, never client parameters or cached role claims.
   const user = await getDatabase().user.findUnique({
@@ -34,8 +40,9 @@ export async function getViewer(): Promise<Viewer | null> {
 
 export async function requireViewer(
   allowed?: readonly Role[],
+  requestHeaders?: Headers,
 ): Promise<Viewer> {
-  const viewer = await getViewer();
+  const viewer = await getViewer(requestHeaders);
   if (!viewer) throw new HttpError(401, "Please sign in to continue.");
   if (allowed) requireRole(viewer, allowed);
   return viewer;

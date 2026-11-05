@@ -66,16 +66,29 @@ export async function listKitchenOrders(viewer: Viewer) {
         },
       ],
     },
-    select: orderSelection,
+    select: {
+      ...orderSelection,
+      events: {
+        where: { status: { in: ["NEW", "READY"] } },
+        select: { status: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
     orderBy: { createdAt: "asc" },
-    take: 50,
   });
-  return withLateness(orders);
+  return withLateness(orders).map(({ events, ...order }) => ({
+    ...order,
+    queuedAt:
+      events.find((event) => event.status === "NEW")?.createdAt ??
+      order.createdAt,
+    readyAt:
+      events.find((event) => event.status === "READY")?.createdAt ?? null,
+  }));
 }
 
-function withLateness(
-  orders: Prisma.OrderGetPayload<{ select: typeof orderSelection }>[],
-) {
+function withLateness<
+  T extends Prisma.OrderGetPayload<{ select: typeof orderSelection }>,
+>(orders: T[]) {
   const now = Date.now();
   return orders.map((order) => ({
     ...order,
