@@ -38,6 +38,11 @@ export function MenuCard({
           </span>
         </div>
         <h3 className="mt-3 text-lg font-semibold">{item.name}</h3>
+        {item.serviceHoursText && (
+          <p className="mt-1 text-xs font-medium text-amber-800">
+            ⏰ Available {item.serviceHoursText}
+          </p>
+        )}
         <p className="mt-2 text-sm leading-6 text-stone-500">
           {item.description}
         </p>
@@ -70,7 +75,11 @@ export function MenuCard({
             className="min-h-10 border-emerald-800 px-4 text-emerald-900"
             onClick={() => onConfigure(item)}
           >
-            {item.isAvailable ? "Add +" : "Sold out"}
+            {item.isAvailable
+              ? "Add +"
+              : item.timeRestricted
+                ? "Outside hours"
+                : "Sold out"}
           </Button>
         </div>
       </div>

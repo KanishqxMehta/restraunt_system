@@ -1,6 +1,7 @@
 import type { CartLine } from "./validation";
 import type { PricedLine, PriceSummary } from "./types";
 import { HttpError } from "@/server/http/errors";
+import { isItemInTimeWindow } from "@/features/menu/time-windows";
 
 export interface PricingItem {
   id: string;
@@ -8,6 +9,8 @@ export interface PricingItem {
   isVeg: boolean;
   allergens: string[];
   basePrepMinutes: number;
+  availableFromMinute?: number | null;
+  availableToMinute?: number | null;
   availability: { isAvailable: boolean }[];
   portions: {
     id: string;
@@ -26,6 +29,7 @@ export interface PricingItem {
 export function priceLines(
   lines: CartLine[],
   items: PricingItem[],
+  now: Date = new Date(),
 ): PricedLine[] {
   return [...lines]
     .sort(
@@ -52,6 +56,15 @@ export function priceLines(
         throw new HttpError(
           409,
           "An item is unavailable or its city price changed. Review your menu and cart.",
+        );
+      if (
+        item.availableFromMinute != null &&
+        item.availableToMinute != null &&
+        !isItemInTimeWindow(item.availableFromMinute, item.availableToMinute, now)
+      )
+        throw new HttpError(
+          409,
+          "An item is unavailable outside its designated service hours. Review your menu and cart.",
         );
       const addons = [...line.addonIds].sort().map((id) => {
         const addon = item.addons.find((addon) => addon.id === id);

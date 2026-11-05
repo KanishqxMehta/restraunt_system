@@ -8,7 +8,9 @@ export function listAdminMenu(viewer: Viewer) {
     include: {
       portions: { include: { prices: true } },
       addons: true,
-      availability: { include: { outlet: { select: { name: true } } } },
+      availability: {
+        include: { outlet: { select: { id: true, name: true, city: true } } },
+      },
     },
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });

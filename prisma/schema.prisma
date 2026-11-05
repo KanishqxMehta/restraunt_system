@@ -149,6 +149,8 @@ model MenuItem {
   prepStation      String   @default("MAIN")
   batchCapacity    Int      @default(1)
   isActive         Boolean  @default(true)
+  availableFromMinute Int?
+  availableToMinute   Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   portions         MenuPortion[]

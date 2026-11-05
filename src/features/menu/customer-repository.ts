@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getDatabase } from "@/server/db/client";
 import { HttpError } from "@/server/http/errors";
 import { isOpenAt } from "@/features/outlets/serviceability";
+import { formatTimeWindow, isItemInTimeWindow } from "./time-windows";
 
 export type DatabaseReader = Pick<
   Prisma.TransactionClient,
@@ -52,33 +53,51 @@ export async function loadCatalog(
 
 export async function getCustomerMenu(outletId: string) {
   const { outlet, items } = await loadCatalog(outletId);
+  const now = new Date();
   return {
     outlet,
-    isOpen: isOpenAt(outlet.opensAtMinute, outlet.closesAtMinute, new Date()),
-    items: items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      category: item.category,
-      imageUrl: item.imageUrl,
-      isVeg: item.isVeg,
-      allergens: item.allergens,
-      spiceLevel: item.spiceLevel,
-      isAvailable: Boolean(item.availability[0]?.isAvailable),
-      portions: item.portions
-        .filter((portion) => portion.prices.length > 0)
-        .map((portion) => ({
-          id: portion.id,
-          name: portion.name,
-          pricePaise: portion.prices[0].pricePaise,
-        }))
-        .sort((a, b) => a.pricePaise - b.pricePaise),
-      addons: item.addons.map((addon) => ({
-        id: addon.id,
-        name: addon.name,
-        pricePaise: addon.pricePaise,
-        allergens: addon.allergens,
-      })),
-    })),
+    isOpen: isOpenAt(outlet.opensAtMinute, outlet.closesAtMinute, now),
+    items: items.map((item) => {
+      const inTimeWindow = isItemInTimeWindow(
+        item.availableFromMinute,
+        item.availableToMinute,
+        now,
+      );
+      const isAvailable = Boolean(item.availability[0]?.isAvailable) && inTimeWindow;
+      const timeRestricted =
+        item.availableFromMinute != null && item.availableToMinute != null;
+
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        imageUrl: item.imageUrl,
+        isVeg: item.isVeg,
+        allergens: item.allergens,
+        spiceLevel: item.spiceLevel,
+        isAvailable,
+        availableFromMinute: item.availableFromMinute,
+        availableToMinute: item.availableToMinute,
+        timeRestricted,
+        serviceHoursText: timeRestricted
+          ? formatTimeWindow(item.availableFromMinute, item.availableToMinute)
+          : undefined,
+        portions: item.portions
+          .filter((portion) => portion.prices.length > 0)
+          .map((portion) => ({
+            id: portion.id,
+            name: portion.name,
+            pricePaise: portion.prices[0].pricePaise,
+          }))
+          .sort((a, b) => a.pricePaise - b.pricePaise),
+        addons: item.addons.map((addon) => ({
+          id: addon.id,
+          name: addon.name,
+          pricePaise: addon.pricePaise,
+          allergens: addon.allergens,
+        })),
+      };
+    }),
   };
 }

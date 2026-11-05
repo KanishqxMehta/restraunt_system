@@ -59,7 +59,7 @@ export async function buildSnapshot(
       400,
       "Your location is outside this outlet's delivery radius.",
     );
-  const pricedItems = priceLines(input.lines, items);
+  const pricedItems = priceLines(input.lines, items, now);
   const coupon = await validateCoupon(
     input.couponCode,
     viewer.id,
