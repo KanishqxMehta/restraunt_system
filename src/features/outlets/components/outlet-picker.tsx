@@ -89,14 +89,14 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
     onSelected();
   }
   return (
-    <section className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
+    <section className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
       <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-900">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e2d0ee] bg-[#f5effa] text-[#4a1d5a]">
           <MapPin className="h-5 w-5" />
         </span>
         <div>
-          <h2 className="text-xl font-semibold">Where are we delivering?</h2>
-          <p className="mt-1 text-sm text-stone-500">
+          <h2 className="text-xl font-bold text-[#133d34]">Where are we delivering?</h2>
+          <p className="mt-1 text-sm text-[#5c5448]">
             Find an open kitchen within delivery range.
           </p>
         </div>
@@ -111,7 +111,7 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
         Use my location
       </Button>
       <div className="mt-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">
+        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
           Or try a demo location
         </p>
         <div className="flex flex-wrap gap-2">
@@ -192,16 +192,16 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
                 key={outlet.id}
                 type="button"
                 onClick={() => select(outlet)}
-                className="flex w-full items-center gap-4 rounded-2xl border border-stone-200 p-5 text-left hover:border-emerald-800 focus-visible:outline-2 focus-visible:outline-emerald-900"
+                className="flex w-full items-center gap-4 rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-5 text-left transition hover:border-[#133d34] hover:bg-[#faf7f2] focus-visible:outline-2 focus-visible:outline-[#3b1747]"
               >
                 <div className="flex-1">
-                  <p className="mb-1 text-xs font-medium text-emerald-800">
+                  <p className="mb-1 text-xs font-bold text-[#4a1d5a]">
                     {index === 0
                       ? "Recommended · nearest"
                       : "Also delivers here"}
                   </p>
-                  <h3 className="font-semibold">{outlet.name}</h3>
-                  <p className="mt-1 text-xs text-stone-500">
+                  <h3 className="font-bold text-[#133d34]">{outlet.name}</h3>
+                  <p className="mt-1 text-xs text-[#635b50]">
                     {outlet.distanceKm.toFixed(1)} km away · Provisional prep{" "}
                     {outlet.minimumPrepMinutes + outlet.packingMinutes} min
                   </p>
@@ -209,7 +209,7 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
                     FSSAI {outlet.fssaiLicense}
                   </p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-emerald-900" />
+                <ArrowRight className="h-5 w-5 text-[#133d34]" />
               </button>
             ))}
           </div>

@@ -54,17 +54,17 @@ export function KitchenBoard({
           <section
             key={stage}
             aria-label={laneLabels[stage]}
-            className="min-w-0 rounded-2xl bg-stone-100 p-4"
+            className="min-w-0 rounded-2xl border border-[#ded5c6] bg-[#f4efe5] p-4 shadow-xs"
           >
             <header className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-xl font-semibold">{laneLabels[stage]}</h2>
-              <span className="rounded-full bg-white px-3 py-1 font-semibold">
+              <h2 className="text-xl font-bold tracking-tight text-[#133d34]">{laneLabels[stage]}</h2>
+              <span className="rounded-full border border-[#ded5c6] bg-[#fffdfa] px-3 py-1 text-sm font-bold text-[#4a1d5a]">
                 {orders.length}
               </span>
             </header>
             <div className="space-y-3">
               {orders.length === 0 && (
-                <p className="rounded-xl border border-dashed border-stone-300 p-5 text-stone-600">
+                <p className="rounded-xl border border-dashed border-[#ded5c6] bg-[#faf8f4] p-5 text-sm text-[#635b50]">
                   No tickets in this stage.
                 </p>
               )}
@@ -186,7 +186,7 @@ function KitchenTicket({
           ? "border-2 border-red-600 bg-red-50/40 ring-2 ring-red-400/50"
           : late
             ? "border-red-400 bg-red-50/20"
-            : "border-stone-200 bg-white",
+            : "border-[#ded5c6] bg-[#fffdfa] hover:border-[#133d34]/40",
       )}
     >
       {/* Critical 10+ Min Lateness Alert Banner */}
@@ -199,30 +199,30 @@ function KitchenTicket({
 
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="break-all text-xl font-black text-stone-900 tracking-tight">
+          <h3 className="break-all text-xl font-black text-[#133d34] tracking-tight">
             {ticket.orderNumber}
           </h3>
-          <p className="mt-0.5 text-xs text-stone-500 font-medium">{ticket.outlet.name}</p>
+          <p className="mt-0.5 text-xs text-[#635b50] font-semibold">{ticket.outlet.name}</p>
         </div>
 
         {/* AI & Override Status Badges */}
         <div className="flex flex-col items-end gap-1">
           {ticket.estimateSource === "GEMINI_AI" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
-              <Sparkles className="h-3 w-3 text-emerald-700" /> Gemini AI
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-2.5 py-0.5 text-[11px] font-bold text-[#065f46]">
+              <Sparkles className="h-3 w-3 text-[#059669]" /> Gemini AI
             </span>
           )}
           {ticket.estimateSource === "MANAGER_OVERRIDE" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-[11px] font-bold text-purple-900">
-              <Sliders className="h-3 w-3 text-purple-700" /> Override
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
+              <Sliders className="h-3 w-3 text-[#6b21a8]" /> Override
             </span>
           )}
         </div>
       </div>
 
       {ticket.managerOverrideReason && (
-        <p className="mt-1 text-xs text-purple-900 bg-purple-50 rounded-md p-1.5 border border-purple-200">
-          <strong>Supervisor note:</strong> {ticket.managerOverrideReason}
+        <p className="mt-2 text-xs text-[#3b1747] bg-[#faf6fd] rounded-lg p-2 border border-[#e4d3f1]">
+          <strong className="text-[#4a1d5a]">Supervisor note:</strong> {ticket.managerOverrideReason}
         </p>
       )}
 
@@ -233,8 +233,8 @@ function KitchenTicket({
           criticalLate
             ? "bg-red-700 text-white"
             : late
-              ? "bg-red-100 text-red-900"
-              : "bg-emerald-50 text-emerald-950",
+              ? "bg-red-100 text-red-900 border border-red-300"
+              : "bg-[#eef6f4] text-[#133d34] border border-[#a7f3d0]/60",
         )}
       >
         <span>
@@ -296,6 +296,7 @@ function KitchenTicket({
       <div className="flex gap-2">
         {canAdvance && (
           <Button
+            variant="primary"
             className="flex-1 font-bold"
             disabled={saving || refreshing}
             onClick={() =>
@@ -310,7 +311,7 @@ function KitchenTicket({
           <button
             type="button"
             onClick={() => setOverriding(true)}
-            className="flex items-center justify-center gap-1 rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition"
+            className="flex items-center justify-center gap-1 rounded-xl border border-[#dcc8ea] bg-[#f5effa] px-3 py-2 text-xs font-bold text-[#3b1747] transition hover:bg-[#ede0f5] shadow-xs cursor-pointer"
             title="Adjust promised preparation time"
           >
             <Sliders className="h-4 w-4" />
@@ -325,14 +326,14 @@ function KitchenTicket({
           title="Confirm rider handoff"
           onClose={() => setConfirming(false)}
         >
-          <p className="mb-5 text-stone-700">
+          <p className="mb-5 text-[#544d42]">
             Confirm that the delivery partner has collected {ticket.orderNumber}.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button variant="secondary" onClick={() => setConfirming(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void advance()}>Confirm collected</Button>
+            <Button variant="primary" onClick={() => void advance()}>Confirm collected</Button>
           </div>
         </Modal>
       )}
@@ -344,7 +345,7 @@ function KitchenTicket({
           onClose={() => setOverriding(false)}
         >
           <form onSubmit={handleOverride} className="space-y-4">
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-[#544d42]">
               Kitchen supervisors can adjust the promised ready time if unexpected delays occur. The customer&apos;s live tracking screen will update immediately.
             </p>
 
@@ -355,7 +356,7 @@ function KitchenTicket({
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-stone-800 mb-2">
+              <label className="block text-sm font-bold text-[#133d34] mb-2">
                 Extend ready time from now by:
               </label>
               <div className="flex gap-2 mb-2">
@@ -367,8 +368,8 @@ function KitchenTicket({
                     className={cn(
                       "flex-1 rounded-xl border py-2 text-xs font-bold transition",
                       extraMinutes === mins
-                        ? "bg-stone-900 text-white border-stone-900"
-                        : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100",
+                        ? "bg-[#3b1747] text-white border-[#3b1747] shadow-xs"
+                        : "bg-[#f5efe5] text-[#544d42] border-[#ded5c6] hover:bg-[#ede3f5] hover:text-[#4a1d5a]",
                     )}
                   >
                     +{mins} min

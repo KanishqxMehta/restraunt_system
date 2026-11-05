@@ -41,12 +41,16 @@ export function ItemConfiguration({
           </p>
         </div>
         <fieldset>
-          <legend className="mb-3 font-semibold">Choose a portion</legend>
+          <legend className="mb-3 font-bold text-[#133d34]">Choose a portion</legend>
           <div className="space-y-2">
             {item.portions.map((portion) => (
               <label
                 key={portion.id}
-                className="flex min-h-14 items-center gap-3 rounded-xl border border-stone-200 px-4"
+                className={`flex min-h-14 items-center gap-3 rounded-xl border px-4 transition cursor-pointer ${
+                  portionId === portion.id
+                    ? "border-[#133d34] bg-[#eef6f4] text-[#133d34] font-bold shadow-xs"
+                    : "border-[#ded5c6] bg-[#fffdfa] text-[#544d42] hover:border-[#4a1d5a]"
+                }`}
               >
                 <input
                   type="radio"
@@ -54,10 +58,10 @@ export function ItemConfiguration({
                   value={portion.id}
                   checked={portionId === portion.id}
                   onChange={() => setPortion(portion.id)}
-                  className="accent-emerald-900"
+                  className="accent-[#133d34]"
                 />
                 <span className="flex-1 text-sm">{portion.name}</span>
-                <span className="text-sm font-medium">
+                <span className="text-sm font-bold text-[#133d34]">
                   {formatMoney(portion.pricePaise)}
                 </span>
               </label>
@@ -66,16 +70,16 @@ export function ItemConfiguration({
         </fieldset>
         {item.addons.length > 0 && (
           <fieldset>
-            <legend className="mb-3 font-semibold">
+            <legend className="mb-3 font-bold text-[#133d34]">
               Make it yours{" "}
-              <span className="text-sm font-normal text-stone-500">
+              <span className="text-sm font-semibold text-[#4a1d5a]">
                 · optional
               </span>
             </legend>
             {item.addons.map((addon) => (
               <label
                 key={addon.id}
-                className="flex min-h-12 items-center gap-3 text-sm"
+                className="flex min-h-12 items-center gap-3 text-sm text-[#25221e] cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -87,24 +91,25 @@ export function ItemConfiguration({
                         : ids.filter((id) => id !== addon.id),
                     )
                   }
-                  className="h-4 w-4 accent-emerald-900"
+                  className="h-4 w-4 accent-[#133d34]"
                 />
-                <span className="flex-1">
+                <span className="flex-1 font-medium">
                   {addon.name}
                   {addon.allergens.length > 0 && (
-                    <span className="block text-xs text-stone-500">
+                    <span className="block text-xs text-[#877d70]">
                       Contains {addon.allergens.join(", ")}
                     </span>
                   )}
                 </span>
-                <span>+{formatMoney(addon.pricePaise)}</span>
+                <span className="font-bold text-[#133d34]">+{formatMoney(addon.pricePaise)}</span>
               </label>
             ))}
           </fieldset>
         )}
         <Button
           type="submit"
-          className="w-full bg-emerald-950 hover:bg-emerald-900"
+          variant="primary"
+          className="w-full"
           disabled={!portion}
         >
           Add to basket · {formatMoney(total)}

@@ -155,34 +155,34 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
     <div className="space-y-6">
       {/* Top Banner Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Total Dishes</p>
-          <p className="mt-2 text-2xl font-bold text-stone-900">{totalItems}</p>
+        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-xs uppercase tracking-wider font-semibold text-[#635b50]">Total Dishes</p>
+          <p className="mt-2 text-2xl font-black text-[#25221e]">{totalItems}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Active</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-800">{activeItems}</p>
+        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-xs uppercase tracking-wider font-semibold text-[#133d34]">Active</p>
+          <p className="mt-2 text-2xl font-black text-[#133d34]">{activeItems}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Vegetarian</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">{vegItems}</p>
+        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-xs uppercase tracking-wider font-semibold text-emerald-800">Vegetarian</p>
+          <p className="mt-2 text-2xl font-black text-emerald-700">{vegItems}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Non-Veg</p>
-          <p className="mt-2 text-2xl font-bold text-red-700">{nonVegItems}</p>
+        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-xs uppercase tracking-wider font-semibold text-red-800">Non-Veg</p>
+          <p className="mt-2 text-2xl font-black text-red-700">{nonVegItems}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Outlet Pauses</p>
-          <p className="mt-2 text-2xl font-bold text-amber-800">{pausedOutletsCount}</p>
+        <div className="rounded-2xl border border-[#dcc8ea] bg-[#faf6fd] p-4 shadow-xs">
+          <p className="text-xs uppercase tracking-wider font-bold text-[#4a1d5a]">Outlet Pauses</p>
+          <p className="mt-2 text-2xl font-black text-[#3b1747]">{pausedOutletsCount}</p>
         </div>
       </div>
 
       {feedback && (
         <div
           role="status"
-          className={`flex items-center justify-between rounded-xl p-3 text-sm font-medium ${
+          className={`flex items-center justify-between rounded-xl p-3 text-sm font-semibold ${
             feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              ? "bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]"
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
         >
@@ -198,7 +198,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       )}
 
       {/* Action Controls & Filters */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-5 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative min-w-[260px] flex-1">
             <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
@@ -207,13 +207,14 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search dishes by name, description or category…"
-              className="h-11 w-full rounded-xl border border-stone-300 pl-10 pr-4 text-sm outline-none focus:border-stone-800"
+              className="h-11 w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] pl-10 pr-4 text-sm text-[#25221e] outline-none transition focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
             />
           </div>
           <Button
             type="button"
+            variant="primary"
             onClick={() => setCreateModalOpen(true)}
-            className="min-h-11 gap-2 bg-stone-900 text-white hover:bg-stone-800"
+            className="min-h-11 gap-2"
           >
             <Plus className="h-4 w-4" />
             Add menu dish
@@ -221,8 +222,8 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100 text-xs">
-          <span className="font-semibold text-stone-500 mr-1 flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#ede6da] text-xs">
+          <span className="font-bold text-[#4a1d5a] mr-1 flex items-center gap-1">
             <Filter className="h-3.5 w-3.5" /> Category:
           </span>
           {categories.map((c) => (
@@ -230,17 +231,17 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               key={c}
               type="button"
               onClick={() => setCategoryFilter(c)}
-              className={`rounded-full px-3 py-1 font-medium transition ${
+              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
                 categoryFilter === c
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  ? "bg-[#133d34] text-white shadow-xs"
+                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
               }`}
             >
               {c}
             </button>
           ))}
 
-          <span className="font-semibold text-stone-500 ml-3 mr-1">Dietary:</span>
+          <span className="font-bold text-[#4a1d5a] ml-3 mr-1">Dietary:</span>
           {[
             { label: "All", val: "ALL" },
             { label: "Veg", val: "VEG" },
@@ -250,17 +251,17 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               key={d.val}
               type="button"
               onClick={() => setDietaryFilter(d.val)}
-              className={`rounded-full px-3 py-1 font-medium transition ${
+              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
                 dietaryFilter === d.val
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  ? "bg-[#133d34] text-white shadow-xs"
+                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
               }`}
             >
               {d.label}
             </button>
           ))}
 
-          <span className="font-semibold text-stone-500 ml-3 mr-1">Status:</span>
+          <span className="font-bold text-[#4a1d5a] ml-3 mr-1">Status:</span>
           {[
             { label: "All", val: "ALL" },
             { label: "Active", val: "ACTIVE" },
@@ -270,10 +271,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               key={s.val}
               type="button"
               onClick={() => setStatusFilter(s.val)}
-              className={`rounded-full px-3 py-1 font-medium transition ${
+              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
                 statusFilter === s.val
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  ? "bg-[#3b1747] text-white shadow-xs"
+                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
               }`}
             >
               {s.label}
@@ -296,13 +297,13 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
             return (
               <article
                 key={item.id}
-                className={`overflow-hidden rounded-2xl border transition bg-white shadow-xs flex flex-col justify-between ${
-                  item.isActive ? "border-stone-200" : "border-stone-300 bg-stone-50/50 opacity-75"
+                className={`overflow-hidden rounded-2xl border transition bg-[#fffdfa] shadow-xs flex flex-col justify-between ${
+                  item.isActive ? "border-[#ded5c6]" : "border-[#ded5c6] bg-[#fbf9f4] opacity-75"
                 }`}
               >
                 <div>
                   {/* Card Image Banner */}
-                  <div className="relative aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                  <div className="relative aspect-[16/9] w-full bg-[#f4efe6] overflow-hidden">
                     {item.imageUrl ? (
                       <Image
                         src={item.imageUrl}
@@ -320,7 +321,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                       <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-semibold backdrop-blur-xs">
                         <DietaryMark isVeg={item.isVeg} />
                       </span>
-                      <span className="rounded-md bg-stone-950/80 px-2 py-1 text-xs font-medium text-white backdrop-blur-xs">
+                      <span className="rounded-md bg-[#133d34]/90 px-2 py-1 text-xs font-bold text-white backdrop-blur-xs">
                         {item.category}
                       </span>
                     </div>
@@ -332,7 +333,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                         </span>
                       )}
                       {hasTimeWindow && (
-                        <span className="rounded-md bg-amber-900/90 text-amber-200 px-2 py-1 text-xs font-medium flex items-center gap-1 backdrop-blur-xs">
+                        <span className="rounded-md border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] px-2 py-1 text-xs font-bold flex items-center gap-1 backdrop-blur-xs">
                           <Clock className="h-3 w-3" /> {timeWindowLabel}
                         </span>
                       )}
@@ -343,29 +344,29 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-bold text-stone-900">{item.name}</h2>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <h2 className="text-xl font-bold text-[#133d34]">{item.name}</h2>
+                        <p className="mt-1 text-xs text-[#635b50]">
                           Spice: {["Mild", "Gentle", "Medium", "Hot"][item.spiceLevel ?? 1]} · Station:{" "}
-                          {item.prepStation ?? "MAIN"}
+                          <span className="font-semibold text-[#4a1d5a]">{item.prepStation ?? "MAIN"}</span>
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-3 text-sm text-stone-600 leading-relaxed">{item.description}</p>
+                    <p className="mt-3 text-sm text-[#544d42] leading-relaxed">{item.description}</p>
 
                     {/* Portions & City Prices */}
-                    <div className="mt-4 rounded-xl border border-stone-100 bg-stone-50/70 p-3">
-                      <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+                    <div className="mt-4 rounded-xl border border-[#ded5c6] bg-[#faf7f2] p-3">
+                      <p className="text-xs font-bold text-[#4a1d5a] uppercase tracking-wider mb-2">
                         Portions & City Prices (5% GST Incl.)
                       </p>
                       <ul className="space-y-1.5 text-sm">
                         {(item.portions || []).flatMap((portion) =>
                           (portion.prices || []).map((price) => (
-                            <li key={price.id} className="flex justify-between text-stone-700">
+                            <li key={price.id} className="flex justify-between text-[#544d42]">
                               <span>
-                                {portion.name} <span className="text-stone-400">· {price.city}</span>
+                                {portion.name} <span className="text-[#877d70]">· {price.city}</span>
                               </span>
-                              <span className="font-semibold text-stone-900">
+                              <span className="font-extrabold text-[#133d34]">
                                 {formatMoney(price.pricePaise)}
                               </span>
                             </li>
@@ -375,25 +376,25 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                     </div>
 
                     {/* Operational Details */}
-                    <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500 border-t border-stone-100 pt-3">
+                    <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#635b50] border-t border-[#ede6da] pt-3">
                       <p>
-                        Base Prep: <strong className="text-stone-700">{item.basePrepMinutes} min</strong>
+                        Base Prep: <strong className="text-[#133d34]">{item.basePrepMinutes} min</strong>
                       </p>
                       <p>
-                        Batch Capacity: <strong className="text-stone-700">{item.batchCapacity}</strong>
+                        Batch Capacity: <strong className="text-[#133d34]">{item.batchCapacity}</strong>
                       </p>
                       <p>
                         Allergens:{" "}
-                        <strong className="text-stone-700">
+                        <strong className="text-[#25221e]">
                           {item.allergens?.join(", ") || "None"}
                         </strong>
                       </p>
                     </div>
 
                     {/* Outlet Availability / Stock Pausing Controls */}
-                    <div className="mt-5 border-t border-stone-100 pt-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-stone-600 mb-2 flex items-center gap-1.5">
-                        <PauseCircle className="h-3.5 w-3.5 text-amber-700" />
+                    <div className="mt-5 border-t border-[#ede6da] pt-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#4a1d5a] mb-2 flex items-center gap-1.5">
+                        <PauseCircle className="h-3.5 w-3.5 text-[#4a1d5a]" />
                         Outlet Stock Availability
                       </p>
                       <div className="grid grid-cols-1 gap-2">
@@ -406,20 +407,20 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                           return (
                             <div
                               key={outlet.id}
-                              className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 text-xs"
+                              className="flex items-center justify-between rounded-lg border border-[#ded5c6] bg-[#fffdfa] px-3 py-2 text-xs"
                             >
                               <div className="flex flex-col">
-                                <span className="font-medium text-stone-800">{outlet.name}</span>
-                                <span className="text-[10px] text-stone-400">{outlet.city}</span>
+                                <span className="font-semibold text-[#25221e]">{outlet.name}</span>
+                                <span className="text-[10px] text-[#877d70]">{outlet.city}</span>
                               </div>
                               <button
                                 type="button"
                                 disabled={isToggling}
                                 onClick={() => handleToggleStock(item.id, outlet.id, isAvailable)}
-                                className={`rounded-md px-2.5 py-1 font-semibold transition cursor-pointer disabled:opacity-50 ${
+                                className={`rounded-md px-2.5 py-1 font-bold transition cursor-pointer disabled:opacity-50 ${
                                   isAvailable
-                                    ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                                    : "bg-amber-100 text-amber-900 hover:bg-amber-200"
+                                    ? "border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46] hover:bg-[#d1fae5]"
+                                    : "border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] hover:bg-[#ede0f5]"
                                 }`}
                               >
                                 {isToggling ? "Updating…" : isAvailable ? "In Stock" : "Paused / Out"}
@@ -433,7 +434,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center justify-between border-t border-stone-100 bg-stone-50/50 p-4">
+                <div className="flex items-center justify-between border-t border-[#ede6da] bg-[#fbf9f4] p-4">
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -445,8 +446,8 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                     </Button>
                     <Button
                       type="button"
-                      variant="secondary"
-                      className="min-h-9 px-3 text-xs"
+                      variant="tertiary"
+                      className="min-h-9 px-3 text-xs font-bold"
                       onClick={() => setPricingItem(item)}
                     >
                       City prices
@@ -456,7 +457,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                   <button
                     type="button"
                     onClick={() => handleToggleDishActive(item.id, item.isActive)}
-                    className="text-xs font-semibold text-stone-600 hover:text-stone-900 underline"
+                    className="text-xs font-bold text-[#635b50] hover:text-[#4a1d5a] underline"
                   >
                     {item.isActive ? "Deactivate" : "Activate"}
                   </button>

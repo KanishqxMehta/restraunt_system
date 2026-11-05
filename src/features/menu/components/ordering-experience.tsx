@@ -43,13 +43,13 @@ export function OrderingExperience() {
   );
   return (
     <div className="pb-20 lg:pb-0">
-      <header className="mb-8 overflow-hidden rounded-[2rem] bg-[#173e37] text-white">
+      <header className="mb-8 overflow-hidden rounded-[2rem] bg-[#133d34] text-white shadow-sm">
         <div className="grid sm:grid-cols-[1.2fr_0.8fr]">
           <div className="px-7 py-10 sm:px-10 sm:py-12">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#f4d6a9]">
               From our kitchen. To your table.
             </p>
-            <h1 className="max-w-md text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+            <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
               Hyderabad,
               <br />
               served with heart.
@@ -69,7 +69,7 @@ export function OrderingExperience() {
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#173e37] to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#133d34] to-transparent" />
           </div>
         </div>
       </header>
@@ -90,14 +90,16 @@ export function OrderingExperience() {
         <>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-emerald-900" />
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5effa] text-[#4a1d5a] border border-[#e2d0ee]">
+                <MapPin className="h-5 w-5" />
+              </span>
               <div>
-                <p className="text-xs text-stone-500">Ordering from</p>
-                <h2 className="font-semibold">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#4a1d5a]">Ordering from</p>
+                <h2 className="font-bold text-[#133d34]">
                   {menu?.outlet.name ?? "Your selected outlet"}
                 </h2>
                 {menu && (
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-0.5 text-xs text-[#615a4f]">
                     FSSAI {menu.outlet.fssaiLicense} · Provisional prep{" "}
                     {menu.outlet.minimumPrepMinutes +
                       menu.outlet.packingMinutes}{" "}
@@ -139,23 +141,23 @@ export function OrderingExperience() {
               <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
               <section aria-label="Menu">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-2xl font-semibold tracking-tight">
+                  <h2 className="text-2xl font-bold tracking-tight text-[#133d34]">
                     Find your favourite
                   </h2>
-                  <span className="text-xs text-stone-500">
+                  <span className="rounded-full bg-[#f5effa] px-3 py-1 text-xs font-semibold text-[#4a1d5a] border border-[#e4d3f1]">
                     All prices include 5% GST
                   </span>
                 </div>
                 {!menu.isOpen && (
                   <p
                     role="alert"
-                    className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"
+                    className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
                   >
                     This outlet is currently closed. Choose another outlet to
                     order.
                   </p>
                 )}
-                <label className="mb-5 flex min-h-12 items-center gap-3 rounded-xl border border-stone-200 bg-white px-4">
+                <label className="mb-5 flex min-h-12 items-center gap-3 rounded-xl border border-[#ded5c6] bg-[#fffdfa] px-4 transition focus-within:border-[#133d34] focus-within:ring-2 focus-within:ring-[#f5effa]">
                   <Search
                     className="h-4 w-4 text-stone-400"
                     aria-hidden="true"
@@ -165,7 +167,7 @@ export function OrderingExperience() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search dishes"
-                    className="w-full bg-transparent text-sm outline-none"
+                    className="w-full bg-transparent text-sm text-[#25221e] outline-none placeholder:text-stone-400"
                   />
                 </label>
                 <div
@@ -179,10 +181,10 @@ export function OrderingExperience() {
                       aria-pressed={category === value}
                       onClick={() => setCategory(value)}
                       className={cn(
-                        "min-h-10 rounded-full border px-4 text-sm font-medium",
+                        "min-h-10 rounded-full border px-4 text-sm font-semibold transition active:scale-95",
                         category === value
-                          ? "border-emerald-950 bg-emerald-950 text-white"
-                          : "border-stone-200 bg-white text-stone-600",
+                          ? "border-[#133d34] bg-[#133d34] text-white shadow-xs"
+                          : "border-[#dfd6c7] bg-[#fffdfa] text-[#554e44] hover:border-[#4a1d5a] hover:text-[#4a1d5a]",
                       )}
                     >
                       {value}
@@ -222,7 +224,7 @@ export function OrderingExperience() {
               {cart.lines.length > 0 && (
                 <Link
                   href="/checkout"
-                  className="fixed inset-x-4 bottom-4 z-20 flex min-h-16 items-center gap-3 rounded-2xl bg-emerald-950 px-5 text-sm font-semibold text-white shadow-xl lg:hidden"
+                  className="fixed inset-x-4 bottom-4 z-20 flex min-h-16 items-center gap-3 rounded-2xl bg-[#133d34] px-5 text-sm font-semibold text-white shadow-xl transition hover:bg-[#0c2a23] active:scale-[0.99] lg:hidden"
                 >
                   <ShoppingBag className="h-5 w-5" />
                   <span>View basket · {formatMoney(subtotal)}</span>

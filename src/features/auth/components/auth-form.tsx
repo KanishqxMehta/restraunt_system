@@ -64,7 +64,7 @@ export function AuthForm() {
   return (
     <div>
       <div
-        className="mb-7 grid grid-cols-2 rounded-xl bg-stone-100 p-1"
+        className="mb-7 grid grid-cols-2 rounded-xl border border-[#ded5c6] bg-[#f4efe5] p-1 shadow-xs"
         aria-label="Account action"
       >
         {(["login", "register"] as const).map((value) => (
@@ -78,10 +78,10 @@ export function AuthForm() {
               setError("");
             }}
             className={cn(
-              "min-h-11 rounded-lg text-sm font-semibold focus-visible:outline-2 focus-visible:outline-orange-700",
+              "min-h-11 rounded-lg text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#3b1747]",
               mode === value
-                ? "bg-white text-stone-900 shadow-sm"
-                : "text-stone-500",
+                ? "bg-[#fffdfa] text-[#133d34] shadow-xs"
+                : "text-[#635b50] hover:text-[#4a1d5a]",
             )}
           >
             {value === "login" ? "Sign in" : "Create account"}

@@ -27,17 +27,17 @@ export function Modal({
         event.preventDefault();
         onClose();
       }}
-      className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-3xl border-0 bg-white p-0 shadow-2xl backdrop:bg-stone-950/50"
+      className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-3xl border border-[#e8dfd1] bg-[#fffdfa] p-0 shadow-2xl backdrop:bg-[#1a0f20]/50"
     >
-      <div className="flex items-start justify-between gap-4 border-b border-stone-100 px-6 py-5">
-        <h2 id={titleId} className="text-xl font-semibold">
+      <div className="flex items-start justify-between gap-4 border-b border-[#eee7db] px-6 py-5">
+        <h2 id={titleId} className="text-xl font-bold text-[#133d34]">
           {title}
         </h2>
         <button
           type="button"
           aria-label="Close dialog"
           onClick={onClose}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-100"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5efe5] text-[#25221e] transition hover:bg-[#ebdcf5] hover:text-[#3b1747]"
         >
           <X className="h-5 w-5" />
         </button>

@@ -22,12 +22,12 @@ export function CartPanel({
   return (
     <section
       aria-label="Your basket"
-      className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-6"
+      className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-5 sm:p-6 shadow-xs"
     >
       <div className="flex items-center gap-2">
-        <ShoppingBag className="h-5 w-5 text-emerald-900" />
-        <h2 className="text-lg font-semibold">Your basket</h2>
-        <span className="ml-auto text-sm text-stone-500">
+        <ShoppingBag className="h-5 w-5 text-[#133d34]" />
+        <h2 className="text-lg font-bold text-[#133d34]">Your basket</h2>
+        <span className="ml-auto rounded-full border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-0.5 text-xs font-semibold text-[#4a1d5a]">
           {cart.lines.reduce((sum, line) => sum + line.quantity, 0)} items
         </span>
       </div>
@@ -100,18 +100,18 @@ export function CartPanel({
               </li>
             ))}
           </ul>
-          <div className="border-t border-stone-200 pt-5">
-            <div className="flex justify-between font-semibold">
+          <div className="border-t border-[#ede6da] pt-5">
+            <div className="flex justify-between font-bold text-[#133d34]">
               <span>Subtotal</span>
               <span>{formatMoney(total)}</span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-stone-500">
+            <p className="mt-2 text-xs leading-5 text-[#6b6255]">
               Includes 5% GST. Coupons apply at checkout.
             </p>
             {checkoutLink && (
               <Link
                 href="/checkout"
-                className="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-emerald-950 px-4 text-sm font-semibold text-white hover:bg-emerald-900"
+                className="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-[#133d34] px-4 text-sm font-bold text-white transition hover:bg-[#0c2a23] shadow-xs active:scale-[0.99]"
               >
                 Go to checkout
               </Link>

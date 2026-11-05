@@ -28,15 +28,15 @@ export default async function CustomerOrderPage({
     <div className="mx-auto max-w-3xl">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-800">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[#4a1d5a]">
             {order.orderNumber}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#133d34]">
             {paid
               ? "Your order is in good hands."
               : "Your order is awaiting payment."}
           </h1>
-          <p className="mt-3 text-sm text-stone-500">
+          <p className="mt-2 text-sm text-[#5c5448]">
             {order.outlet.name} · FSSAI {order.outlet.fssaiLicense}
           </p>
         </div>
@@ -50,7 +50,7 @@ export default async function CustomerOrderPage({
         >
           <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
           <div>
-            <h2 className="font-semibold text-sm">We&apos;re taking extra care with your order</h2>
+            <h2 className="font-bold text-sm text-amber-950">We&apos;re taking extra care with your order</h2>
             <p className="mt-1 text-xs leading-5 text-amber-900">
               Preparation is taking slightly longer than expected during our current peak rush. Our outlet kitchen manager has been alerted and is expediting your dishes.
             </p>
@@ -58,11 +58,13 @@ export default async function CustomerOrderPage({
         </div>
       )}
 
-      <section className="mb-6 rounded-3xl bg-[#173e37] p-6 text-white sm:p-8">
+      <section className="mb-6 rounded-3xl bg-[#133d34] p-6 text-white shadow-sm sm:p-8">
         <div className="flex items-center gap-3">
-          <Clock3 className="h-6 w-6 text-amber-200" />
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[#f4d6a9]">
+            <Clock3 className="h-6 w-6" />
+          </span>
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-bold">
               {paid
                 ? `Kitchen ready by ${formatTime(order.promisedReadyAt)}`
                 : "Complete your test payment"}
@@ -72,7 +74,7 @@ export default async function CustomerOrderPage({
                 order.estimateSource === "GEMINI_AI" ? (
                   <span>✨ Estimated by Gemini culinary AI based on live kitchen queue.</span>
                 ) : order.estimateSource === "MANAGER_OVERRIDE" ? (
-                  <span>
+                  <span className="inline-block rounded-md bg-[#2d1136] px-2 py-0.5 font-semibold text-[#f5effa] border border-[#5a276c]">
                     ⏱️ Updated by kitchen supervisor: {order.managerOverrideReason || "Extended for careful preparation"}
                   </span>
                 ) : (
@@ -126,29 +128,29 @@ export default async function CustomerOrderPage({
           </Link>
         )}
       </section>
-      <section className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
-        <h2 className="text-lg font-semibold">Order details</h2>
-        <ul className="my-6 divide-y divide-stone-100">
+      <section className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
+        <h2 className="text-lg font-bold text-[#133d34]">Order details</h2>
+        <ul className="my-6 divide-y divide-[#ede6da]">
           {order.items.map((item, index) => (
             <li key={index} className="py-4">
               <div className="flex justify-between gap-4">
                 <div>
                   <DietaryMark isVeg={item.isVeg} />
-                  <h3 className="mt-2 text-sm font-semibold">
+                  <h3 className="mt-2 text-sm font-bold text-[#25221e]">
                     {item.quantity} × {item.name} · {item.portionName}
                   </h3>
                   {snapshotAddons(item.addons).length > 0 && (
-                    <p className="mt-1 text-xs text-stone-500">
+                    <p className="mt-1 text-xs text-[#635b50]">
                       {snapshotAddons(item.addons)
                         .map((addon) => addon.name)
                         .join(", ")}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-1 text-xs text-[#736a5c]">
                     Allergens: {item.allergens.join(", ") || "None declared"}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm font-medium">
+                <span className="shrink-0 text-sm font-bold text-[#133d34]">
                   {formatMoney(item.unitPricePaise * item.quantity)}
                 </span>
               </div>
@@ -166,29 +168,31 @@ export default async function CustomerOrderPage({
               order.includedTaxPaise - Math.floor(order.includedTaxPaise / 2),
           }}
         />
-        <p className="mt-5 text-xs text-stone-500">
+        <p className="mt-5 text-xs text-[#635b50]">
           {paid
             ? `Paid by ${order.paymentMethod} · Test payment`
             : "Payment pending"}
           {order.couponCode ? ` · Coupon ${order.couponCode}` : ""}
         </p>
         {order.deliveryAddress && (
-          <div className="mt-6 flex items-start gap-3 border-t border-stone-100 pt-6">
-            <MapPin className="h-5 w-5 shrink-0 text-emerald-900" />
+          <div className="mt-6 flex items-start gap-3 border-t border-[#ede6da] pt-6">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5effa] text-[#4a1d5a] border border-[#e4d3f1]">
+              <MapPin className="h-4 w-4" />
+            </span>
             <div>
-              <h3 className="text-sm font-semibold">Delivery address</h3>
-              <p className="mt-2 text-sm leading-6 text-stone-600">
+              <h3 className="text-sm font-bold text-[#133d34]">Delivery address</h3>
+              <p className="mt-1 text-sm leading-6 text-[#524d45]">
                 {order.deliveryAddress}
               </p>
             </div>
           </div>
         )}
       </section>
-      <div className="mt-6 flex flex-wrap gap-5 text-sm text-emerald-900">
-        <Link href="/order" className="underline underline-offset-4">
+      <div className="mt-6 flex flex-wrap gap-5 text-sm font-semibold text-[#133d34]">
+        <Link href="/order" className="underline underline-offset-4 hover:text-[#0c2a23]">
           Order something else
         </Link>
-        <Link href="/account" className="underline underline-offset-4">
+        <Link href="/account" className="text-[#4a1d5a] underline underline-offset-4 hover:text-[#2d1136]">
           All my orders
         </Link>
       </div>

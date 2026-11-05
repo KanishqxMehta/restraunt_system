@@ -73,18 +73,18 @@ export function MockPayment({
     }
   }
   return (
-    <section className="mx-auto max-w-xl rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
-      <p className="mb-4 inline-flex rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
+    <section className="mx-auto max-w-xl rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
+      <p className="mb-4 inline-flex rounded-full border border-[#e4d3f1] bg-[#f5effa] px-3 py-1.5 text-xs font-bold text-[#4a1d5a]">
         Test payment · No money moves
       </p>
-      <h1 className="text-2xl font-semibold">Finish your order</h1>
-      <p className="mt-2 text-sm text-stone-500">
+      <h1 className="text-2xl font-bold text-[#133d34]">Finish your order</h1>
+      <p className="mt-2 text-sm text-[#635b50]">
         {order.orderNumber} · {order.outlet.name}
       </p>
-      <p className="my-6 text-4xl font-semibold">
+      <p className="my-6 text-4xl font-extrabold text-[#133d34]">
         {formatMoney(order.totalPaise)}
       </p>
-      <p className="mb-6 text-sm leading-6 text-stone-500">
+      <p className="mb-6 text-sm leading-6 text-[#635b50]">
         This payment screen simulates UPI and card outcomes. No card details,
         UPI PIN or bank account information are needed.
       </p>
@@ -94,7 +94,7 @@ export function MockPayment({
         disabled={pending || restart}
       />
       <fieldset className="my-6">
-        <legend className="mb-3 text-sm font-semibold">
+        <legend className="mb-3 text-sm font-bold text-[#133d34]">
           Choose a test outcome
         </legend>
         <div className="space-y-2">
@@ -107,7 +107,7 @@ export function MockPayment({
           ).map(([value, label]) => (
             <label
               key={value}
-              className="flex min-h-11 items-center gap-3 text-sm"
+              className="flex min-h-11 items-center gap-3 text-sm font-semibold text-[#25221e] cursor-pointer"
             >
               <input
                 type="radio"
@@ -116,7 +116,7 @@ export function MockPayment({
                 checked={outcome === value}
                 onChange={() => setOutcome(value)}
                 disabled={pending || restart}
-                className="accent-emerald-900"
+                className="accent-[#133d34]"
               />
               {label}
             </label>
@@ -126,7 +126,7 @@ export function MockPayment({
       {message && (
         <p
           role="alert"
-          className="mb-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950"
+          className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950"
         >
           {message}
         </p>
@@ -134,7 +134,7 @@ export function MockPayment({
       {restart ? (
         <Link
           href="/checkout"
-          className="flex min-h-12 items-center justify-center rounded-xl bg-emerald-950 text-sm font-semibold text-white"
+          className="flex min-h-12 items-center justify-center rounded-xl bg-[#133d34] text-sm font-bold text-white transition hover:bg-[#0c2a23] shadow-xs"
         >
           Review a fresh checkout
         </Link>
@@ -143,14 +143,15 @@ export function MockPayment({
           type="button"
           onClick={pay}
           disabled={pending}
-          className="w-full bg-emerald-950 hover:bg-emerald-900"
+          variant="primary"
+          className="w-full"
         >
           {pending ? "Processing test payment…" : "Run test payment"}
         </Button>
       )}
       <Link
         href="/order"
-        className="mt-5 block text-center text-sm text-stone-500 underline underline-offset-4"
+        className="mt-5 block text-center text-sm font-semibold text-[#4a1d5a] underline underline-offset-4 hover:text-[#2b1035]"
       >
         Return to menu
       </Link>

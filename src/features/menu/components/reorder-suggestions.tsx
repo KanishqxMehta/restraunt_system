@@ -56,16 +56,16 @@ export function ReorderSuggestions({
   if (loading || suggestions.length === 0) return null;
 
   return (
-    <section aria-label="AI Reorder Suggestions" className="mb-8 rounded-3xl bg-amber-50/70 p-6 border border-amber-200 shadow-xs">
+    <section aria-label="AI Reorder Suggestions" className="mb-8 rounded-3xl bg-[#faf6fd] p-6 border border-[#e2d2ed] shadow-xs">
       <div className="flex items-center gap-2 mb-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-amber-900">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ebdcf5] text-[#3b1747]">
           <Sparkles className="h-3.5 w-3.5" />
         </span>
-        <h2 className="text-base font-bold text-amber-950">AI Suggested for You</h2>
+        <h2 className="text-base font-bold text-[#3b1747]">AI Suggested for You</h2>
       </div>
 
       {aiNote && (
-        <p className="text-xs text-amber-900 mb-4 italic leading-relaxed">
+        <p className="text-xs text-[#522960] mb-4 italic leading-relaxed">
           &ldquo;{aiNote}&rdquo;
         </p>
       )}
@@ -78,10 +78,10 @@ export function ReorderSuggestions({
           return (
             <div
               key={sug.itemId}
-              className="flex flex-col justify-between rounded-2xl bg-white p-4 border border-amber-200/80 shadow-xs"
+              className="flex flex-col justify-between rounded-2xl bg-[#fffdfa] p-4 border border-[#ded5c6] shadow-xs transition hover:border-[#3b1747]/40"
             >
               <div>
-                <div className="relative aspect-video w-full rounded-xl bg-stone-100 overflow-hidden mb-3">
+                <div className="relative aspect-video w-full rounded-xl bg-[#f4efe6] overflow-hidden mb-3">
                   {fullItem.imageUrl ? (
                     <Image
                       src={fullItem.imageUrl}
@@ -100,17 +100,17 @@ export function ReorderSuggestions({
                   </span>
                 </div>
 
-                <h3 className="font-bold text-sm text-stone-900">{fullItem.name}</h3>
-                <p className="text-[11px] text-amber-900 font-medium mt-0.5">{sug.reason}</p>
+                <h3 className="font-bold text-sm text-[#133d34]">{fullItem.name}</h3>
+                <p className="text-[11px] text-[#4a1d5a] font-medium mt-0.5">{sug.reason}</p>
               </div>
 
               {/* Strict constraint: Never adds directly to cart; opens configuration review */}
-              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-                <span className="text-xs text-stone-500 font-medium">Customize</span>
+              <div className="mt-4 pt-3 border-t border-[#ede6da] flex items-center justify-between">
+                <span className="text-xs text-[#635b50] font-medium">Customize</span>
                 <Button
                   type="button"
-                  variant="secondary"
-                  className="min-h-8 px-3 text-xs border-amber-700 text-amber-900 hover:bg-amber-50"
+                  variant="primary"
+                  className="min-h-8 px-3 text-xs"
                   onClick={() => onConfigure(fullItem)}
                   disabled={!fullItem.isAvailable}
                 >
@@ -121,7 +121,7 @@ export function ReorderSuggestions({
           );
         })}
       </div>
-      <p className="mt-3 text-[10px] text-amber-800/80">
+      <p className="mt-3 text-[10px] text-[#6e587b]">
         AI recommendations are based on your order history and current kitchen availability. Dishes are never auto-added to your cart.
       </p>
     </section>

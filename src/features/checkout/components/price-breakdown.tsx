@@ -8,22 +8,22 @@ export function PriceBreakdown({ summary }: { summary: PriceSummary }) {
         <dd>{formatMoney(summary.subtotalPaise)}</dd>
       </div>
       {summary.discountPaise > 0 && (
-        <div className="flex justify-between text-emerald-800">
+        <div className="flex justify-between font-bold text-[#4a1d5a]">
           <dt>Coupon savings</dt>
           <dd>−{formatMoney(summary.discountPaise)}</dd>
         </div>
       )}
-      <div className="flex justify-between text-stone-500">
+      <div className="flex justify-between text-[#635b50]">
         <dt>Delivery · demo</dt>
-        <dd>Free</dd>
+        <dd className="font-semibold text-[#133d34]">Free</dd>
       </div>
-      <div className="flex justify-between border-t border-stone-200 pt-4 text-lg font-semibold">
+      <div className="flex justify-between border-t border-[#ede6da] pt-4 text-lg font-extrabold text-[#133d34]">
         <dt>To pay</dt>
         <dd>{formatMoney(summary.totalPaise)}</dd>
       </div>
-      <div className="text-xs leading-6 text-stone-500">
+      <div className="text-xs leading-6 text-[#635b50]">
         <dt className="inline">Includes 5% GST: </dt>
-        <dd className="inline">
+        <dd className="inline font-medium">
           {formatMoney(summary.includedTaxPaise)} (CGST{" "}
           {formatMoney(summary.cgstPaise)} + SGST{" "}
           {formatMoney(summary.sgstPaise)})

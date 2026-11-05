@@ -36,13 +36,13 @@ export function RefreshStatus({ orderId }: { orderId?: string }) {
     <div className="flex flex-wrap items-center gap-3">
       <span
         role="status"
-        className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium text-stone-700"
+        className="inline-flex items-center gap-2 rounded-full border border-[#ded5c6] bg-[#fffdfa] px-3.5 py-1.5 text-xs font-bold text-[#25221e] shadow-xs"
       >
         <span
           aria-hidden="true"
           className={
             connection === "Live"
-              ? "h-2 w-2 rounded-full bg-emerald-600"
+              ? "h-2 w-2 rounded-full bg-emerald-600 animate-pulse"
               : "h-2 w-2 rounded-full bg-amber-500"
           }
         />

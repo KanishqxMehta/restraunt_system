@@ -14,8 +14,8 @@ export function MenuCard({
   onConfigure: (item: CustomerMenuItem) => void;
 }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-      <div className="relative aspect-[16/10] bg-stone-100">
+    <article className="overflow-hidden rounded-2xl border border-[#ded5c6] bg-[#fffdfa] shadow-xs transition hover:border-[#133d34]/40 hover:shadow-md">
+      <div className="relative aspect-[16/10] bg-[#f4efe6]">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
@@ -33,24 +33,24 @@ export function MenuCard({
       <div className="p-5">
         <div className="flex items-center justify-between gap-2">
           <DietaryMark isVeg={item.isVeg} />
-          <span className="text-xs text-stone-500">
+          <span className="rounded-full bg-[#f4efe6] px-2.5 py-0.5 text-[11px] font-semibold text-[#544d42]">
             {["Mild", "Gentle spice", "Medium spice", "Hot"][item.spiceLevel]}
           </span>
         </div>
-        <h3 className="mt-3 text-lg font-semibold">{item.name}</h3>
+        <h3 className="mt-3 text-lg font-bold text-[#133d34]">{item.name}</h3>
         {item.serviceHoursText && (
-          <p className="mt-1 text-xs font-medium text-amber-800">
+          <p className="mt-1.5 inline-block rounded-md border border-[#e4d3f1] bg-[#f5effa] px-2 py-0.5 text-xs font-semibold text-[#4a1d5a]">
             ⏰ Available {item.serviceHoursText}
           </p>
         )}
-        <p className="mt-2 text-sm leading-6 text-stone-500">
+        <p className="mt-2 text-sm leading-6 text-[#5c5448]">
           {item.description}
         </p>
-        <p className="mt-3 text-xs leading-5 text-stone-500">
+        <p className="mt-3 text-xs leading-5 text-[#736a5c]">
           Contains: {item.allergens.join(", ") || "No declared allergens"}
         </p>
         <div className="mt-5 flex items-center justify-between gap-3">
-          <p className="font-semibold">
+          <p className="font-extrabold text-[#25221e]">
             {item.portions.length ? (
               <>
                 {item.portions.length > 1 && (
@@ -69,10 +69,10 @@ export function MenuCard({
             )}
           </p>
           <Button
-            variant="secondary"
+            variant="primary"
             disabled={!item.isAvailable || !isOpen || !item.portions.length}
             aria-label={`Add ${item.name}`}
-            className="min-h-10 border-emerald-800 px-4 text-emerald-900"
+            className="min-h-10 px-4 text-xs font-bold"
             onClick={() => onConfigure(item)}
           >
             {item.isAvailable

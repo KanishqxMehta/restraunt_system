@@ -6,15 +6,17 @@ export function Button({
   variant = "primary",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "tertiary";
 }) {
   return (
     <button
       className={cn(
-        "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 disabled:cursor-wait disabled:opacity-60",
+        "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#3b1747] disabled:cursor-wait disabled:opacity-60",
         variant === "primary"
-          ? "bg-stone-900 text-white hover:bg-stone-700"
-          : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-50",
+          ? "bg-[#133d34] text-white hover:bg-[#0c2a23] shadow-xs active:scale-[0.99]"
+          : variant === "tertiary"
+            ? "border border-[#dcc8ea] bg-[#f5effa] text-[#3b1747] hover:bg-[#ecdcf5] active:scale-[0.99]"
+            : "border border-[#e0d6c7] bg-[#fffdfa] text-[#25221e] hover:bg-[#f6f0e7] hover:text-[#133d34] active:scale-[0.99]",
         className,
       )}
       {...props}
