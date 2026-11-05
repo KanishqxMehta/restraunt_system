@@ -42,7 +42,7 @@ describe("server authorization", () => {
     ).toThrow();
   });
   it("routes each role to its workspace", () => {
-    expect(homeForRole("CUSTOMER")).toBe("/account");
+    expect(homeForRole("CUSTOMER")).toBe("/order");
     expect(homeForRole("KITCHEN_STAFF")).toBe("/kitchen");
     expect(homeForRole("CENTRAL_ADMIN")).toBe("/admin/menu");
   });

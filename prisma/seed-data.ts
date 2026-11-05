@@ -42,6 +42,7 @@ export const outlets = [
 export const menu = [
   {
     id: "item-chicken-biryani",
+    imageUrl: "/menu/chicken-biryani.jpg",
     slug: "chicken-dum-biryani",
     name: "Chicken dum biryani",
     description: "Fragrant basmati rice, tender chicken and slow dum cooking.",
@@ -56,11 +57,17 @@ export const menu = [
       { id: "portion-chicken-family", name: "Family pack", pricePaise: 94000 },
     ],
     addons: [
-      { id: "addon-chicken-raita", name: "Extra raita", pricePaise: 4000 },
+      {
+        id: "addon-chicken-raita",
+        name: "Extra raita",
+        pricePaise: 4000,
+        allergens: ["Milk"],
+      },
     ],
   },
   {
     id: "item-veg-biryani",
+    imageUrl: "/menu/veg-biryani.jpg",
     slug: "veg-biryani",
     name: "Veg biryani",
     description:
@@ -78,6 +85,7 @@ export const menu = [
   },
   {
     id: "item-salan",
+    imageUrl: "/menu/salan.jpg",
     slug: "mirchi-ka-salan",
     name: "Mirchi ka salan",
     description: "Chillies in a rich peanut and sesame gravy.",
@@ -92,6 +100,7 @@ export const menu = [
   },
   {
     id: "item-haleem",
+    imageUrl: "/menu/haleem.jpg",
     slug: "mutton-haleem",
     name: "Mutton haleem",
     description: "Slow-cooked mutton and wheat, finished fresh for serving.",
@@ -106,6 +115,7 @@ export const menu = [
   },
   {
     id: "item-meetha",
+    imageUrl: "/menu/meetha.jpg",
     slug: "double-ka-meetha",
     name: "Double ka meetha",
     description: "A comforting Hyderabadi bread dessert with milk and nuts.",

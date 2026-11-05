@@ -12,6 +12,8 @@ test("customer can sign in, reload a private workspace, and sign out", async ({
     .getByRole("button", { name: "Sign in", exact: true })
     .last()
     .click();
+  await expect(page).toHaveURL(/\/order$/);
+  await page.getByRole("link", { name: "My orders", exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole("heading", { name: "WEB-778120" })).toBeVisible();
   await expect(page.getByText("WEB-778146")).toHaveCount(0);
@@ -36,7 +38,8 @@ test("phone registration is usable, consent is optional, and empty history is cl
   await page.getByLabel("Password", { exact: true }).fill(DEMO_PASSWORD);
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await page.getByRole("button", { name: "Create customer account" }).click();
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/order$/);
+  await page.getByRole("link", { name: "My orders", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "No orders yet" }),
   ).toBeVisible();

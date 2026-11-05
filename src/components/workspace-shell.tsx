@@ -27,7 +27,26 @@ export function WorkspaceShell({
               Company A · Hyderabad
             </span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            {viewer.role === "CUSTOMER" && (
+              <nav
+                aria-label="Customer navigation"
+                className="flex gap-4 text-sm"
+              >
+                <Link
+                  href="/order"
+                  className="text-emerald-900 hover:underline"
+                >
+                  Order food
+                </Link>
+                <Link
+                  href="/account"
+                  className="text-stone-500 hover:underline"
+                >
+                  My orders
+                </Link>
+              </nav>
+            )}
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium">{viewer.name}</p>
               <p className="text-xs text-stone-500">

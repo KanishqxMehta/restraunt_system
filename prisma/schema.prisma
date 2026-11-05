@@ -48,6 +48,8 @@ model User {
   accounts         Account[]
   memberships      OutletMembership[]
   orders           Order[]
+  quotes           CheckoutQuote[]
+  redemptions      CouponRedemption[]
 }
 
 model Session {
@@ -114,6 +116,8 @@ model Outlet {
   minimumPrepMinutes Int      @default(20)
   packingMinutes     Int      @default(5)
   kitchenCapacity    Int      @default(3)
+  opensAtMinute      Int      @default(0)
+  closesAtMinute     Int      @default(1440)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   memberships        OutletMembership[]
@@ -177,6 +181,7 @@ model MenuAddon {
   name             String
   pricePaise       Int
   extraPrepMinutes Int      @default(0)
+  allergens        String[] @default([])
   @@unique([itemId, name])
 }
 
@@ -207,12 +212,25 @@ model Order {
   promisedReadyAt   DateTime
   originalPromiseAt DateTime
   estimateSource    String        @default("PROVISIONAL")
+  quoteId           String?       @unique
+  quote             CheckoutQuote? @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  idempotencyKey    String?
+  subtotalPaise     Int           @default(0)
+  discountPaise     Int           @default(0)
+  couponCode        String?
+  deliveryAddress   String?
+  deliveryLatitude  Float?
+  deliveryLongitude Float?
+  paymentExpiresAt  DateTime?
+  paymentAttempts   PaymentAttempt[]
+  redemption        CouponRedemption?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   items             OrderItem[]
   events            OrderEvent[]
   @@index([outletId, status, createdAt])
   @@index([customerId, createdAt])
+  @@unique([customerId, idempotencyKey])
 }
 
 model OrderItem {
@@ -226,6 +244,7 @@ model OrderItem {
   prepMinutes      Int
   isVeg            Boolean
   allergens        String[]
+  addons           Json @default("[]")
   @@index([orderId])
 }
 
@@ -236,4 +255,66 @@ model OrderEvent {
   status    OrderStatus
   createdAt DateTime    @default(now())
   @@index([orderId, createdAt])
+}
+
+model CheckoutQuote {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  input         Json
+  fingerprint   String
+  snapshot      Json
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  order         Order?
+  @@index([customerId, expiresAt])
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+model Coupon {
+  id               String @id @default(cuid())
+  code             String @unique
+  discountType     DiscountType
+  value            Int
+  minOrderPaise    Int @default(0)
+  maxDiscountPaise Int?
+  usageLimit       Int?
+  perCustomerLimit Int?
+  isActive         Boolean @default(true)
+  startsAt         DateTime
+  expiresAt        DateTime
+  redemptions      CouponRedemption[]
+}
+
+model CouponRedemption {
+  id         String @id @default(cuid())
+  couponId   String
+  coupon     Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  customerId String
+  customer   User @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  orderId    String @unique
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+  @@index([couponId, customerId])
+}
+
+enum MockPaymentOutcome {
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model PaymentAttempt {
+  id             String @id @default(cuid())
+  orderId        String
+  order          Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  idempotencyKey String
+  method         PaymentMethod
+  outcome        MockPaymentOutcome
+  createdAt      DateTime @default(now())
+  @@unique([orderId, idempotencyKey])
 }

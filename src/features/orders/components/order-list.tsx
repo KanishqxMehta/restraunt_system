@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { snapshotAddons } from "../snapshots";
 import { Clock3 } from "lucide-react";
 import type { listOrders } from "../repository";
 import { formatMoney, formatTime } from "@/lib/format";
@@ -15,14 +17,16 @@ const statusLabels = {
 
 export function OrderList({
   orders,
+  showDetails = false,
 }: {
   orders: Awaited<ReturnType<typeof listOrders>>;
+  showDetails?: boolean;
 }) {
   if (orders.length === 0)
     return (
       <EmptyState
         title="No orders yet"
-        description="Orders you have access to will appear here. Customer checkout is coming in the next iteration."
+        description="Orders you have access to will appear here. Browse the menu to place your first order."
       />
     );
   return (
@@ -39,7 +43,18 @@ export function OrderList({
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold">{order.orderNumber}</h2>
+                <h2 className="text-lg font-semibold">
+                  {showDetails ? (
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="underline decoration-stone-200 underline-offset-4"
+                    >
+                      {order.orderNumber}
+                    </Link>
+                  ) : (
+                    order.orderNumber
+                  )}
+                </h2>
                 <p className="mt-1 text-sm text-stone-500">
                   {order.outlet.name}
                 </p>
@@ -65,6 +80,11 @@ export function OrderList({
                     {item.quantity} × {item.name}
                     <span className="ml-1 text-stone-500">
                       ({item.portionName})
+                      {snapshotAddons(item.addons).length
+                        ? ` · ${snapshotAddons(item.addons)
+                            .map((addon) => addon.name)
+                            .join(", ")}`
+                        : ""}
                     </span>
                   </span>
                   <span className="shrink-0 text-stone-600">
@@ -79,7 +99,7 @@ export function OrderList({
                   <Clock3 className="h-4 w-4" aria-hidden="true" />
                   Promised ready: {formatTime(order.promisedReadyAt)}
                 </p>
-                <p>Provisional estimate · AI integration comes later</p>
+                <p>Provisional kitchen preparation time</p>
                 <p>FSSAI: {order.outlet.fssaiLicense}</p>
               </div>
               <div className="text-right">

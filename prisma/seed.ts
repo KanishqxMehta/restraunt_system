@@ -74,6 +74,11 @@ async function seed() {
           update: {},
           create: details,
         });
+        // Backfill only missing photos when upgrading an existing demo database.
+        await transaction.menuItem.updateMany({
+          where: { id: item.id, imageUrl: null },
+          data: { imageUrl: item.imageUrl },
+        });
         for (const portion of portions) {
           const { pricePaise, ...details } = portion;
           await transaction.menuPortion.upsert({
@@ -104,6 +109,19 @@ async function seed() {
             create: { outletId: outlet.id, itemId: item.id },
           });
       }
+      await transaction.coupon.upsert({
+        where: { code: "DIRECT10" },
+        update: {},
+        create: {
+          code: "DIRECT10",
+          discountType: "PERCENT",
+          value: 10,
+          minOrderPaise: 30000,
+          maxDiscountPaise: 10000,
+          startsAt: new Date("2020-01-01T00:00:00Z"),
+          expiresAt: new Date("2099-01-01T00:00:00Z"),
+        },
+      });
       // Keep the brief's IDs/items/totals. Relative timestamps keep the first demo run inspectable.
       const now = Date.now();
       const samples = [
@@ -204,6 +222,7 @@ async function seed() {
             ...details,
             paymentStatus: "PAID",
             includedTaxPaise: Math.round((sample.totalPaise * 5) / 105),
+            subtotalPaise: sample.totalPaise,
             promisedReadyAt,
             originalPromiseAt: promisedReadyAt,
             createdAt,

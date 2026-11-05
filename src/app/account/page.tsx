@@ -11,9 +11,9 @@ export default async function AccountPage() {
       <PageHeader
         eyebrow="Your account"
         title={`Welcome, ${viewer.name}`}
-        description="Your order history is private to your account. Menu browsing and checkout arrive in the next iteration."
+        description="Your order history is private to your account. Open an order to check its status or finish a test payment."
       />
-      <OrderList orders={orders} />
+      <OrderList orders={orders} showDetails />
     </WorkspaceShell>
   );
 }

@@ -10,5 +10,5 @@ export const roleLabels: Record<Role, string> = {
 export function homeForRole(role: Role): string {
   if (role === "CENTRAL_ADMIN") return "/admin/menu";
   if (role === "KITCHEN_STAFF") return "/kitchen";
-  return "/account";
+  return "/order";
 }
