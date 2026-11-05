@@ -11,6 +11,7 @@ import { useCustomerMenu } from "../use-customer-menu";
 import type { CustomerMenuItem } from "../types";
 import { ItemConfiguration } from "./item-configuration";
 import { MenuCard } from "./menu-card";
+import { ReorderSuggestions } from "./reorder-suggestions";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/classes";
@@ -127,7 +128,15 @@ export function OrderingExperience() {
             </div>
           )}
           {menu && (
-            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
+            <>
+              {cart.outletId && (
+                <ReorderSuggestions
+                  outletId={cart.outletId}
+                  allItems={menu.items}
+                  onConfigure={setConfiguredItem}
+                />
+              )}
+              <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
               <section aria-label="Menu">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-2xl font-semibold tracking-tight">
@@ -221,7 +230,8 @@ export function OrderingExperience() {
                 </Link>
               )}
             </div>
-          )}
+          </>
+        )}
         </>
       )}
       {configuredItem && (

@@ -26,6 +26,9 @@ services:
       ENABLE_DEMO_DATA: "true"
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
       - auth_runtime:/app/.runtime
     depends_on:
       db:

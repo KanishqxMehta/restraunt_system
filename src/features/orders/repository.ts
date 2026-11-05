@@ -20,6 +20,9 @@ const orderSelection = {
   promisedReadyAt: true,
   originalPromiseAt: true,
   estimateSource: true,
+  aiEstimatedMinutes: true,
+  aiExplanation: true,
+  managerOverrideReason: true,
   createdAt: true,
   outlet: { select: { id: true, name: true, fssaiLicense: true } },
   items: {
@@ -51,7 +54,7 @@ export async function findOrder(viewer: Viewer, id: string) {
     select: orderSelection,
   });
   if (!order) throw new HttpError(404, "Order not found.");
-  return order;
+  return withLateness([order])[0];
 }
 
 export async function listKitchenOrders(viewer: Viewer) {
@@ -90,10 +93,17 @@ function withLateness<
   T extends Prisma.OrderGetPayload<{ select: typeof orderSelection }>,
 >(orders: T[]) {
   const now = Date.now();
-  return orders.map((order) => ({
-    ...order,
-    isLate:
-      ["NEW", "PREPARING"].includes(order.status) &&
-      order.promisedReadyAt.getTime() < now,
-  }));
+  return orders.map((order) => {
+    const overdueMs = now - order.promisedReadyAt.getTime();
+    const isLate =
+      ["NEW", "PREPARING"].includes(order.status) && overdueMs > 0;
+    const isCriticalLate = isLate && overdueMs >= 10 * 60 * 1000;
+
+    return {
+      ...order,
+      isLate,
+      isCriticalLate,
+      overdueMinutes: isLate ? Math.floor(overdueMs / 60_000) : 0,
+    };
+  });
 }

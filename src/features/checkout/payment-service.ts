@@ -7,6 +7,10 @@ import { fingerprint } from "./snapshot";
 import type { z } from "zod";
 import type { mockPaymentSchema } from "./validation";
 import { buildSnapshot } from "./quote-service";
+import {
+  fetchOutletKitchenLoad,
+  predictKitchenPrepTime,
+} from "@/features/orders/ai-estimation";
 export async function processMockPayment(
   viewer: Viewer,
   orderId: string,
@@ -51,13 +55,17 @@ export async function processMockPayment(
       );
     let promisedReadyAt = order.promisedReadyAt;
     let couponId: string | undefined;
+    let estimateSource = order.estimateSource;
+    let aiEstimatedMinutes: number | null = null;
+    let aiExplanation: string | null = null;
+
     if (input.outcome === "SUCCESS") {
       if (!order.quote)
         throw new HttpError(
           409,
           "The original checkout quote is missing. Start checkout again.",
         );
-      const { snapshot, coupon } = await buildSnapshot(
+      const { snapshot, coupon, outlet } = await buildSnapshot(
         quoteInputSchema.parse(order.quote.input),
         viewer,
         transaction,
@@ -69,9 +77,32 @@ export async function processMockPayment(
           "Price or availability changed before payment. Start checkout again and confirm the new total.",
         );
       couponId = coupon?.id;
-      promisedReadyAt = new Date(
-        now.getTime() + snapshot.provisionalMinutes * 60_000,
+
+      // Predict honest preparation time based on current live kitchen load
+      const load = await fetchOutletKitchenLoad(outlet.id, transaction);
+      const prepResult = await predictKitchenPrepTime(
+        snapshot.items.map((i) => ({
+          name: i.name,
+          portionName: i.portionName,
+          quantity: i.quantity,
+          prepMinutes: i.prepMinutes,
+          isVeg: i.isVeg,
+        })),
+        {
+          id: outlet.id,
+          name: outlet.name,
+          minimumPrepMinutes: outlet.minimumPrepMinutes,
+          packingMinutes: outlet.packingMinutes,
+        },
+        load,
       );
+
+      promisedReadyAt = new Date(
+        now.getTime() + prepResult.promisedMinutes * 60_000,
+      );
+      estimateSource = prepResult.estimateSource;
+      aiEstimatedMinutes = prepResult.aiEstimatedMinutes;
+      aiExplanation = prepResult.explanation;
     }
     await transaction.paymentAttempt.create({
       data: {
@@ -90,6 +121,9 @@ export async function processMockPayment(
           status: "NEW",
           promisedReadyAt,
           originalPromiseAt: promisedReadyAt,
+          estimateSource,
+          aiEstimatedMinutes,
+          aiExplanation,
           events: { create: { status: "NEW" } },
         },
       });

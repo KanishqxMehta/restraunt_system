@@ -1,6 +1,6 @@
 import { customerStages } from "@/features/orders/stages";
 import Link from "next/link";
-import { Check, Clock3, MapPin } from "lucide-react";
+import { Check, Clock3, MapPin, AlertTriangle } from "lucide-react";
 import { requirePageViewer } from "@/features/auth/session";
 import { loadOrderPage } from "@/features/orders/page-loader";
 import { RefreshStatus } from "@/features/orders/components/refresh-status";
@@ -21,6 +21,9 @@ export default async function CustomerOrderPage({
   const currentStage = customerStages.findIndex(
     (stage) => stage.status === order.status,
   );
+
+  const isCriticalLate = order.isCriticalLate;
+
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -39,6 +42,22 @@ export default async function CustomerOrderPage({
         </div>
         <RefreshStatus key={order.id} orderId={order.id} />
       </header>
+
+      {isCriticalLate && (
+        <div
+          role="alert"
+          className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 flex items-start gap-3 shadow-xs"
+        >
+          <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <h2 className="font-semibold text-sm">We&apos;re taking extra care with your order</h2>
+            <p className="mt-1 text-xs leading-5 text-amber-900">
+              Preparation is taking slightly longer than expected during our current peak rush. Our outlet kitchen manager has been alerted and is expediting your dishes.
+            </p>
+          </div>
+        </div>
+      )}
+
       <section className="mb-6 rounded-3xl bg-[#173e37] p-6 text-white sm:p-8">
         <div className="flex items-center gap-3">
           <Clock3 className="h-6 w-6 text-amber-200" />
@@ -49,9 +68,19 @@ export default async function CustomerOrderPage({
                 : "Complete your test payment"}
             </h2>
             <p className="mt-1 text-xs leading-6 text-stone-200">
-              {paid
-                ? "Provisional preparation time. Delivery partner travel time is not included."
-                : "Unpaid orders are not sent to the kitchen."}
+              {paid ? (
+                order.estimateSource === "GEMINI_AI" ? (
+                  <span>✨ Estimated by Gemini culinary AI based on live kitchen queue.</span>
+                ) : order.estimateSource === "MANAGER_OVERRIDE" ? (
+                  <span>
+                    ⏱️ Updated by kitchen supervisor: {order.managerOverrideReason || "Extended for careful preparation"}
+                  </span>
+                ) : (
+                  <span>Preparation estimate calculated from outlet station parameters.</span>
+                )
+              ) : (
+                "Unpaid orders are not sent to the kitchen."
+              )}
             </p>
           </div>
         </div>

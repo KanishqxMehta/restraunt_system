@@ -74,7 +74,7 @@ export async function buildSnapshot(
     provisionalMinutes: outlet.minimumPrepMinutes + outlet.packingMinutes,
     outletId: outlet.id,
   };
-  return { snapshot, coupon };
+  return { snapshot, coupon, outlet };
 }
 
 export async function createQuote(

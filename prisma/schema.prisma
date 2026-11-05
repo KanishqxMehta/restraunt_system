@@ -215,6 +215,9 @@ model Order {
   promisedReadyAt   DateTime
   originalPromiseAt DateTime
   estimateSource    String        @default("PROVISIONAL")
+  aiEstimatedMinutes Int?
+  aiExplanation     String?
+  managerOverrideReason String?
   quoteId           String?       @unique
   quote             CheckoutQuote? @relation(fields: [quoteId], references: [id], onDelete: Restrict)
   idempotencyKey    String?
