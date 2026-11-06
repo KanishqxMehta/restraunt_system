@@ -6,12 +6,11 @@ import {
   Flame,
   Clock,
   Sparkles,
-  KeyRound,
 } from "lucide-react";
 import { getViewer } from "@/features/auth/session";
-import { homeForRole, roleLabels } from "@/features/auth/roles";
+import { homeForRole } from "@/features/auth/roles";
 import { AuthForm } from "@/features/auth/components/auth-form";
-import { demoAccounts, DEMO_PASSWORD } from "@/features/auth/demo-accounts";
+import { DemoAccountPicker } from "@/features/auth/components/demo-account-picker";
 
 export default async function LoginPage() {
   const viewer = await getViewer();
@@ -148,52 +147,7 @@ export default async function LoginPage() {
             <AuthForm />
           </div>
 
-          {process.env.ENABLE_DEMO_DATA === "true" && (
-            <details className="group mt-6 overflow-hidden rounded-2xl border border-[#ded2bf] bg-[#fffdfa] shadow-xs transition">
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-bold text-[#0f352d] select-none hover:bg-[#faf5ec]">
-                <span className="flex items-center gap-2">
-                  <KeyRound
-                    className="h-4 w-4 text-[#c99b53]"
-                    aria-hidden="true"
-                  />
-                  Try the local demo accounts
-                </span>
-                <span className="rounded-full border border-[#e4d3f1] bg-[#f7f2fa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
-                  {demoAccounts.filter((a) => a.id !== "demo-customer-two").length} roles
-                </span>
-              </summary>
-              <div className="border-t border-[#ece3d5] bg-[#faf7f2]/60 px-5 py-4">
-                <p className="text-xs leading-6 text-[#5f574c]">
-                  Synthetic accounts only. Password for all:{" "}
-                  <code className="rounded-md border border-[#dec9ec] bg-[#f7f2fa] px-2 py-0.5 font-mono text-xs font-bold text-[#3b1747]">
-                    {DEMO_PASSWORD}
-                  </code>
-                </p>
-                <ul className="mt-3 grid gap-2.5">
-                  {demoAccounts
-                    .filter((account) => account.id !== "demo-customer-two")
-                    .map((account) => (
-                      <li
-                        key={account.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e5dbc9] bg-[#fffdfa] px-3.5 py-2.5 text-xs shadow-2xs"
-                      >
-                        <div>
-                          <span className="block font-bold text-[#1f1c18]">
-                            {account.name}
-                          </span>
-                          <code className="font-mono text-[11px] break-all text-[#4a1d5a]">
-                            {account.email}
-                          </code>
-                        </div>
-                        <span className="rounded-full border border-[#d6e8e2] bg-[#eef6f4] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0f352d]">
-                          {roleLabels[account.role]}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </details>
-          )}
+          {process.env.ENABLE_DEMO_DATA === "true" && <DemoAccountPicker />}
         </div>
       </section>
     </main>
