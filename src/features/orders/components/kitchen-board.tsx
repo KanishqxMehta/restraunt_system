@@ -152,6 +152,32 @@ function KitchenTicket({
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [overriding, setOverriding] = useState(false);
+  const [confirmingCatering, setConfirmingCatering] = useState(false);
+  const [cateringNotes, setCateringNotes] = useState(
+    "Handis allocated; slot locked",
+  );
+  const [cateringSaving, setCateringSaving] = useState(false);
+  const [cateringError, setCateringError] = useState("");
+
+  async function handleConfirmCatering(action: "CONFIRM" | "DECLINE") {
+    setCateringSaving(true);
+    setCateringError("");
+    try {
+      await requestJson(
+        "/api/kitchen/catering/" + encodeURIComponent(ticket.id) + "/confirm",
+        {
+          method: "POST",
+          body: JSON.stringify({ action, notes: cateringNotes.trim() }),
+        },
+      );
+      setConfirmingCatering(false);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setCateringError(errorMessage(err));
+    } finally {
+      setCateringSaving(false);
+    }
+  }
 
   // Override Form State
   const [extraMinutes, setExtraMinutes] = useState(10);
@@ -255,12 +281,43 @@ function KitchenTicket({
 
       {/* Catering Banner */}
       {ticket.isCatering && (
-        <div className="mb-3 flex items-center justify-between rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3 py-1.5 text-xs font-bold text-[#3b1747] shadow-2xs">
-          <span>🎉 Bulk Catering · {ticket.guestCount ?? 20} Guests</span>
-          {ticket.eventDate && (
-            <span className="font-mono font-semibold text-[#6b21a8]">
-              Slot: {formatTime(new Date(ticket.eventDate))}
+        <div className="mb-3 space-y-2 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] p-2.5 text-xs text-[#3b1747] shadow-2xs">
+          <div className="flex items-center justify-between font-bold">
+            <span>🎉 Bulk Catering · {ticket.guestCount ?? 20} Guests</span>
+            {ticket.eventDate && (
+              <span className="font-mono font-semibold text-[#6b21a8]">
+                Slot: {formatTime(new Date(ticket.eventDate))}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between border-t border-[#dec9ec]/50 pt-1.5">
+            <span
+              className={cn(
+                "rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                ticket.cateringStatus === "CONFIRMED"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-900",
+              )}
+            >
+              {ticket.cateringStatus === "CONFIRMED"
+                ? `Confirmed by ${ticket.cateringConfirmedBy || "Manager"}`
+                : "Needs Catering Review"}
             </span>
+
+            {ticket.cateringStatus !== "CONFIRMED" && (
+              <button
+                type="button"
+                onClick={() => setConfirmingCatering(true)}
+                className="rounded-lg bg-[#3b1747] px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] transition hover:bg-[#250e2d]"
+              >
+                Review & Confirm
+              </button>
+            )}
+          </div>
+          {ticket.cateringStatus === "CONFIRMED" && ticket.cateringNotes && (
+            <p className="text-[11px] text-[#4a1d5a] italic">
+              &ldquo;{ticket.cateringNotes}&rdquo;
+            </p>
           )}
         </div>
       )}
@@ -525,6 +582,67 @@ function KitchenTicket({
               </Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Catering Manager Review Modal */}
+      {confirmingCatering && (
+        <Modal
+          title={`Confirm Catering: ${ticket.orderNumber}`}
+          onClose={() => setConfirmingCatering(false)}
+        >
+          <div className="space-y-4">
+            {cateringError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800">
+                {cateringError}
+              </div>
+            )}
+            <div className="rounded-2xl border border-[#ded2bf] bg-[#faf7f2] p-4 text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="font-bold text-[#7a6f60]">Guest Count:</span>
+                <span className="font-black text-[#0f352d]">{ticket.guestCount ?? 20} Guests</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-bold text-[#7a6f60]">Scheduled Slot:</span>
+                <span className="font-mono font-bold text-[#3b1747]">
+                  {ticket.eventDate ? formatTime(new Date(ticket.eventDate)) : "Standard"}
+                </span>
+              </div>
+              {ticket.specialInstructions && (
+                <div className="pt-2 border-t border-[#ece3d5]">
+                  <span className="font-bold text-[#7a6f60]">Customer Instructions:</span>
+                  <p className="mt-0.5 italic text-[#544d42]">{ticket.specialInstructions}</p>
+                </div>
+              )}
+            </div>
+
+            <InputField
+              label="Catering Manager Note"
+              value={cateringNotes}
+              onChange={(e) => setCateringNotes(e.target.value)}
+              placeholder="e.g. 5kg and 10kg handis assigned; chef confirmed"
+            />
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#ece3d5]">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => handleConfirmCatering("DECLINE")}
+                disabled={cateringSaving}
+                className="text-red-700 hover:bg-red-50"
+              >
+                Decline
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => handleConfirmCatering("CONFIRM")}
+                disabled={cateringSaving}
+              >
+                {cateringSaving ? "Confirming..." : "Confirm Catering Order"}
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </article>

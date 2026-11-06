@@ -74,6 +74,7 @@ export async function createCateringOrder(
         estimateSource: "CATERING_SCHEDULED",
         aiExplanation: `Party catering for ${quote.guestCount} guests scheduled for ${eventDate.toLocaleDateString("en-IN")}.`,
         isCatering: true,
+        cateringStatus: "PENDING_CONFIRMATION",
         guestCount: quote.guestCount,
         eventDate,
         specialInstructions: input.specialInstructions?.trim() || null,

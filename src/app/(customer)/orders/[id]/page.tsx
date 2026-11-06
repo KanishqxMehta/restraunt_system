@@ -79,25 +79,41 @@ export default async function CustomerOrderPage({
 
       {/* Catering Banner */}
       {order.isCatering && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[#dec9ec] bg-gradient-to-r from-[#faf5fd] via-[#fffdfa] to-[#f4ebfa] p-5 text-xs font-bold text-[#3b1747] shadow-xs">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#3b1747] text-base text-[#f4d6a9] shadow-2xs">
-              🎉
-            </span>
-            <div>
-              <p className="font-display text-base font-bold text-[#0f352d]">
-                Bulk Party Catering · {order.guestCount ?? 20} Guests
-              </p>
-              {order.specialInstructions && (
-                <p className="mt-0.5 text-xs font-normal italic text-[#522960]">
-                  &ldquo;{order.specialInstructions}&rdquo;
+        <div className="mb-6 rounded-3xl border border-[#dec9ec] bg-gradient-to-r from-[#faf5fd] via-[#fffdfa] to-[#f4ebfa] p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#3b1747] text-base text-[#f4d6a9] shadow-2xs">
+                🎉
+              </span>
+              <div>
+                <p className="font-display text-base font-bold text-[#0f352d]">
+                  Bulk Party Catering · {order.guestCount ?? 20} Guests
                 </p>
-              )}
+                {order.specialInstructions && (
+                  <p className="mt-0.5 text-xs font-normal italic text-[#522960]">
+                    &ldquo;{order.specialInstructions}&rdquo;
+                  </p>
+                )}
+              </div>
             </div>
+            <span
+              className={cn(
+                "rounded-full px-3.5 py-1 text-xs font-bold",
+                order.cateringStatus === "CONFIRMED"
+                  ? "border border-emerald-300 bg-emerald-100 text-emerald-950"
+                  : "border border-[#dec9ec] bg-[#3b1747] text-[#f4d6a9]",
+              )}
+            >
+              {order.cateringStatus === "CONFIRMED"
+                ? `Confirmed by ${order.cateringConfirmedBy || "Catering Manager"}`
+                : "Pending Catering Manager Review"}
+            </span>
           </div>
-          <span className="rounded-full border border-[#dec9ec] bg-[#3b1747] px-3.5 py-1 text-xs font-bold text-[#f4d6a9]">
-            Sealed Dum Handis Confirmed
-          </span>
+          {order.cateringStatus === "CONFIRMED" && order.cateringNotes && (
+            <p className="mt-3 border-t border-[#dec9ec]/50 pt-2 text-xs text-[#3b1747]">
+              <strong>Manager note:</strong> {order.cateringNotes}
+            </p>
+          )}
         </div>
       )}
 
