@@ -563,7 +563,7 @@ async function seed() {
     { timeout: 60_000 },
   );
   console.log(
-    "Demo data ready: 3 outlets, 5 menu items, 5 accounts and 26 sample orders across Kondapur, Gachibowli and Kukatpally kitchens.",
+    "Demo data ready: 17 outlets (14 dine-in + 3 cloud kitchens), 5 menu items, 5 accounts and 26 sample orders across Hyderabad.",
   );
 }
 

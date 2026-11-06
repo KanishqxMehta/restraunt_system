@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -82,6 +82,8 @@ export function KitchenBoard({
 }) {
   const [now, setNow] = useState<number | null>(null);
   const [selectedOutletId, setSelectedOutletId] = useState<string>("ALL");
+  const [outletCategory, setOutletCategory] = useState<"ALL" | "DINE_IN" | "CLOUD">("ALL");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<"ALL" | "CRITICAL_LATE" | "CATERING">("ALL");
   const [pageByStage, setPageByStage] = useState<Record<KitchenStage, number>>({
@@ -89,6 +91,12 @@ export function KitchenBoard({
     PREPARING: 1,
     READY: 1,
   });
+
+  const scrollRibbon = (offset: number) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -120,80 +128,197 @@ export function KitchenBoard({
   const criticalLateCount = outletFiltered.filter((t) => t.isCriticalLate).length;
   const cateringCount = outletFiltered.filter((t) => t.isCatering).length;
 
+  const visibleOutlets = outlets.filter((o) => {
+    if (outletCategory === "DINE_IN") return !o.isCloudKitchen;
+    if (outletCategory === "CLOUD") return o.isCloudKitchen;
+    return true;
+  });
+
   return (
     <div className="space-y-4">
       {/* Multi-Outlet Switcher Ribbon (for Admin & Multi-Outlet Staff) */}
       {outlets.length > 1 && (
         <div className="flex flex-col gap-2 rounded-2xl border border-[#ded2bf] bg-[#fffdfa] p-3 shadow-xs">
-          <div className="flex items-center justify-between px-1">
-            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#7a6f60]">
-              <Store className="h-3.5 w-3.5 text-[#0f352d]" />
-              <span>Kitchen Display Filter</span>
-            </span>
-            <span className="text-[11px] text-[#7a6f60]">
-              Showing {selectedOutletId === "ALL" ? "All Outlets" : outlets.find((o) => o.id === selectedOutletId)?.name}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedOutletId("ALL");
-                setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
-              }}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
-                selectedOutletId === "ALL"
-                  ? "bg-[#0f352d] text-white shadow-xs"
-                  : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
-              )}
-            >
-              <span>All Kitchens</span>
-              <span
-                className={cn(
-                  "rounded-full px-1.5 py-0.2 text-[10px]",
-                  selectedOutletId === "ALL"
-                    ? "bg-white/20 text-white"
-                    : "bg-[#e2d8c7] text-[#332e26]",
-                )}
-              >
-                {tickets.length}
+          {/* Top Bar: Title, Category Segment Tabs, and Compact Dropdown Select */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#7a6f60]">
+                <Store className="h-3.5 w-3.5 text-[#0f352d]" />
+                <span>Kitchen Display Filter</span>
               </span>
-            </button>
 
-            {outlets.map((outlet) => {
-              const count = tickets.filter((t) => t.outlet.id === outlet.id).length;
-              const isSelected = selectedOutletId === outlet.id;
-              return (
+              {/* Category Segment Tabs */}
+              <div className="flex items-center rounded-lg border border-[#e5dcce] bg-[#faf7f2] p-0.5 text-[11px] font-bold">
                 <button
-                  key={outlet.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedOutletId(outlet.id);
-                    setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
-                  }}
+                  onClick={() => setOutletCategory("ALL")}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
-                    isSelected
+                    "rounded-md px-2 py-0.5 transition",
+                    outletCategory === "ALL"
                       ? "bg-[#0f352d] text-white shadow-xs"
-                      : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+                      : "text-[#6b6255] hover:text-[#0f352d]",
                   )}
                 >
-                  <span>{outlet.isCloudKitchen ? "☁️" : "🍽️"} {outlet.name}</span>
-                  <span
+                  All ({outlets.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOutletCategory("DINE_IN")}
+                  className={cn(
+                    "rounded-md px-2 py-0.5 transition",
+                    outletCategory === "DINE_IN"
+                      ? "bg-[#0f352d] text-white shadow-xs"
+                      : "text-[#6b6255] hover:text-[#0f352d]",
+                  )}
+                >
+                  🍽️ Dine-in ({outlets.filter((o) => !o.isCloudKitchen).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOutletCategory("CLOUD")}
+                  className={cn(
+                    "rounded-md px-2 py-0.5 transition",
+                    outletCategory === "CLOUD"
+                      ? "bg-[#0f352d] text-white shadow-xs"
+                      : "text-[#6b6255] hover:text-[#0f352d]",
+                  )}
+                >
+                  ☁️ Cloud ({outlets.filter((o) => o.isCloudKitchen).length})
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Dropdown: Instant jump to any of 15+ outlets without horizontal scrolling */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="outlet-jump-select" className="sr-only">
+                Select Kitchen Outlet
+              </label>
+              <select
+                id="outlet-jump-select"
+                value={selectedOutletId}
+                onChange={(e) => {
+                  setSelectedOutletId(e.target.value);
+                  setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                }}
+                className="h-8 rounded-xl border border-[#ded2bf] bg-white px-2.5 text-xs font-bold text-[#0f352d] shadow-2xs focus:border-[#0f352d] focus:outline-none"
+              >
+                <option value="ALL">All Kitchens ({tickets.length} total tickets)</option>
+                <optgroup label="🍽️ Flagship Dine-in Outlets">
+                  {outlets
+                    .filter((o) => !o.isCloudKitchen)
+                    .map((o) => {
+                      const count = tickets.filter((t) => t.outlet.id === o.id).length;
+                      return (
+                        <option key={o.id} value={o.id}>
+                          🍽️ {o.name} ({count} tickets)
+                        </option>
+                      );
+                    })}
+                </optgroup>
+                <optgroup label="☁️ Cloud Kitchens">
+                  {outlets
+                    .filter((o) => o.isCloudKitchen)
+                    .map((o) => {
+                      const count = tickets.filter((t) => t.outlet.id === o.id).length;
+                      return (
+                        <option key={o.id} value={o.id}>
+                          ☁️ {o.name} ({count} tickets)
+                        </option>
+                      );
+                    })}
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          {/* Single-Line Horizontally Scrollable Track with Left/Right Nav Buttons */}
+          <div className="relative flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => scrollRibbon(-220)}
+              title="Scroll left"
+              aria-label="Scroll left"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#ded2bf] bg-[#faf7f2] text-[#544d42] transition hover:bg-[#ede5d6]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div
+              ref={scrollContainerRef}
+              className="flex flex-1 items-center gap-1.5 overflow-x-auto scroll-smooth py-1 scrollbar-none"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOutletId("ALL");
+                  setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                }}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                  selectedOutletId === "ALL"
+                    ? "bg-[#0f352d] text-white shadow-xs"
+                    : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+                )}
+              >
+                <span>All Kitchens</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.2 text-[10px]",
+                    selectedOutletId === "ALL"
+                      ? "bg-white/20 text-white"
+                      : "bg-[#e2d8c7] text-[#332e26]",
+                  )}
+                >
+                  {tickets.length}
+                </span>
+              </button>
+
+              {visibleOutlets.map((outlet) => {
+                const count = tickets.filter((t) => t.outlet.id === outlet.id).length;
+                const isSelected = selectedOutletId === outlet.id;
+                return (
+                  <button
+                    key={outlet.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOutletId(outlet.id);
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
                     className={cn(
-                      "rounded-full px-1.5 py-0.2 text-[10px]",
+                      "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
                       isSelected
-                        ? "bg-white/20 text-white"
-                        : "bg-[#e2d8c7] text-[#332e26]",
+                        ? "bg-[#0f352d] text-white shadow-xs"
+                        : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
                     )}
                   >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                    <span>
+                      {outlet.isCloudKitchen ? "☁️" : "🍽️"} {outlet.name}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.2 text-[10px]",
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-[#e2d8c7] text-[#332e26]",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => scrollRibbon(220)}
+              title="Scroll right"
+              aria-label="Scroll right"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#ded2bf] bg-[#faf7f2] text-[#544d42] transition hover:bg-[#ede5d6]"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}

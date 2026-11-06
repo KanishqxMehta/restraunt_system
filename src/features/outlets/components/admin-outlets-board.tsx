@@ -16,6 +16,8 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateOutletModal } from "./create-outlet-modal";
@@ -282,34 +284,46 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
 
                       <span
                         className={cn(
-                          "rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                           outlet.isActive
                             ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                             : "bg-amber-100 text-amber-800 border border-amber-200",
                         )}
                       >
-                        {outlet.isActive ? "Accepting Orders" : "Paused"}
+                        <span
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            outlet.isActive ? "bg-emerald-600 animate-pulse" : "bg-amber-600",
+                          )}
+                        />
+                        {outlet.isActive ? "Accepting Orders" : "Orders Paused"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Fast Status Toggle */}
+                  {/* Explicit Action Button with Visible Text: "Pause Outlet" / "Resume Outlet" */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(outlet)}
                     disabled={isUpdating === outlet.id}
-                    title={outlet.isActive ? "Click to Pause Outlet" : "Click to Activate Outlet"}
+                    title={outlet.isActive ? "Click to Pause Kitchen Orders" : "Click to Resume Kitchen Orders"}
                     className={cn(
-                      "rounded-lg p-1.5 transition-colors",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-bold transition shadow-2xs",
                       outlet.isActive
-                        ? "text-emerald-700 hover:bg-emerald-50"
-                        : "text-amber-700 hover:bg-amber-100",
+                        ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 hover:border-amber-400"
+                        : "border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:border-emerald-400",
                     )}
                   >
                     {outlet.isActive ? (
-                      <CheckCircle2 className="h-5 w-5" />
+                      <>
+                        <PauseCircle className="h-3.5 w-3.5 text-amber-700" />
+                        <span>Pause Outlet</span>
+                      </>
                     ) : (
-                      <XCircle className="h-5 w-5" />
+                      <>
+                        <PlayCircle className="h-3.5 w-3.5 text-emerald-700" />
+                        <span>Resume Outlet</span>
+                      </>
                     )}
                   </button>
                 </div>
