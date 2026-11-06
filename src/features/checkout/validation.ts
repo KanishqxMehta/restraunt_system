@@ -41,6 +41,7 @@ export const quoteInputSchema = z
       .max(32)
       .transform((value) => value.toUpperCase())
       .optional(),
+    redeemPoints: z.boolean().default(false).optional(),
   })
   .strict();
 export type QuoteInput = z.infer<typeof quoteInputSchema>;

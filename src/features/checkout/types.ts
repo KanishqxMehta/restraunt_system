@@ -14,6 +14,10 @@ export interface PricedLine {
 export interface PriceSummary {
   subtotalPaise: number;
   discountPaise: number;
+  pointsDiscountPaise?: number;
+  pointsRedeemed?: number;
+  pointsEarnedEstimate?: number;
+  availablePoints?: number;
   totalPaise: number;
   includedTaxPaise: number;
   cgstPaise: number;

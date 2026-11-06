@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   MapPin,
@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ShoppingBag,
+  Sparkles,
 } from "lucide-react";
 import { useCart } from "@/features/cart/context";
 import { CartPanel } from "@/features/cart/components/cart-panel";
@@ -27,11 +28,32 @@ export function CheckoutExperience() {
   const { menu, error: menuError, retry } = useCustomerMenu(cart.outletId);
   const [address, setAddress] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [redeemPoints, setRedeemPoints] = useState(false);
+  const [loyalty, setLoyalty] = useState<{
+    pointsBalance: number;
+    rupeeValue: number;
+  } | null>(null);
   const [method, setMethod] = useState<"UPI" | "CARD">("UPI");
   const [quoteResult, setQuote] = useState<{
     key: string;
     quote: CheckoutQuote;
   } | null>(null);
+
+  // Fetch customer loyalty balance
+  useEffect(() => {
+    fetch("/api/customer/loyalty")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.account) {
+          setLoyalty({
+            pointsBalance: data.account.pointsBalance,
+            rupeeValue: data.account.rupeeValue,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const createKey = useRef<{
@@ -46,6 +68,7 @@ export function CheckoutExperience() {
     location: cart.location,
     lines: cart.lines,
     couponCode: couponCode.trim() || undefined,
+    redeemPoints,
   };
   const inputKey = JSON.stringify(input);
   const quote = quoteResult?.key === inputKey ? quoteResult.quote : null;
@@ -220,6 +243,43 @@ export function CheckoutExperience() {
               )}
             </div>
           </div>
+
+          {/* Royal Rewards Loyalty Points */}
+          {loyalty && loyalty.pointsBalance > 0 && (
+            <div className="border-t border-[#ece3d5] pt-5">
+              <div className="flex items-center justify-between rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/70 via-[#fffdfa] to-amber-50/40 p-4 shadow-2xs">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-100 text-[#b48028]">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <span className="block text-xs font-bold uppercase tracking-wider text-[#0f352d]">
+                      Royal Rewards Points
+                    </span>
+                    <p className="mt-0.5 text-xs text-[#544d42]">
+                      You have{" "}
+                      <strong className="font-bold text-[#b48028]">
+                        {loyalty.pointsBalance} pts
+                      </strong>{" "}
+                      available (worth ₹{loyalty.rupeeValue} discount).
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={redeemPoints}
+                    onChange={(e) => setRedeemPoints(e.target.checked)}
+                    disabled={pending}
+                    className="h-4 w-4 rounded border-amber-300 text-[#0f352d] focus:ring-[#0f352d]"
+                  />
+                  <span className="text-xs font-bold text-[#0f352d]">
+                    {redeemPoints ? "Redeeming" : "Redeem"}
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Payment Method */}
           <div className="border-t border-[#ece3d5] pt-5">

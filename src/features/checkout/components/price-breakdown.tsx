@@ -18,6 +18,16 @@ export function PriceBreakdown({ summary }: { summary: PriceSummary }) {
           </dd>
         </div>
       )}
+      {Boolean(summary.pointsDiscountPaise && summary.pointsDiscountPaise > 0) && (
+        <div className="flex justify-between rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-1.5 font-bold text-amber-900">
+          <dt className="flex items-center gap-1">
+            <span>✨ Royal Rewards ({summary.pointsRedeemed} pts)</span>
+          </dt>
+          <dd className="font-mono-tabular">
+            −{formatMoney(summary.pointsDiscountPaise ?? 0)}
+          </dd>
+        </div>
+      )}
       <div className="flex justify-between text-[#5f574c]">
         <dt>Delivery · demo</dt>
         <dd className="font-bold text-[#0f352d]">Free</dd>

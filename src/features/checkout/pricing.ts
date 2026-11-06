@@ -2,6 +2,10 @@ import type { CartLine } from "./validation";
 import type { PricedLine, PriceSummary } from "./types";
 import { HttpError } from "@/server/http/errors";
 import { isItemInTimeWindow } from "@/features/menu/time-windows";
+import {
+  calculateLoyaltyRedemption,
+  calculatePointsEarned,
+} from "@/features/loyalty/calculator";
 
 export interface PricingItem {
   id: string;
@@ -111,6 +115,10 @@ export function calculateTotals(
     minOrderPaise: number;
     maxDiscountPaise: number | null;
   },
+  loyalty?: {
+    availablePoints: number;
+    redeem: boolean;
+  },
 ): PriceSummary {
   const subtotalPaise = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPricePaise,
@@ -136,12 +144,27 @@ export function calculateTotals(
     raw,
     coupon?.maxDiscountPaise ?? subtotalPaise,
   );
-  const totalPaise = subtotalPaise - discountPaise;
+
+  const payableBeforeLoyalty = subtotalPaise - discountPaise;
+  const { pointsToRedeem, discountPaise: pointsDiscountPaise } =
+    calculateLoyaltyRedemption(
+      loyalty?.availablePoints ?? 0,
+      payableBeforeLoyalty,
+      loyalty?.redeem ?? false,
+    );
+
+  const totalPaise = Math.max(0, payableBeforeLoyalty - pointsDiscountPaise);
   const includedTaxPaise = Math.round((totalPaise * 5) / 105);
   const cgstPaise = Math.floor(includedTaxPaise / 2);
+  const pointsEarnedEstimate = calculatePointsEarned(totalPaise);
+
   return {
     subtotalPaise,
     discountPaise,
+    pointsDiscountPaise,
+    pointsRedeemed: pointsToRedeem,
+    pointsEarnedEstimate,
+    availablePoints: loyalty?.availablePoints,
     totalPaise,
     includedTaxPaise,
     cgstPaise,

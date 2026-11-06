@@ -51,6 +51,7 @@ model User {
   quotes           CheckoutQuote[]
   redemptions      CouponRedemption[]
   kitchenEvents    OrderEvent[]
+  loyaltyAccount   LoyaltyAccount?
 }
 
 model Session {
@@ -224,7 +225,14 @@ model Order {
   subtotalPaise     Int           @default(0)
   discountPaise     Int           @default(0)
   couponCode        String?
+  pointsRedeemed    Int           @default(0)
+  pointsDiscountPaise Int         @default(0)
+  pointsEarned      Int           @default(0)
   isCatering        Boolean       @default(false)
+  cateringStatus    CateringStatus @default(NOT_CATERING)
+  cateringNotes     String?
+  cateringConfirmedAt DateTime?
+  cateringConfirmedBy String?
   guestCount        Int?
   eventDate         DateTime?
   specialInstructions String?
@@ -234,6 +242,7 @@ model Order {
   paymentExpiresAt  DateTime?
   paymentAttempts   PaymentAttempt[]
   redemption        CouponRedemption?
+  loyaltyTransactions LoyaltyTransaction[]
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   items             OrderItem[]
@@ -360,4 +369,44 @@ model OrderNotification {
 
   @@index([orderId, sentAt])
 }
+
+enum CateringStatus {
+  NOT_CATERING
+  PENDING_CONFIRMATION
+  CONFIRMED
+  DECLINED
+}
+
+enum LoyaltyTxType {
+  EARNED
+  REDEEMED
+  REFUNDED
+}
+
+model LoyaltyAccount {
+  id               String               @id @default(cuid())
+  userId           String               @unique
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsBalance    Int                  @default(0)
+  lifetimeEarned   Int                  @default(0)
+  lifetimeRedeemed Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  transactions     LoyaltyTransaction[]
+}
+
+model LoyaltyTransaction {
+  id          String         @id @default(cuid())
+  accountId   String
+  account     LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  type        LoyaltyTxType
+  points      Int
+  description String
+  createdAt   DateTime       @default(now())
+
+  @@index([accountId, createdAt])
+}
+
 

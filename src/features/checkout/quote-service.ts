@@ -66,7 +66,14 @@ export async function buildSnapshot(
     transaction,
     now,
   );
-  const totals = calculateTotals(pricedItems, coupon);
+  const loyaltyAccount = await transaction.loyaltyAccount.findUnique({
+    where: { userId: viewer.id },
+  });
+  const availablePoints = loyaltyAccount?.pointsBalance ?? (viewer.id.startsWith("demo-customer") ? 250 : 0);
+  const totals = calculateTotals(pricedItems, coupon, {
+    availablePoints,
+    redeem: Boolean(input.redeemPoints),
+  });
   const snapshot: QuoteSnapshot = {
     ...totals,
     items: pricedItems,

@@ -11,6 +11,10 @@ import {
   fetchOutletKitchenLoad,
   predictKitchenPrepTime,
 } from "@/features/orders/ai-estimation";
+import {
+  deductLoyaltyPoints,
+  creditLoyaltyPoints,
+} from "@/features/loyalty/service";
 import { dispatchOrderNotifications } from "@/features/notifications/dispatcher";
 
 export async function processMockPayment(
@@ -133,6 +137,26 @@ export async function processMockPayment(
         await transaction.couponRedemption.create({
           data: { couponId, orderId, customerId: viewer.id },
         });
+
+      if (order.pointsRedeemed > 0) {
+        await deductLoyaltyPoints(
+          transaction,
+          viewer.id,
+          order.id,
+          order.orderNumber,
+          order.pointsRedeemed,
+        );
+      }
+
+      if (order.pointsEarned > 0) {
+        await creditLoyaltyPoints(
+          transaction,
+          viewer.id,
+          order.id,
+          order.orderNumber,
+          order.pointsEarned,
+        );
+      }
     } else {
       await transaction.order.update({
         where: { id: orderId },
