@@ -20,7 +20,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "test:access": "playwright test tests/e2e/access.spec.ts"
+    "test:access": "playwright test tests/e2e/access.spec.ts",
+    "build:submission": "node scripts/generate-submission.mjs"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.16",
