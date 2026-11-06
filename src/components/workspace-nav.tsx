@@ -9,6 +9,7 @@ import {
   BarChart3,
   BookOpen,
   ChefHat,
+  Store,
 } from "lucide-react";
 import type { Role } from "@/features/auth/roles";
 import { cn } from "@/lib/classes";
@@ -85,6 +86,12 @@ export function WorkspaceNav({ role }: { role: Role }) {
         label: "Menu & Stock",
         icon: BookOpen,
         active: pathname.startsWith("/admin/menu"),
+      },
+      {
+        href: "/admin/outlets",
+        label: "Outlets",
+        icon: Store,
+        active: pathname.startsWith("/admin/outlets"),
       },
       {
         href: "/kitchen",
