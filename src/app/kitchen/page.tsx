@@ -76,6 +76,7 @@ export default async function KitchenPage() {
 
       <KitchenBoard
         tickets={orders}
+        outlets={outlets}
         canAdvance={viewer.role === "KITCHEN_STAFF"}
       />
     </WorkspaceShell>

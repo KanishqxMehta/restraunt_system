@@ -10,6 +10,10 @@ import {
   BellRing,
   CheckCircle2,
   Clock,
+  Search,
+  Store,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -65,72 +69,293 @@ function duration(ms: number) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 export function KitchenBoard({
   tickets,
+  outlets = [],
   canAdvance,
 }: {
   tickets: Ticket[];
+  outlets?: { id: string; name: string; isCloudKitchen?: boolean }[];
   canAdvance: boolean;
 }) {
   const [now, setNow] = useState<number | null>(null);
+  const [selectedOutletId, setSelectedOutletId] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterMode, setFilterMode] = useState<"ALL" | "CRITICAL_LATE" | "CATERING">("ALL");
+  const [pageByStage, setPageByStage] = useState<Record<KitchenStage, number>>({
+    NEW: 1,
+    PREPARING: 1,
+    READY: 1,
+  });
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
 
+  // Filter by Outlet
+  const outletFiltered =
+    selectedOutletId === "ALL"
+      ? tickets
+      : tickets.filter((t) => t.outlet.id === selectedOutletId);
+
+  // Filter by Search Query & Tag
+  const filteredTickets = outletFiltered.filter((t) => {
+    if (filterMode === "CRITICAL_LATE" && !t.isCriticalLate) return false;
+    if (filterMode === "CATERING" && !t.isCatering) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        t.orderNumber.toLowerCase().includes(q) ||
+        t.outlet.name.toLowerCase().includes(q) ||
+        (t.specialInstructions &&
+          t.specialInstructions.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
+
+  const criticalLateCount = outletFiltered.filter((t) => t.isCriticalLate).length;
+  const cateringCount = outletFiltered.filter((t) => t.isCatering).length;
+
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-3">
-      {kitchenStages.map((stage) => {
-        const orders = tickets.filter((ticket) => ticket.status === stage);
-        const style = laneStyles[stage];
-        const Icon = style.icon;
-        return (
-          <section
-            key={stage}
-            aria-label={laneLabels[stage]}
-            className="min-w-0 overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#f4ede2]/90 shadow-xs"
-          >
-            <div className={cn("h-1.5 w-full bg-gradient-to-r", style.accent)} />
-            <header className="flex items-center justify-between gap-2 border-b border-[#e4dac9] bg-[#fffdfa] px-5 py-4">
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className="h-4 w-4 text-[#0f352d]"
-                  aria-hidden="true"
-                />
-                <h2 className="font-display text-lg font-bold tracking-tight text-[#0f352d]">
-                  {laneLabels[stage]}
-                </h2>
-              </div>
+    <div className="space-y-4">
+      {/* Multi-Outlet Switcher Ribbon (for Admin & Multi-Outlet Staff) */}
+      {outlets.length > 1 && (
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#ded2bf] bg-[#fffdfa] p-3 shadow-xs">
+          <div className="flex items-center justify-between px-1">
+            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#7a6f60]">
+              <Store className="h-3.5 w-3.5 text-[#0f352d]" />
+              <span>Kitchen Display Filter</span>
+            </span>
+            <span className="text-[11px] text-[#7a6f60]">
+              Showing {selectedOutletId === "ALL" ? "All Outlets" : outlets.find((o) => o.id === selectedOutletId)?.name}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedOutletId("ALL");
+                setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                selectedOutletId === "ALL"
+                  ? "bg-[#0f352d] text-white shadow-xs"
+                  : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+              )}
+            >
+              <span>All Kitchens</span>
               <span
                 className={cn(
-                  "font-mono-tabular rounded-full border px-3 py-0.5 text-xs font-extrabold",
-                  style.badgeBg,
+                  "rounded-full px-1.5 py-0.2 text-[10px]",
+                  selectedOutletId === "ALL"
+                    ? "bg-white/20 text-white"
+                    : "bg-[#e2d8c7] text-[#332e26]",
                 )}
               >
-                {orders.length}
+                {tickets.length}
               </span>
-            </header>
+            </button>
 
-            <div className="space-y-4 p-4">
-              {orders.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2] px-5 py-10 text-center text-xs font-medium text-[#655c50]">
-                  No tickets in this stage.
-                </div>
+            {outlets.map((outlet) => {
+              const count = tickets.filter((t) => t.outlet.id === outlet.id).length;
+              const isSelected = selectedOutletId === outlet.id;
+              return (
+                <button
+                  key={outlet.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedOutletId(outlet.id);
+                    setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                    isSelected
+                      ? "bg-[#0f352d] text-white shadow-xs"
+                      : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+                  )}
+                >
+                  <span>{outlet.isCloudKitchen ? "☁️" : "🍽️"} {outlet.name}</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.2 text-[10px]",
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-[#e2d8c7] text-[#332e26]",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Control Strip: Search & Urgency / Category Quick Filter */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#ded2bf] bg-[#fffdfa] p-3 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {(
+            [
+              { key: "ALL", label: `All Orders (${outletFiltered.length})` },
+              { key: "CRITICAL_LATE", label: `🚨 10+ Min Late (${criticalLateCount})` },
+              { key: "CATERING", label: `🎉 Bulk Catering (${cateringCount})` },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setFilterMode(t.key);
+                setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+              }}
+              className={cn(
+                "rounded-xl px-3 py-1 text-xs font-bold transition",
+                filterMode === t.key
+                  ? "bg-[#3b1747] text-[#f4d6a9] shadow-xs"
+                  : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
               )}
-              {orders.map((ticket) => (
-                <KitchenTicket
-                  key={ticket.id}
-                  ticket={ticket}
-                  stage={stage}
-                  now={now}
-                  canAdvance={canAdvance}
-                />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#7a6f60]" />
+          <input
+            type="text"
+            placeholder="Search ticket # or notes..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+            }}
+            className="w-full rounded-xl border border-[#ded2bf] bg-[#faf7f2] py-1.5 pl-8 pr-3 text-xs font-semibold text-[#1f1c18] placeholder-[#7a6f60] focus:border-[#0f352d] focus:outline-hidden"
+          />
+        </div>
+      </div>
+
+      {/* 3-Column Kanban Board with Fixed Viewport Height & Independent Internal Scrolling */}
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+        {kitchenStages.map((stage) => {
+          // Sort stage orders by urgency: Critical Late -> Late -> Earliest promised
+          const stageOrders = filteredTickets
+            .filter((ticket) => ticket.status === stage)
+            .sort((a, b) => {
+              if (a.isCriticalLate && !b.isCriticalLate) return -1;
+              if (!a.isCriticalLate && b.isCriticalLate) return 1;
+              if (a.isLate && !b.isLate) return -1;
+              if (!a.isLate && b.isLate) return 1;
+              return a.promisedReadyAt.getTime() - b.promisedReadyAt.getTime();
+            });
+
+          const totalOrders = stageOrders.length;
+          const currentPage = pageByStage[stage] || 1;
+          const totalPages = Math.ceil(totalOrders / PAGE_SIZE) || 1;
+          const paginatedOrders = stageOrders.slice(
+            (currentPage - 1) * PAGE_SIZE,
+            currentPage * PAGE_SIZE,
+          );
+
+          const style = laneStyles[stage];
+          const Icon = style.icon;
+
+          return (
+            <section
+              key={stage}
+              aria-label={laneLabels[stage]}
+              className="flex flex-col h-[calc(100vh-16rem)] min-h-[580px] max-h-[850px] overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#f4ede2]/90 shadow-xs"
+            >
+              {/* Lane Top Accent */}
+              <div
+                className={cn("h-1.5 w-full shrink-0 bg-gradient-to-r", style.accent)}
+              />
+
+              {/* Fixed Sticky Header */}
+              <header className="shrink-0 flex items-center justify-between gap-2 border-b border-[#e4dac9] bg-[#fffdfa] px-5 py-3.5">
+                <div className="flex items-center gap-2.5">
+                  <Icon className="h-4 w-4 text-[#0f352d]" aria-hidden="true" />
+                  <h2 className="font-display text-base font-bold tracking-tight text-[#0f352d]">
+                    {laneLabels[stage]}
+                  </h2>
+                </div>
+                <span
+                  className={cn(
+                    "font-mono-tabular rounded-full border px-3 py-0.5 text-xs font-extrabold",
+                    style.badgeBg,
+                  )}
+                >
+                  {totalOrders}
+                </span>
+              </header>
+
+              {/* Scrollable Card Container */}
+              <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin">
+                {totalOrders === 0 && (
+                  <div className="rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2] px-5 py-12 text-center text-xs font-medium text-[#655c50]">
+                    No tickets in this stage.
+                  </div>
+                )}
+                {paginatedOrders.map((ticket) => (
+                  <KitchenTicket
+                    key={ticket.id}
+                    ticket={ticket}
+                    stage={stage}
+                    now={now}
+                    canAdvance={canAdvance}
+                  />
+                ))}
+              </div>
+
+              {/* Sticky Footer: Lane Batch Paging when > PAGE_SIZE */}
+              {totalPages > 1 && (
+                <footer className="shrink-0 flex items-center justify-between border-t border-[#e4dac9] bg-[#fffdfa] px-4 py-2.5 text-xs text-[#544d42]">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPageByStage((prev) => ({
+                        ...prev,
+                        [stage]: Math.max(1, currentPage - 1),
+                      }))
+                    }
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#ded2bf] px-2.5 py-1 text-[11px] font-bold text-[#0f352d] disabled:opacity-40 hover:bg-[#faf7f2] transition cursor-pointer"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  <span className="font-mono text-[11px] font-semibold text-[#7a6f60]">
+                    Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalOrders)} of {totalOrders}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPageByStage((prev) => ({
+                        ...prev,
+                        [stage]: Math.min(totalPages, currentPage + 1),
+                      }))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#ded2bf] px-2.5 py-1 text-[11px] font-bold text-[#0f352d] disabled:opacity-40 hover:bg-[#faf7f2] transition cursor-pointer"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </footer>
+              )}
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
