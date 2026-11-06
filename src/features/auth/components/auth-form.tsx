@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, LoaderCircle } from "lucide-react";
+import { ArrowRight, LoaderCircle, ShieldCheck } from "lucide-react";
 import { authClient } from "../client";
 import { signInSchema, signUpSchema } from "../validation";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,7 @@ export function AuthForm() {
   return (
     <div>
       <div
-        className="mb-7 grid grid-cols-2 rounded-xl border border-[#ded5c6] bg-[#f4efe5] p-1 shadow-xs"
+        className="mb-6 grid grid-cols-2 rounded-2xl border border-[#ded4c3] bg-[#f3ece0] p-1.5 shadow-[inset_0_1px_2px_rgba(25,20,15,0.06)]"
         aria-label="Account action"
       >
         {(["login", "register"] as const).map((value) => (
@@ -78,21 +78,23 @@ export function AuthForm() {
               setError("");
             }}
             className={cn(
-              "min-h-11 rounded-lg text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#3b1747]",
+              "min-h-11 rounded-xl text-sm font-bold transition-all focus-visible:outline-2 focus-visible:outline-[#3b1747]",
               mode === value
-                ? "bg-[#fffdfa] text-[#133d34] shadow-xs"
-                : "text-[#635b50] hover:text-[#4a1d5a]",
+                ? "bg-[#0f352d] text-white shadow-xs"
+                : "text-[#5f574c] hover:text-[#0f352d]",
             )}
           >
             {value === "login" ? "Sign in" : "Create account"}
           </button>
         ))}
       </div>
-      <form onSubmit={submit} className="space-y-5" aria-busy={pending}>
+
+      <form onSubmit={submit} className="space-y-4" aria-busy={pending}>
         {mode === "register" && (
           <InputField
             label="Your name"
             name="name"
+            placeholder="e.g. Aisha Khan"
             autoComplete="name"
             minLength={2}
             maxLength={80}
@@ -113,6 +115,9 @@ export function AuthForm() {
           label="Password"
           name="password"
           type="password"
+          placeholder={
+            mode === "register" ? "At least 12 characters" : "Enter your password"
+          }
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           minLength={mode === "register" ? 12 : undefined}
           maxLength={128}
@@ -120,33 +125,37 @@ export function AuthForm() {
           disabled={pending}
         />
         {mode === "register" && (
-          <>
-            <p className="text-xs leading-5 text-stone-500">
+          <div className="space-y-3 pt-1">
+            <p className="flex items-center gap-1.5 text-xs leading-5 text-[#6b6255]">
+              <ShieldCheck
+                className="h-3.5 w-3.5 shrink-0 text-[#0f352d]"
+                aria-hidden="true"
+              />
               Use at least 12 characters. New accounts are customer accounts.
             </p>
-            <label className="flex items-start gap-3 text-sm leading-6 text-stone-600">
+            <label className="flex items-start gap-3 rounded-xl border border-[#e5dbc9] bg-[#faf7f2] p-3.5 text-xs leading-5 text-[#4e473d] transition hover:border-[#c99b53]">
               <input
                 name="marketingOptIn"
                 type="checkbox"
-                className="mt-1 h-4 w-4 shrink-0 accent-orange-800"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-[#0f352d]"
                 disabled={pending}
               />
               <span>
-                I would like offers and updates. Optional; you can order without
-                opting in.
+                I would like seasonal Dum Handi offers and updates (DPDP
+                compliant). Optional; you can order without opting in.
               </span>
             </label>
-          </>
+          </div>
         )}
         {error && (
           <p
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-900"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium leading-5 text-red-900"
           >
             {error}
           </p>
         )}
-        <Button type="submit" className="w-full" disabled={pending}>
+        <Button type="submit" className="mt-2 min-h-12 w-full" disabled={pending}>
           {pending ? (
             <>
               <LoaderCircle

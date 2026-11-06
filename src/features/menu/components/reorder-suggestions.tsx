@@ -56,61 +56,87 @@ export function ReorderSuggestions({
   if (loading || suggestions.length === 0) return null;
 
   return (
-    <section aria-label="AI Reorder Suggestions" className="mb-8 rounded-3xl bg-[#faf6fd] p-6 border border-[#e2d2ed] shadow-xs">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ebdcf5] text-[#3b1747]">
-          <Sparkles className="h-3.5 w-3.5" />
+    <section
+      aria-label="AI Reorder Suggestions"
+      className="mb-9 overflow-hidden rounded-[2rem] border border-[#dec9ec] bg-gradient-to-br from-[#faf5fd] via-[#fffdfa] to-[#f4ecfa] p-6 shadow-xs sm:p-7"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden="true"
+            className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3b1747] text-[#f4d6a9] shadow-2xs"
+          >
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <div>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#4a1d5a]">
+              Personal Culinary Concierge
+            </span>
+            <h2 className="font-display text-lg font-bold text-[#3b1747]">
+              AI Suggested for You
+            </h2>
+          </div>
+        </div>
+        <span className="rounded-full border border-[#dec9ec] bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#4a1d5a]">
+          Tailored to your palate & live stock
         </span>
-        <h2 className="text-base font-bold text-[#3b1747]">AI Suggested for You</h2>
       </div>
 
       {aiNote && (
-        <p className="text-xs text-[#522960] mb-4 italic leading-relaxed">
+        <p className="mb-5 rounded-xl border border-[#e5d4f0] bg-white/70 px-4 py-2.5 text-xs italic leading-relaxed text-[#4a1d5a]">
           &ldquo;{aiNote}&rdquo;
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {suggestions.map((sug) => {
-          const fullItem = allItems.find((i) => i.id === sug.itemId || i.name === sug.name);
+          const fullItem = allItems.find(
+            (i) => i.id === sug.itemId || i.name === sug.name,
+          );
           if (!fullItem) return null;
 
           return (
             <div
               key={sug.itemId}
-              className="flex flex-col justify-between rounded-2xl bg-[#fffdfa] p-4 border border-[#ded5c6] shadow-xs transition hover:border-[#3b1747]/40"
+              className="group flex flex-col justify-between rounded-2xl border border-[#e2d4ec] bg-[#fffdfa] p-4 shadow-2xs transition hover:border-[#3b1747]/45 hover:shadow-md"
             >
               <div>
-                <div className="relative aspect-video w-full rounded-xl bg-[#f4efe6] overflow-hidden mb-3">
+                <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-[#f4efe6]">
                   {fullItem.imageUrl ? (
                     <Image
                       src={fullItem.imageUrl}
                       alt={fullItem.name}
                       fill
                       sizes="(min-width: 640px) 250px, 90vw"
-                      className="object-cover"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-stone-400">
                       Photo
                     </div>
                   )}
-                  <span className="absolute top-2 left-2 rounded-md bg-white/90 px-1.5 py-0.5 text-xs backdrop-blur-xs">
+                  <span className="absolute top-2 left-2 rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">
                     <DietaryMark isVeg={fullItem.isVeg} />
                   </span>
                 </div>
 
-                <h3 className="font-bold text-sm text-[#133d34]">{fullItem.name}</h3>
-                <p className="text-[11px] text-[#4a1d5a] font-medium mt-0.5">{sug.reason}</p>
+                <h3 className="font-display text-base font-bold text-[#0f352d]">
+                  {fullItem.name}
+                </h3>
+                <p className="mt-1 text-xs font-medium text-[#4a1d5a]">
+                  {sug.reason}
+                </p>
               </div>
 
               {/* Strict constraint: Never adds directly to cart; opens configuration review */}
-              <div className="mt-4 pt-3 border-t border-[#ede6da] flex items-center justify-between">
-                <span className="text-xs text-[#635b50] font-medium">Customize</span>
+              <div className="mt-4 flex items-center justify-between border-t border-[#ede6da] pt-3">
+                <span className="text-xs font-semibold text-[#635b50]">
+                  Customize portion
+                </span>
                 <Button
                   type="button"
                   variant="primary"
-                  className="min-h-8 px-3 text-xs"
+                  className="min-h-9 px-3.5 text-xs"
                   onClick={() => onConfigure(fullItem)}
                   disabled={!fullItem.isAvailable}
                 >
@@ -121,8 +147,9 @@ export function ReorderSuggestions({
           );
         })}
       </div>
-      <p className="mt-3 text-[10px] text-[#6e587b]">
-        AI recommendations are based on your order history and current kitchen availability. Dishes are never auto-added to your cart.
+      <p className="mt-4 text-[11px] text-[#6e587b]">
+        AI recommendations are based on your order history and current kitchen
+        availability. Dishes are never auto-added to your cart.
       </p>
     </section>
   );

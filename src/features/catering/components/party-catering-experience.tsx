@@ -3,7 +3,18 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Users, Calendar, Sparkles, Check, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  Sparkles,
+  Check,
+  ArrowRight,
+  ShieldCheck,
+  Flame,
+  UtensilsCrossed,
+  Clock,
+  Crown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { formatMoney } from "@/lib/format";
@@ -14,6 +25,7 @@ import {
   MAX_CATERING_GUESTS,
   type CateringRequirements,
 } from "../calculator";
+import { cn } from "@/lib/classes";
 
 interface OutletOption {
   id: string;
@@ -27,14 +39,20 @@ interface PartyCateringExperienceProps {
   outlets: OutletOption[];
 }
 
-export function PartyCateringExperience({ outlets }: PartyCateringExperienceProps) {
+export function PartyCateringExperience({
+  outlets,
+}: PartyCateringExperienceProps) {
   const router = useRouter();
 
   // Headcount & Menu Preferences
   const [guestCount, setGuestCount] = useState<number>(30);
   const [vegPercentage, setVegPercentage] = useState<number>(30);
-  const [biryaniChoice, setBiryaniChoice] = useState<"CHICKEN" | "MUTTON" | "MIXED">("CHICKEN");
-  const [packageTier, setPackageTier] = useState<"ROYAL_DAAWAT" | "NIZAMI_FEAST">("ROYAL_DAAWAT");
+  const [biryaniChoice, setBiryaniChoice] = useState<
+    "CHICKEN" | "MUTTON" | "MIXED"
+  >("CHICKEN");
+  const [packageTier, setPackageTier] = useState<
+    "ROYAL_DAAWAT" | "NIZAMI_FEAST"
+  >("ROYAL_DAAWAT");
 
   // Scheduling (Default: Tomorrow at 13:00)
   const [defaultDateStr] = useState(() => {
@@ -45,7 +63,9 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
   });
 
   const [eventDateTime, setEventDateTime] = useState<string>(defaultDateStr);
-  const [selectedOutletId, setSelectedOutletId] = useState<string>(outlets[0]?.id || "");
+  const [selectedOutletId, setSelectedOutletId] = useState<string>(
+    outlets[0]?.id || "",
+  );
   const [deliveryAddress, setDeliveryAddress] = useState<string>("");
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
 
@@ -55,7 +75,9 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
   // Live Calculated Quote
   const quote = useMemo(() => {
     const eventDate = new Date(eventDateTime);
-    const validDate = isNaN(eventDate.getTime()) ? new Date(defaultDateStr) : eventDate;
+    const validDate = isNaN(eventDate.getTime())
+      ? new Date(defaultDateStr)
+      : eventDate;
 
     const req: CateringRequirements = {
       guestCount,
@@ -65,7 +87,18 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
       eventDateTime: validDate,
     };
     return calculateCateringQuote(req);
-  }, [guestCount, vegPercentage, biryaniChoice, packageTier, eventDateTime, defaultDateStr]);
+  }, [
+    guestCount,
+    vegPercentage,
+    biryaniChoice,
+    packageTier,
+    eventDateTime,
+    defaultDateStr,
+  ]);
+
+  const perGuestPaise = Math.round(
+    quote.totalPaise / Math.max(1, quote.guestCount),
+  );
 
   async function handleBookCatering(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +106,9 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
     setError("");
 
     if (!deliveryAddress.trim() || deliveryAddress.trim().length < 10) {
-      setError("Please provide a detailed delivery address (at least 10 characters).");
+      setError(
+        "Please provide a detailed delivery address (at least 10 characters).",
+      );
       return;
     }
 
@@ -86,22 +121,21 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
 
     setSubmitting(true);
     try {
-      const res = await requestJson<{ order: { id: string; orderNumber: string } }>(
-        "/api/catering/order",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            outletId: selectedOutletId,
-            guestCount: quote.guestCount,
-            vegPercentage,
-            biryaniChoice,
-            packageTier,
-            eventDateTime: new Date(eventDateTime).toISOString(),
-            deliveryAddress: deliveryAddress.trim(),
-            specialInstructions: specialInstructions.trim() || undefined,
-          }),
-        },
-      );
+      const res = await requestJson<{
+        order: { id: string; orderNumber: string };
+      }>("/api/catering/order", {
+        method: "POST",
+        body: JSON.stringify({
+          outletId: selectedOutletId,
+          guestCount: quote.guestCount,
+          vegPercentage,
+          biryaniChoice,
+          packageTier,
+          eventDateTime: new Date(eventDateTime).toISOString(),
+          deliveryAddress: deliveryAddress.trim(),
+          specialInstructions: specialInstructions.trim() || undefined,
+        }),
+      });
 
       router.push(`/orders/${res.order.id}`);
       router.refresh();
@@ -114,32 +148,45 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
 
   return (
     <div className="pb-16">
-      {/* Hero Header */}
-      <header className="mb-8 overflow-hidden rounded-[2rem] bg-[#133d34] text-white shadow-sm">
-        <div className="grid sm:grid-cols-[1.2fr_0.8fr]">
-          <div className="px-7 py-10 sm:px-10 sm:py-12">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#f4d6a9]">
-              Bulk & Party Catering · Direct from Kitchen
-            </p>
-            <h1 className="max-w-md text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-              Authentic Dum Handis for Your Celebration.
-            </h1>
-            <p className="mt-4 max-w-sm text-sm leading-7 text-stone-200">
-              Freshly sealed 5kg, 10kg & 20kg clay pot biryani with royal accompaniments. Zero aggregator commissions.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-4 text-xs font-semibold text-[#f4d6a9]">
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4" /> Sealed Clay Dum Handis
+      {/* Unified Luxury Hero Masthead */}
+      <header className="mb-9 overflow-hidden rounded-[2.25rem] border border-[#2c1537] bg-gradient-to-br from-[#0b2922] via-[#173a32] to-[#341440] text-white shadow-[0_18px_48px_rgba(25,15,30,0.18)]">
+        <div className="grid lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="flex flex-col justify-between px-6 py-9 sm:px-10 sm:py-11">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f4d6a9]/35 bg-white/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#f4d6a9] backdrop-blur-xs">
+                <Crown className="h-3.5 w-3.5" aria-hidden="true" />
+                Direct Royal Daawat · Bulk & Party Catering
+              </div>
+              <h1 className="font-display max-w-xl text-3xl font-bold leading-[1.12] tracking-tight text-[#fffdfa] sm:text-5xl">
+                Sealed Clay Dum Handis
+                <br />
+                <span className="text-[#f4d6a9]">for Your Celebration.</span>
+              </h1>
+              <p className="mt-4 max-w-lg text-sm leading-7 text-stone-200/90 sm:text-base">
+                Celebrate weddings, corporate daawats, and family milestones
+                with freshly sealed 5kg, 10kg & 20kg earthen handis. Customize
+                your guest count and dietary ratio below—dispatched straight
+                from our Hyderabad kitchens with zero aggregator commissions.
+              </p>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-5 text-xs font-bold text-[#f4d6a9]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5">
+                <Check className="h-3.5 w-3.5" aria-hidden="true" /> Sealed Clay
+                Dum Handis
               </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4" /> 15 to 500 Guests
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5">
+                <Check className="h-3.5 w-3.5" aria-hidden="true" /> 15 to 500
+                Guests
               </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4" /> 5% Inclusive GST
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5">
+                <Check className="h-3.5 w-3.5" aria-hidden="true" /> Up to 12%
+                Bulk Celebration Discount
               </span>
             </div>
           </div>
-          <div className="relative hidden min-h-64 sm:block">
+
+          <div className="relative hidden min-h-72 lg:block">
             <Image
               src="/menu/chicken-biryani.jpg"
               alt="Party dum handi biryani"
@@ -148,37 +195,79 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#133d34] to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1d3336] via-[#1d3336]/35 to-transparent" />
+            <div className="absolute right-5 bottom-5 rounded-2xl border border-white/20 bg-black/60 px-4 py-3 text-right backdrop-blur-md">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-[#f4d6a9]">
+                Live Per-Guest Estimate
+              </span>
+              <span className="font-mono-tabular text-2xl font-black text-white">
+                {formatMoney(perGuestPaise)}
+              </span>
+              <span className="block text-[11px] text-stone-300">
+                per guest · 5% GST incl.
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Two-Column Layout: Form Wizard + Live Quote Card */}
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.2fr)_420px]">
+      {/* Main Two-Column Layout: Interactive Feast Builder + Live Proposal Sidebar */}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.22fr)_420px]">
         {/* Wizard Form */}
-        <form onSubmit={handleBookCatering} className="space-y-6">
+        <form onSubmit={handleBookCatering} className="space-y-7">
           {error && (
-            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <div
+              role="alert"
+              className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800"
+            >
               {error}
             </div>
           )}
 
           {/* Section 1: Headcount & Dietary Split */}
-          <section className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a]">
-                <Users className="h-4 w-4" />
-              </span>
-              <h2 className="text-lg font-bold text-[#133d34]">1. Guest Count & Dietary Ratio</h2>
+          <section className="rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs sm:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#ece3d5] pb-4">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]"
+                >
+                  <Users className="h-5 w-5" />
+                </span>
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a1d5a]">
+                    Step 1 · Guest Sizing
+                  </span>
+                  <h2 className="font-display text-xl font-bold text-[#0f352d]">
+                    1. Guest Count & Dietary Ratio
+                  </h2>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-[#d6e8e2] bg-[#eef6f4] px-3.5 py-1.5 text-right">
+                <span className="font-mono-tabular text-lg font-black text-[#0f352d]">
+                  {guestCount}
+                </span>
+                <span className="ml-1 text-xs font-bold text-[#0f352d]">
+                  Guests
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="guest-slider" className="text-sm font-bold text-[#25221e]">
-                    Total Number of Guests: <span className="text-[#133d34] font-black text-base">{guestCount}</span>
+                <div className="mb-2.5 flex items-center justify-between">
+                  <label
+                    htmlFor="guest-slider"
+                    className="text-sm font-bold text-[#1f1c18]"
+                  >
+                    Total Number of Guests:{" "}
+                    <span className="font-mono-tabular text-base font-black text-[#0f352d]">
+                      {guestCount}
+                    </span>
                   </label>
-                  <span className="text-xs text-[#635b50]">Min {MIN_CATERING_GUESTS} · Max {MAX_CATERING_GUESTS}</span>
+                  <span className="text-xs font-medium text-[#655c50]">
+                    Min {MIN_CATERING_GUESTS} · Max {MAX_CATERING_GUESTS}
+                  </span>
                 </div>
                 <input
                   id="guest-slider"
@@ -188,122 +277,200 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
                   step={5}
                   value={guestCount}
                   onChange={(e) => setGuestCount(Number(e.target.value))}
-                  className="w-full h-2 rounded-lg bg-[#ded5c6] accent-[#133d34] cursor-pointer"
+                  className="h-2.5 w-full cursor-pointer rounded-lg bg-[#e2d6c3] accent-[#0f352d]"
                 />
-              </div>
 
-              {/* Quick Guest Selector Pills */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {[15, 25, 50, 75, 100, 150, 200].map((count) => (
-                  <button
-                    key={count}
-                    type="button"
-                    onClick={() => setGuestCount(count)}
-                    className={`px-3 py-1 text-xs font-bold rounded-full transition cursor-pointer ${
-                      guestCount === count
-                        ? "bg-[#133d34] text-white shadow-xs"
-                        : "bg-[#f5efe5] text-[#544d42] border border-[#ded5c6] hover:bg-[#ede3f5]"
-                    }`}
-                  >
-                    {count} Guests
-                  </button>
-                ))}
-              </div>
-
-              {/* Dietary Split */}
-              <div className="pt-4 border-t border-[#ede6da]">
-                <div className="flex justify-between items-center mb-2 text-sm font-semibold">
-                  <span>Dietary Ratio:</span>
-                  <span className="text-xs">
-                    <strong className="text-emerald-700">{quote.vegCount} Veg</strong> ({vegPercentage}%) ·{" "}
-                    <strong className="text-red-700">{quote.nonVegCount} Non-Veg</strong> ({100 - vegPercentage}%)
-                  </span>
+                {/* Quick Guest Selector Pills */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {[15, 25, 50, 75, 100, 150, 200].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setGuestCount(count)}
+                      className={cn(
+                        "rounded-full border px-3.5 py-1.5 text-xs font-bold transition",
+                        guestCount === count
+                          ? "border-[#0f352d] bg-[#0f352d] text-white shadow-2xs"
+                          : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:border-[#4a1d5a] hover:bg-white hover:text-[#4a1d5a]",
+                      )}
+                    >
+                      {count} Guests
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              {/* Dietary Split with Visual Split Bar */}
+              <div className="rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-4 sm:p-5">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="font-bold text-[#1f1c18]">
+                    Dietary Split Ratio
+                  </span>
+                  <div className="flex items-center gap-3 text-xs font-bold">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/25 bg-emerald-50 px-2.5 py-0.5 text-emerald-900">
+                      ● {quote.vegCount} Veg ({vegPercentage}%)
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-800/25 bg-red-50 px-2.5 py-0.5 text-red-900">
+                      ▲ {quote.nonVegCount} Non-Veg ({100 - vegPercentage}%)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual Split Progress Bar */}
+                <div className="mb-3 flex h-3 w-full overflow-hidden rounded-full bg-red-200/80 p-0.5">
+                  <div
+                    className="h-full rounded-l-full bg-emerald-600 transition-all duration-300"
+                    style={{ width: `${vegPercentage}%` }}
+                  />
+                </div>
+
                 <input
                   type="range"
+                  aria-label="Vegetarian guest percentage"
                   min={0}
                   max={100}
                   step={5}
                   value={vegPercentage}
                   onChange={(e) => setVegPercentage(Number(e.target.value))}
-                  className="w-full h-2 rounded-lg bg-[#ded5c6] accent-[#3b1747] cursor-pointer"
+                  className="h-2 w-full cursor-pointer rounded-lg bg-[#dfd4c2] accent-[#3b1747]"
                 />
               </div>
             </div>
           </section>
 
           {/* Section 2: Biryani Choices & Package Tier */}
-          <section className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a]">
-                <Sparkles className="h-4 w-4" />
+          <section className="rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs sm:p-8">
+            <div className="mb-6 flex items-center gap-3 border-b border-[#ece3d5] pb-4">
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]"
+              >
+                <Sparkles className="h-5 w-5" />
               </span>
-              <h2 className="text-lg font-bold text-[#133d34]">2. Biryani Choice & Feast Package</h2>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a1d5a]">
+                  Step 2 · Culinary Selection
+                </span>
+                <h2 className="font-display text-xl font-bold text-[#0f352d]">
+                  2. Biryani Choice & Feast Package
+                </h2>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-bold text-[#25221e] mb-2">Non-Veg Biryani Recipe</label>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <label className="mb-3 block text-xs font-bold uppercase tracking-wider text-[#433d35]">
+                  Non-Veg Biryani Handi Recipe
+                </label>
+                <div className="grid gap-3 sm:grid-cols-3">
                   {[
-                    { id: "CHICKEN", label: "Chicken Dum Biryani", sub: "Signature authentic dum" },
-                    { id: "MUTTON", label: "Mutton Dum Biryani", sub: "Kache gosht ki dum" },
-                    { id: "MIXED", label: "Both Chicken & Mutton", sub: "50/50 Handi split" },
-                  ].map((b) => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setBiryaniChoice(b.id as typeof biryaniChoice)}
-                      className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
-                        biryaniChoice === b.id
-                          ? "border-[#133d34] bg-[#eef6f4] shadow-xs"
-                          : "border-[#ded5c6] bg-[#fffdfa] hover:border-[#4a1d5a]"
-                      }`}
-                    >
-                      <p className="text-xs font-bold text-[#133d34]">{b.label}</p>
-                      <p className="text-[11px] text-[#635b50] mt-0.5">{b.sub}</p>
-                    </button>
-                  ))}
+                    {
+                      id: "CHICKEN",
+                      label: "Chicken Dum Biryani",
+                      sub: "Zafrani chicken & aged basmati",
+                      badge: "Most Popular",
+                    },
+                    {
+                      id: "MUTTON",
+                      label: "Mutton Dum Biryani",
+                      sub: "Traditional Kache Gosht ki Dum",
+                      badge: "Royal Cut",
+                    },
+                    {
+                      id: "MIXED",
+                      label: "Both Chicken & Mutton",
+                      sub: "50/50 Dual Handi split",
+                      badge: "Best for Crowds",
+                    },
+                  ].map((b) => {
+                    const active = biryaniChoice === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() =>
+                          setBiryaniChoice(b.id as typeof biryaniChoice)
+                        }
+                        className={cn(
+                          "flex flex-col justify-between rounded-2xl border p-4 text-left transition-all",
+                          active
+                            ? "border-[#0f352d] bg-[#eef6f4] shadow-xs"
+                            : "border-[#dfd4c2] bg-[#faf7f2]/70 hover:border-[#4a1d5a]/50 hover:bg-white",
+                        )}
+                      >
+                        <div>
+                          <span
+                            className={cn(
+                              "inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                              active
+                                ? "bg-[#0f352d] text-[#f4d6a9]"
+                                : "bg-[#ece3d5] text-[#575046]",
+                            )}
+                          >
+                            {b.badge}
+                          </span>
+                          <p className="font-display mt-2 text-sm font-bold text-[#0f352d]">
+                            {b.label}
+                          </p>
+                        </div>
+                        <p className="mt-1.5 text-xs text-[#635b50]">{b.sub}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Package Tiers */}
-              <div className="pt-4 border-t border-[#ede6da]">
-                <label className="block text-sm font-bold text-[#25221e] mb-2">Package Level</label>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <div className="border-t border-[#ece3d5] pt-5">
+                <label className="mb-3 block text-xs font-bold uppercase tracking-wider text-[#433d35]">
+                  Select Feast Tier
+                </label>
+                <div className="grid gap-4 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => setPackageTier("ROYAL_DAAWAT")}
-                    className={`p-4 rounded-2xl border text-left transition cursor-pointer ${
+                    className={cn(
+                      "rounded-2xl border p-5 text-left transition-all",
                       packageTier === "ROYAL_DAAWAT"
-                        ? "border-[#133d34] bg-[#eef6f4] shadow-xs"
-                        : "border-[#ded5c6] bg-[#fffdfa] hover:border-[#4a1d5a]"
-                    }`}
+                        ? "border-[#0f352d] bg-gradient-to-br from-[#eef6f4] to-[#fffdfa] shadow-sm"
+                        : "border-[#dfd4c2] bg-[#faf7f2]/60 hover:border-[#0f352d]/40 hover:bg-white",
+                    )}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-[#133d34]">Royal Daawat</span>
-                      <span className="text-xs font-bold text-[#4a1d5a]">Standard</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-base font-bold text-[#0f352d]">
+                        Royal Daawat
+                      </span>
+                      <span className="rounded-full border border-[#0f352d]/20 bg-[#0f352d]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#0f352d]">
+                        Standard Inclusion
+                      </span>
                     </div>
-                    <p className="text-xs text-[#635b50] mt-1">
-                      Includes Dum Biryani Handis, Mirchi Ka Salan, Burani Raita & Shahi Double Ka Meetha.
+                    <p className="mt-2 text-xs leading-5 text-[#575046]">
+                      Includes Sealed Dum Biryani Handis, Roasted Peanut Mirchi
+                      Ka Salan, Burani Raita & Shahi Double Ka Meetha.
                     </p>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPackageTier("NIZAMI_FEAST")}
-                    className={`p-4 rounded-2xl border text-left transition cursor-pointer ${
+                    className={cn(
+                      "rounded-2xl border p-5 text-left transition-all",
                       packageTier === "NIZAMI_FEAST"
-                        ? "border-[#3b1747] bg-[#faf6fd] shadow-xs"
-                        : "border-[#ded5c6] bg-[#fffdfa] hover:border-[#4a1d5a]"
-                    }`}
+                        ? "border-[#3b1747] bg-gradient-to-br from-[#f8f1fc] to-[#fffdfa] shadow-sm"
+                        : "border-[#dfd4c2] bg-[#faf7f2]/60 hover:border-[#3b1747]/40 hover:bg-white",
+                    )}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-[#3b1747]">Nizami Feast</span>
-                      <span className="text-xs font-bold text-[#4a1d5a]">+₹80 / guest</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-base font-bold text-[#3b1747]">
+                        Nizami Feast
+                      </span>
+                      <span className="rounded-full border border-[#dec9ec] bg-[#3b1747] px-2.5 py-0.5 text-[11px] font-bold text-[#f4d6a9]">
+                        +₹80 / guest
+                      </span>
                     </div>
-                    <p className="text-xs text-[#635b50] mt-1">
-                      Royal Daawat PLUS Shahi Mutton Haleem / Paneer Tikka platter and Rose Gulab Jamuns.
+                    <p className="mt-2 text-xs leading-5 text-[#575046]">
+                      Everything in Royal Daawat PLUS Shahi Mutton Haleem &
+                      Charcoal Paneer Tikka Starters + Warm Rose Gulab Jamuns.
                     </p>
                   </button>
                 </div>
@@ -312,64 +479,99 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
           </section>
 
           {/* Section 3: Event Scheduling & Outlet Assignment */}
-          <section className="rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a]">
-                <Calendar className="h-4 w-4" />
+          <section className="rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs sm:p-8">
+            <div className="mb-6 flex items-center gap-3 border-b border-[#ece3d5] pb-4">
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]"
+              >
+                <Calendar className="h-5 w-5" />
               </span>
-              <h2 className="text-lg font-bold text-[#133d34]">3. Event Scheduling & Kitchen Outlet</h2>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a1d5a]">
+                  Step 3 · Dispatch & Venue
+                </span>
+                <h2 className="font-display text-xl font-bold text-[#0f352d]">
+                  3. Event Scheduling & Kitchen Outlet
+                </h2>
+              </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-bold text-[#25221e] mb-1">
+                <label
+                  htmlFor="event-datetime"
+                  className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]"
+                >
                   Event Date & Serving Time
                 </label>
                 <input
+                  id="event-datetime"
                   type="datetime-local"
                   required
                   value={eventDateTime}
                   onChange={(e) => setEventDateTime(e.target.value)}
-                  className="min-h-12 w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] px-3 text-sm text-[#25221e] outline-none focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+                  className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none transition focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
                 />
-                <p className="mt-1 text-xs text-[#635b50]">
-                  Requires min 4h preparation window. Lead time: <strong>{quote.leadTimeHours}h</strong>.
+                <p
+                  className={cn(
+                    "mt-1.5 flex items-center gap-1.5 text-xs font-medium",
+                    quote.isValidLeadTime
+                      ? "text-[#0f352d]"
+                      : "font-bold text-amber-800",
+                  )}
+                >
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    Requires min 4h preparation window. Lead time:{" "}
+                    <strong>{quote.leadTimeHours}h</strong>.
+                  </span>
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#25221e] mb-1">
+                <label
+                  htmlFor="catering-outlet"
+                  className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]"
+                >
                   Assigned Kitchen Outlet
                 </label>
                 <select
+                  id="catering-outlet"
                   value={selectedOutletId}
                   onChange={(e) => setSelectedOutletId(e.target.value)}
-                  className="min-h-12 w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] px-3 text-sm text-[#25221e] outline-none focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+                  className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none transition focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
                 >
                   {outlets.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.name} ({o.city}) {o.isCloudKitchen ? "· Cloud Kitchen" : ""}
+                      {o.name} ({o.city}){" "}
+                      {o.isCloudKitchen ? "· Cloud Kitchen" : ""}
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-[#635b50]">
-                  Order routes straight to this outlet&apos;s kitchen display.
+                <p className="mt-1.5 text-xs text-[#635b50]">
+                  Routes directly to this outlet&apos;s live Kitchen Display
+                  System.
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-[#ede6da] space-y-3">
+            <div className="mt-5 space-y-4 border-t border-[#ece3d5] pt-5">
               <div>
-                <label className="block text-sm font-bold text-[#25221e] mb-1">
+                <label
+                  htmlFor="catering-address"
+                  className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]"
+                >
                   Venue Delivery Address
                 </label>
                 <textarea
+                  id="catering-address"
                   rows={2}
                   required
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="Banquet hall, apartment community hall, or residence address with landmark"
-                  className="w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] p-3 text-sm text-[#25221e] outline-none focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+                  placeholder="Banquet hall, office floor, apartment community hall, or residence address with landmark"
+                  className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] p-3.5 text-sm font-medium text-[#1f1c18] outline-none transition placeholder:font-normal placeholder:text-[#9c9283] focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
                 />
               </div>
 
@@ -377,7 +579,7 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
                 label="Special Catering Instructions (Optional)"
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
-                placeholder="e.g. Please deliver by 12:45 PM for 1:00 PM lunch; mild spice for children."
+                placeholder="e.g. Deliver by 12:45 PM for 1:00 PM lunch; mild spice on one handi."
               />
             </div>
           </section>
@@ -386,91 +588,138 @@ export function PartyCateringExperience({ outlets }: PartyCateringExperienceProp
             type="submit"
             variant="primary"
             disabled={submitting || !quote.isValidLeadTime}
-            className="w-full min-h-14 text-base font-bold shadow-md"
+            className="min-h-14 w-full text-base font-bold shadow-md"
           >
-            {submitting ? "Booking catering order…" : `Confirm Party Catering · ${formatMoney(quote.totalPaise)}`}
-            <ArrowRight className="h-5 w-5 ml-1" />
+            {submitting
+              ? "Booking catering order…"
+              : `Confirm Party Catering · ${formatMoney(quote.totalPaise)}`}
+            <ArrowRight className="ml-1 h-5 w-5" aria-hidden="true" />
           </Button>
         </form>
 
         {/* Live Quote & Handi Allocation Sidebar */}
-        <aside className="sticky top-6 rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-[#ede6da]">
-            <h3 className="font-bold text-base text-[#133d34]">Party Catering Summary</h3>
-            <span className="rounded-full border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-0.5 text-xs font-bold text-[#4a1d5a]">
-              {quote.guestCount} Guests
-            </span>
-          </div>
-
-          {/* Handis Allocation Breakdown */}
-          <div className="my-4 space-y-2.5">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
-              Calculated Clay Dum Handis
-            </p>
-            <ul className="space-y-2">
-              {quote.handis.map((h, i) => (
-                <li
-                  key={i}
-                  className="flex items-start justify-between rounded-xl border border-[#ede6da] bg-[#faf8f4] p-3 text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-[#25221e] block">{h.name}</span>
-                    <span className="text-[#635b50]">
-                      {h.quantity} × {h.handiSizeKg} kg · Serves ~{h.servesGuests} guests
-                    </span>
-                  </div>
-                  <span className="font-extrabold text-[#133d34] shrink-0">
-                    {formatMoney(h.totalPricePaise)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Included Accompaniments */}
-          <div className="my-4 pt-3 border-t border-[#ede6da]">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#4a1d5a] mb-2">
-              Complimentary Accompaniments
-            </p>
-            <ul className="space-y-1.5 text-xs text-[#544d42]">
-              {quote.accompaniments.map((acc, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <Check className="h-3.5 w-3.5 text-emerald-700 shrink-0 mt-0.5" />
-                  <span>{acc}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Pricing Breakdown */}
-          <div className="pt-4 border-t border-[#ede6da] space-y-2 text-xs">
-            <div className="flex justify-between text-[#635b50]">
-              <span>Subtotal</span>
-              <span>{formatMoney(quote.subtotalPaise)}</span>
-            </div>
-            {quote.bulkDiscountPaise > 0 && (
-              <div className="flex justify-between font-bold text-[#4a1d5a]">
-                <span>Bulk Celebration Savings</span>
-                <span>−{formatMoney(quote.bulkDiscountPaise)}</span>
+        <aside className="overflow-hidden rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] shadow-[0_14px_40px_rgba(20,18,14,0.07)] lg:sticky lg:top-24">
+          <div className="border-b border-[#ece3d5] bg-gradient-to-r from-[#0f352d] via-[#17483d] to-[#3b1747] px-6 py-5 text-white">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#f4d6a9]">
+                  Live Handi Manifest
+                </span>
+                <h3 className="font-display mt-0.5 text-lg font-bold text-white">
+                  Party Catering Summary
+                </h3>
               </div>
-            )}
-            <div className="flex justify-between text-[#635b50]">
-              <span>Delivery & Clay Pot Packaging</span>
-              <span className="font-semibold text-emerald-800">Included (Free)</span>
+              <span className="rounded-full border border-[#f4d6a9]/35 bg-white/12 px-3 py-1 text-xs font-bold text-[#f4d6a9]">
+                {quote.guestCount} Guests
+              </span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-[#ede6da] text-base font-extrabold text-[#133d34]">
-              <span>Total to Pay</span>
-              <span>{formatMoney(quote.totalPaise)}</span>
-            </div>
-            <p className="text-[11px] text-[#635b50] pt-1">
-              Includes 5% GST: {formatMoney(quote.includedTaxPaise)} (CGST {formatMoney(quote.cgstPaise)} + SGST{" "}
-              {formatMoney(quote.sgstPaise)}). All prices verified and fixed.
-            </p>
           </div>
 
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950 flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-amber-800 shrink-0" />
-            <span>Guaranteed sealed handis. Dispatched directly from our kitchen team.</span>
+          <div className="p-6">
+            {/* Handis Allocation Breakdown */}
+            <div className="space-y-3">
+              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                <Flame className="h-3.5 w-3.5 text-[#c99b53]" aria-hidden="true" />
+                Calculated Clay Dum Handis
+              </p>
+              <ul className="space-y-2.5">
+                {quote.handis.map((h, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start justify-between gap-3 rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-3.5 text-xs"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0f352d] font-mono text-[10px] font-bold text-[#f4d6a9]"
+                      >
+                        {h.handiSizeKg}kg
+                      </span>
+                      <div>
+                        <span className="block font-bold text-[#1f1c18]">
+                          {h.name}
+                        </span>
+                        <span className="text-[#635b50]">
+                          {h.quantity} × {h.handiSizeKg} kg · Serves ~
+                          {h.servesGuests} guests
+                        </span>
+                      </div>
+                    </div>
+                    <span className="font-mono-tabular shrink-0 font-extrabold text-[#0f352d]">
+                      {formatMoney(h.totalPricePaise)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Included Accompaniments */}
+            <div className="my-5 border-t border-[#ece3d5] pt-4">
+              <p className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                <UtensilsCrossed
+                  className="h-3.5 w-3.5 text-[#c99b53]"
+                  aria-hidden="true"
+                />
+                Complimentary Accompaniments
+              </p>
+              <ul className="space-y-2 text-xs text-[#544d42]">
+                {quote.accompaniments.map((acc, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-700"
+                      aria-hidden="true"
+                    />
+                    <span>{acc}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Pricing Breakdown */}
+            <div className="space-y-2.5 border-t border-[#ece3d5] pt-4 text-xs">
+              <div className="flex justify-between text-[#635b50]">
+                <span>Subtotal</span>
+                <span className="font-mono-tabular font-semibold">
+                  {formatMoney(quote.subtotalPaise)}
+                </span>
+              </div>
+              {quote.bulkDiscountPaise > 0 && (
+                <div className="flex justify-between font-bold text-[#4a1d5a]">
+                  <span>Bulk Celebration Savings</span>
+                  <span className="font-mono-tabular">
+                    −{formatMoney(quote.bulkDiscountPaise)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-[#635b50]">
+                <span>Chafing & Clay Pot Packaging</span>
+                <span className="font-bold text-emerald-800">
+                  Included (Free)
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between border-t border-[#ece3d5] pt-3 text-base font-extrabold text-[#0f352d]">
+                <span>Total to Pay</span>
+                <span className="font-mono-tabular text-xl">
+                  {formatMoney(quote.totalPaise)}
+                </span>
+              </div>
+              <p className="pt-1 text-[11px] leading-5 text-[#635b50]">
+                Includes 5% GST: {formatMoney(quote.includedTaxPaise)} (CGST{" "}
+                {formatMoney(quote.cgstPaise)} + SGST{" "}
+                {formatMoney(quote.sgstPaise)}).
+              </p>
+            </div>
+
+            <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-3.5 text-xs text-[#4e3f28]">
+              <ShieldCheck
+                className="h-4 w-4 shrink-0 text-[#c99b53]"
+                aria-hidden="true"
+              />
+              <span>
+                Guaranteed dough-sealed earthen handis dispatched directly by
+                our kitchen team.
+              </span>
+            </div>
           </div>
         </aside>
       </div>

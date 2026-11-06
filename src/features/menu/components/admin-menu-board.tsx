@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Plus, Search, Filter, Clock, PauseCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Clock,
+  PauseCircle,
+  UtensilsCrossed,
+  Flame,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DietaryMark } from "./dietary-mark";
 import { CreateDishModal } from "./create-dish-modal";
@@ -12,6 +20,7 @@ import { formatMoney } from "@/lib/format";
 import { formatTimeWindow } from "../time-windows";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import type { AdminMenuItem, AdminOutlet } from "../types";
+import { cn } from "@/lib/classes";
 
 interface AdminMenuBoardProps {
   initialItems: AdminMenuItem[];
@@ -30,10 +39,16 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
   const [pricingItem, setPricingItem] = useState<AdminMenuItem | null>(null);
 
   const [togglingMap, setTogglingMap] = useState<Record<string, boolean>>({});
-  const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Derive categories
-  const categories = ["All", ...Array.from(new Set(items.map((i) => i.category)))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(items.map((i) => i.category))),
+  ];
 
   // Filtered items
   const filteredItems = items.filter((item) => {
@@ -42,7 +57,8 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       item.description.toLowerCase().includes(search.toLowerCase()) ||
       item.category.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory = categoryFilter === "All" || item.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === "All" || item.category === categoryFilter;
 
     const matchesDietary =
       dietaryFilter === "ALL" ||
@@ -65,11 +81,16 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
   const vegItems = items.filter((i) => i.isVeg).length;
   const nonVegItems = items.filter((i) => !i.isVeg).length;
   const pausedOutletsCount = items.reduce(
-    (acc, item) => acc + (item.availability || []).filter((a) => !a.isAvailable).length,
+    (acc, item) =>
+      acc + (item.availability || []).filter((a) => !a.isAvailable).length,
     0,
   );
 
-  async function handleToggleStock(itemId: string, outletId: string, currentAvailable: boolean) {
+  async function handleToggleStock(
+    itemId: string,
+    outletId: string,
+    currentAvailable: boolean,
+  ) {
     const toggleKey = `${itemId}-${outletId}`;
     setTogglingMap((prev) => ({ ...prev, [toggleKey]: true }));
     setFeedback(null);
@@ -79,9 +100,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       prev.map((item) => {
         if (item.id !== itemId) return item;
         const updatedAvail = (item.availability || []).map((a) =>
-          a.outletId === outletId ? { ...a, isAvailable: !currentAvailable } : a,
+          a.outletId === outletId
+            ? { ...a, isAvailable: !currentAvailable }
+            : a,
         );
-        // If not in availability array yet, append it
         if (!updatedAvail.some((a) => a.outletId === outletId)) {
           updatedAvail.push({ outletId, isAvailable: !currentAvailable });
         }
@@ -108,7 +130,9 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         prev.map((item) => {
           if (item.id !== itemId) return item;
           const revertedAvail = (item.availability || []).map((a) =>
-            a.outletId === outletId ? { ...a, isAvailable: currentAvailable } : a,
+            a.outletId === outletId
+              ? { ...a, isAvailable: currentAvailable }
+              : a,
           );
           return { ...item, availability: revertedAvail };
         }),
@@ -124,12 +148,19 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
   async function handleToggleDishActive(itemId: string, currentActive: boolean) {
     try {
-      const res = await requestJson<{ item: AdminMenuItem }>(`/api/admin/menu/${itemId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ isActive: !currentActive }),
-      });
+      const res = await requestJson<{ item: AdminMenuItem }>(
+        `/api/admin/menu/${itemId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ isActive: !currentActive }),
+        },
+      );
 
-      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, isActive: res.item.isActive } : i)));
+      setItems((prev) =>
+        prev.map((i) =>
+          i.id === itemId ? { ...i, isActive: res.item.isActive } : i,
+        ),
+      );
       setFeedback({
         message: `Dish ${res.item.isActive ? "activated" : "deactivated"} successfully.`,
         type: "success",
@@ -144,7 +175,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
   async function refreshMenu() {
     try {
-      const res = await requestJson<{ items: AdminMenuItem[]; outlets: AdminOutlet[] }>("/api/admin/menu");
+      const res = await requestJson<{
+        items: AdminMenuItem[];
+        outlets: AdminOutlet[];
+      }>("/api/admin/menu");
       setItems(res.items);
     } catch (err) {
       console.error("Refresh menu failed:", err);
@@ -152,45 +186,66 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Top Banner Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wider font-semibold text-[#635b50]">Total Dishes</p>
-          <p className="mt-2 text-2xl font-black text-[#25221e]">{totalItems}</p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <div className="rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#635b50]">
+            Total Dishes
+          </p>
+          <p className="font-mono-tabular mt-2 text-2xl font-black text-[#1f1c18]">
+            {totalItems}
+          </p>
         </div>
-        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wider font-semibold text-[#133d34]">Active</p>
-          <p className="mt-2 text-2xl font-black text-[#133d34]">{activeItems}</p>
+        <div className="rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#0f352d]">
+            Active
+          </p>
+          <p className="font-mono-tabular mt-2 text-2xl font-black text-[#0f352d]">
+            {activeItems}
+          </p>
         </div>
-        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wider font-semibold text-emerald-800">Vegetarian</p>
-          <p className="mt-2 text-2xl font-black text-emerald-700">{vegItems}</p>
+        <div className="rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+            Vegetarian
+          </p>
+          <p className="font-mono-tabular mt-2 text-2xl font-black text-emerald-700">
+            {vegItems}
+          </p>
         </div>
-        <div className="rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wider font-semibold text-red-800">Non-Veg</p>
-          <p className="mt-2 text-2xl font-black text-red-700">{nonVegItems}</p>
+        <div className="rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] p-4 shadow-xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-red-800">
+            Non-Veg
+          </p>
+          <p className="font-mono-tabular mt-2 text-2xl font-black text-red-700">
+            {nonVegItems}
+          </p>
         </div>
-        <div className="rounded-2xl border border-[#dcc8ea] bg-[#faf6fd] p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wider font-bold text-[#4a1d5a]">Outlet Pauses</p>
-          <p className="mt-2 text-2xl font-black text-[#3b1747]">{pausedOutletsCount}</p>
+        <div className="col-span-2 rounded-2xl border border-[#dec9ec] bg-gradient-to-br from-[#faf5fd] to-[#f3e8fa] p-4 shadow-xs sm:col-span-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#4a1d5a]">
+            Outlet Pauses
+          </p>
+          <p className="font-mono-tabular mt-2 text-2xl font-black text-[#3b1747]">
+            {pausedOutletsCount}
+          </p>
         </div>
       </div>
 
       {feedback && (
         <div
           role="status"
-          className={`flex items-center justify-between rounded-xl p-3 text-sm font-semibold ${
+          className={cn(
+            "flex items-center justify-between rounded-2xl p-4 text-sm font-bold shadow-2xs",
             feedback.type === "success"
-              ? "bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
+              ? "border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]"
+              : "border border-red-200 bg-red-50 text-red-800",
+          )}
         >
           <span>{feedback.message}</span>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-xs underline ml-4 hover:opacity-75"
+            className="ml-4 text-xs underline hover:opacity-75"
           >
             Dismiss
           </button>
@@ -198,16 +253,19 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       )}
 
       {/* Action Controls & Filters */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-[#ded5c6] bg-[#fffdfa] p-5 shadow-xs">
+      <div className="flex flex-col gap-4 rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-5 shadow-xs sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="relative min-w-[260px] flex-1">
-            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+          <div className="relative min-w-[240px] flex-1">
+            <Search
+              className="absolute top-3.5 left-3.5 h-4 w-4 text-[#7a7062]"
+              aria-hidden="true"
+            />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search dishes by name, description or category…"
-              className="h-11 w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] pl-10 pr-4 text-sm text-[#25221e] outline-none transition focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+              className="h-11 w-full rounded-xl border border-[#dcd2c2] bg-[#faf7f2] pr-4 pl-10 text-sm font-medium text-[#1f1c18] outline-none transition placeholder:font-normal placeholder:text-[#8f8474] focus:border-[#0f352d] focus:bg-white focus:ring-3 focus:ring-[#0f352d]/10"
             />
           </div>
           <Button
@@ -216,32 +274,33 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
             onClick={() => setCreateModalOpen(true)}
             className="min-h-11 gap-2"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             Add menu dish
           </Button>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#ede6da] text-xs">
-          <span className="font-bold text-[#4a1d5a] mr-1 flex items-center gap-1">
-            <Filter className="h-3.5 w-3.5" /> Category:
+        <div className="flex flex-wrap items-center gap-2 border-t border-[#ece3d5] pt-3.5 text-xs">
+          <span className="mr-1 flex items-center gap-1 font-bold text-[#4a1d5a]">
+            <Filter className="h-3.5 w-3.5" aria-hidden="true" /> Category:
           </span>
           {categories.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCategoryFilter(c)}
-              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
+              className={cn(
+                "rounded-full border px-3 py-1 font-bold transition active:scale-95",
                 categoryFilter === c
-                  ? "bg-[#133d34] text-white shadow-xs"
-                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
-              }`}
+                  ? "border-[#0f352d] bg-[#0f352d] text-white shadow-2xs"
+                  : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:border-[#4a1d5a] hover:bg-white hover:text-[#4a1d5a]",
+              )}
             >
               {c}
             </button>
           ))}
 
-          <span className="font-bold text-[#4a1d5a] ml-3 mr-1">Dietary:</span>
+          <span className="mr-1 ml-3 font-bold text-[#4a1d5a]">Dietary:</span>
           {[
             { label: "All", val: "ALL" },
             { label: "Veg", val: "VEG" },
@@ -251,17 +310,18 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               key={d.val}
               type="button"
               onClick={() => setDietaryFilter(d.val)}
-              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
+              className={cn(
+                "rounded-full border px-3 py-1 font-bold transition active:scale-95",
                 dietaryFilter === d.val
-                  ? "bg-[#133d34] text-white shadow-xs"
-                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
-              }`}
+                  ? "border-[#0f352d] bg-[#0f352d] text-white shadow-2xs"
+                  : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:border-[#4a1d5a] hover:bg-white hover:text-[#4a1d5a]",
+              )}
             >
               {d.label}
             </button>
           ))}
 
-          <span className="font-bold text-[#4a1d5a] ml-3 mr-1">Status:</span>
+          <span className="mr-1 ml-3 font-bold text-[#4a1d5a]">Status:</span>
           {[
             { label: "All", val: "ALL" },
             { label: "Active", val: "ACTIVE" },
@@ -271,11 +331,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
               key={s.val}
               type="button"
               onClick={() => setStatusFilter(s.val)}
-              className={`rounded-full px-3 py-1 font-semibold transition active:scale-95 ${
+              className={cn(
+                "rounded-full border px-3 py-1 font-bold transition active:scale-95",
                 statusFilter === s.val
-                  ? "bg-[#3b1747] text-white shadow-xs"
-                  : "bg-[#f5efe5] text-[#544d42] hover:bg-[#ede3f5] hover:text-[#4a1d5a]"
-              }`}
+                  ? "border-[#3b1747] bg-[#3b1747] text-white shadow-2xs"
+                  : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:border-[#4a1d5a] hover:bg-white hover:text-[#4a1d5a]",
+              )}
             >
               {s.label}
             </button>
@@ -285,25 +346,33 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
       {/* Dishes Grid */}
       {filteredItems.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-stone-300 p-12 text-center text-stone-500">
+        <div className="rounded-3xl border border-dashed border-[#d6c9b6] bg-[#fffdfa] p-12 text-center text-sm text-[#655c50]">
           No dishes match your active search or filters.
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
           {filteredItems.map((item) => {
-            const hasTimeWindow = item.availableFromMinute != null && item.availableToMinute != null;
-            const timeWindowLabel = formatTimeWindow(item.availableFromMinute, item.availableToMinute);
+            const hasTimeWindow =
+              item.availableFromMinute != null &&
+              item.availableToMinute != null;
+            const timeWindowLabel = formatTimeWindow(
+              item.availableFromMinute,
+              item.availableToMinute,
+            );
 
             return (
               <article
                 key={item.id}
-                className={`overflow-hidden rounded-2xl border transition bg-[#fffdfa] shadow-xs flex flex-col justify-between ${
-                  item.isActive ? "border-[#ded5c6]" : "border-[#ded5c6] bg-[#fbf9f4] opacity-75"
-                }`}
+                className={cn(
+                  "flex flex-col justify-between overflow-hidden rounded-[1.75rem] border bg-[#fffdfa] shadow-[0_6px_24px_rgba(20,18,14,0.04)] transition hover:border-[#0f352d]/40",
+                  item.isActive
+                    ? "border-[#dfd4c2]"
+                    : "border-[#dfd4c2] bg-[#faf7f2] opacity-75",
+                )}
               >
                 <div>
                   {/* Card Image Banner */}
-                  <div className="relative aspect-[16/9] w-full bg-[#f4efe6] overflow-hidden">
+                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#f2ebe0]">
                     {item.imageUrl ? (
                       <Image
                         src={item.imageUrl}
@@ -313,60 +382,91 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-stone-400">
+                      <div className="flex h-full items-center justify-center text-xs text-[#8a7f70]">
+                        <UtensilsCrossed
+                          className="mr-1.5 h-4 w-4"
+                          aria-hidden="true"
+                        />
                         No image uploaded
                       </div>
                     )}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-semibold backdrop-blur-xs">
-                        <DietaryMark isVeg={item.isVeg} />
-                      </span>
-                      <span className="rounded-md bg-[#133d34]/90 px-2 py-1 text-xs font-bold text-white backdrop-blur-xs">
-                        {item.category}
-                      </span>
-                    </div>
+                    <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/50 via-black/15 to-transparent p-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">
+                          <DietaryMark isVeg={item.isVeg} />
+                        </span>
+                        <span className="rounded-lg bg-[#0f352d]/90 px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] backdrop-blur-xs">
+                          {item.category}
+                        </span>
+                      </div>
 
-                    <div className="absolute top-3 right-3 flex gap-1">
-                      {!item.isActive && (
-                        <span className="rounded-md bg-red-800 text-white px-2 py-1 text-xs font-semibold">
-                          Deactivated
-                        </span>
-                      )}
-                      {hasTimeWindow && (
-                        <span className="rounded-md border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] px-2 py-1 text-xs font-bold flex items-center gap-1 backdrop-blur-xs">
-                          <Clock className="h-3 w-3" /> {timeWindowLabel}
-                        </span>
-                      )}
+                      <div className="flex gap-1.5">
+                        {!item.isActive && (
+                          <span className="rounded-lg bg-red-800 px-2.5 py-1 text-[11px] font-bold text-white">
+                            Deactivated
+                          </span>
+                        )}
+                        {hasTimeWindow && (
+                          <span className="flex items-center gap-1 rounded-lg border border-[#dec9ec] bg-[#3b1747]/90 px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] backdrop-blur-xs">
+                            <Clock className="h-3 w-3" aria-hidden="true" />{" "}
+                            {timeWindowLabel}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-5">
+                  <div className="p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-bold text-[#133d34]">{item.name}</h2>
-                        <p className="mt-1 text-xs text-[#635b50]">
-                          Spice: {["Mild", "Gentle", "Medium", "Hot"][item.spiceLevel ?? 1]} · Station:{" "}
-                          <span className="font-semibold text-[#4a1d5a]">{item.prepStation ?? "MAIN"}</span>
+                        <h2 className="font-display text-2xl font-bold text-[#0f352d]">
+                          {item.name}
+                        </h2>
+                        <p className="mt-1 flex items-center gap-2 text-xs text-[#635b50]">
+                          <span className="inline-flex items-center gap-1 font-semibold">
+                            <Flame
+                              className="h-3.5 w-3.5 text-[#c99b53]"
+                              aria-hidden="true"
+                            />
+                            {["Mild", "Gentle", "Medium", "Hot"][
+                              item.spiceLevel ?? 1
+                            ]}
+                          </span>
+                          <span>·</span>
+                          <span>
+                            Station:{" "}
+                            <strong className="font-bold text-[#4a1d5a]">
+                              {item.prepStation ?? "MAIN"}
+                            </strong>
+                          </span>
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-3 text-sm text-[#544d42] leading-relaxed">{item.description}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-[#544d42]">
+                      {item.description}
+                    </p>
 
                     {/* Portions & City Prices */}
-                    <div className="mt-4 rounded-xl border border-[#ded5c6] bg-[#faf7f2] p-3">
-                      <p className="text-xs font-bold text-[#4a1d5a] uppercase tracking-wider mb-2">
+                    <div className="mt-4 rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-4">
+                      <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-[#4a1d5a]">
                         Portions & City Prices (5% GST Incl.)
                       </p>
                       <ul className="space-y-1.5 text-sm">
                         {(item.portions || []).flatMap((portion) =>
                           (portion.prices || []).map((price) => (
-                            <li key={price.id} className="flex justify-between text-[#544d42]">
-                              <span>
-                                {portion.name} <span className="text-[#877d70]">· {price.city}</span>
+                            <li
+                              key={price.id}
+                              className="flex justify-between text-[#544d42]"
+                            >
+                              <span className="font-medium text-[#1f1c18]">
+                                {portion.name}{" "}
+                                <span className="text-xs text-[#7a7062]">
+                                  · {price.city}
+                                </span>
                               </span>
-                              <span className="font-extrabold text-[#133d34]">
+                              <span className="font-mono-tabular font-extrabold text-[#0f352d]">
                                 {formatMoney(price.pricePaise)}
                               </span>
                             </li>
@@ -376,30 +476,41 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                     </div>
 
                     {/* Operational Details */}
-                    <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#635b50] border-t border-[#ede6da] pt-3">
+                    <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-[#ece3d5] pt-3.5 text-xs text-[#635b50]">
                       <p>
-                        Base Prep: <strong className="text-[#133d34]">{item.basePrepMinutes} min</strong>
+                        Base Prep:{" "}
+                        <strong className="text-[#0f352d]">
+                          {item.basePrepMinutes} min
+                        </strong>
                       </p>
                       <p>
-                        Batch Capacity: <strong className="text-[#133d34]">{item.batchCapacity}</strong>
+                        Batch Capacity:{" "}
+                        <strong className="text-[#0f352d]">
+                          {item.batchCapacity}
+                        </strong>
                       </p>
                       <p>
                         Allergens:{" "}
-                        <strong className="text-[#25221e]">
+                        <strong className="text-[#1f1c18]">
                           {item.allergens?.join(", ") || "None"}
                         </strong>
                       </p>
                     </div>
 
                     {/* Outlet Availability / Stock Pausing Controls */}
-                    <div className="mt-5 border-t border-[#ede6da] pt-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-[#4a1d5a] mb-2 flex items-center gap-1.5">
-                        <PauseCircle className="h-3.5 w-3.5 text-[#4a1d5a]" />
+                    <div className="mt-5 border-t border-[#ece3d5] pt-4">
+                      <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#4a1d5a]">
+                        <PauseCircle
+                          className="h-3.5 w-3.5 text-[#4a1d5a]"
+                          aria-hidden="true"
+                        />
                         Outlet Stock Availability
                       </p>
                       <div className="grid grid-cols-1 gap-2">
                         {outlets.map((outlet) => {
-                          const avail = (item.availability || []).find((a) => a.outletId === outlet.id);
+                          const avail = (item.availability || []).find(
+                            (a) => a.outletId === outlet.id,
+                          );
                           const isAvailable = avail ? avail.isAvailable : true;
                           const toggleKey = `${item.id}-${outlet.id}`;
                           const isToggling = Boolean(togglingMap[toggleKey]);
@@ -407,23 +518,38 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                           return (
                             <div
                               key={outlet.id}
-                              className="flex items-center justify-between rounded-lg border border-[#ded5c6] bg-[#fffdfa] px-3 py-2 text-xs"
+                              className="flex items-center justify-between rounded-xl border border-[#e3d8c6] bg-[#faf7f2] px-3.5 py-2 text-xs"
                             >
                               <div className="flex flex-col">
-                                <span className="font-semibold text-[#25221e]">{outlet.name}</span>
-                                <span className="text-[10px] text-[#877d70]">{outlet.city}</span>
+                                <span className="font-bold text-[#1f1c18]">
+                                  {outlet.name}
+                                </span>
+                                <span className="text-[10px] text-[#7a7062]">
+                                  {outlet.city}
+                                </span>
                               </div>
                               <button
                                 type="button"
                                 disabled={isToggling}
-                                onClick={() => handleToggleStock(item.id, outlet.id, isAvailable)}
-                                className={`rounded-md px-2.5 py-1 font-bold transition cursor-pointer disabled:opacity-50 ${
+                                onClick={() =>
+                                  handleToggleStock(
+                                    item.id,
+                                    outlet.id,
+                                    isAvailable,
+                                  )
+                                }
+                                className={cn(
+                                  "rounded-lg px-3 py-1 font-bold transition disabled:opacity-50",
                                   isAvailable
                                     ? "border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46] hover:bg-[#d1fae5]"
-                                    : "border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] hover:bg-[#ede0f5]"
-                                }`}
+                                    : "border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a] hover:bg-[#ede0f5]",
+                                )}
                               >
-                                {isToggling ? "Updating…" : isAvailable ? "In Stock" : "Paused / Out"}
+                                {isToggling
+                                  ? "Updating…"
+                                  : isAvailable
+                                    ? "In Stock"
+                                    : "Paused / Out"}
                               </button>
                             </div>
                           );
@@ -434,12 +560,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center justify-between border-t border-[#ede6da] bg-[#fbf9f4] p-4">
+                <div className="flex items-center justify-between border-t border-[#ece3d5] bg-[#faf7f2] px-6 py-4">
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="secondary"
-                      className="min-h-9 px-3 text-xs"
+                      className="min-h-9 px-3.5 text-xs"
                       onClick={() => setEditingItem(item)}
                     >
                       Edit details
@@ -447,7 +573,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                     <Button
                       type="button"
                       variant="tertiary"
-                      className="min-h-9 px-3 text-xs font-bold"
+                      className="min-h-9 px-3.5 text-xs font-bold"
                       onClick={() => setPricingItem(item)}
                     >
                       City prices
@@ -456,8 +582,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
                   <button
                     type="button"
-                    onClick={() => handleToggleDishActive(item.id, item.isActive)}
-                    className="text-xs font-bold text-[#635b50] hover:text-[#4a1d5a] underline"
+                    onClick={() =>
+                      handleToggleDishActive(item.id, item.isActive)
+                    }
+                    className="text-xs font-bold text-[#635b50] underline underline-offset-4 hover:text-[#4a1d5a]"
                   >
                     {item.isActive ? "Deactivate" : "Activate"}
                   </button>
@@ -473,7 +601,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         <CreateDishModal
           onClose={() => setCreateModalOpen(false)}
           onCreated={(newItem) => {
-            setFeedback({ message: `Dish "${newItem.name}" created!`, type: "success" });
+            setFeedback({
+              message: `Dish "${newItem.name}" created!`,
+              type: "success",
+            });
             void refreshMenu();
           }}
         />
@@ -484,7 +615,10 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onUpdated={(updated) => {
-            setFeedback({ message: `Dish "${updated.name}" updated!`, type: "success" });
+            setFeedback({
+              message: `Dish "${updated.name}" updated!`,
+              type: "success",
+            });
             void refreshMenu();
           }}
         />

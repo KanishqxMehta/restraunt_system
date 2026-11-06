@@ -2,6 +2,14 @@
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import {
+  MapPin,
+  TicketPercent,
+  ShieldCheck,
+  ArrowLeft,
+  ArrowRight,
+  ShoppingBag,
+} from "lucide-react";
 import { useCart } from "@/features/cart/context";
 import { CartPanel } from "@/features/cart/components/cart-panel";
 import { useCustomerMenu } from "@/features/menu/use-customer-menu";
@@ -32,6 +40,7 @@ export function CheckoutExperience() {
     method: string;
     id: string;
   } | null>(null);
+
   const input = {
     outletId: cart.outletId,
     location: cart.location,
@@ -40,6 +49,7 @@ export function CheckoutExperience() {
   };
   const inputKey = JSON.stringify(input);
   const quote = quoteResult?.key === inputKey ? quoteResult.quote : null;
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (pending) return;
@@ -97,17 +107,23 @@ export function CheckoutExperience() {
       setPending(false);
     }
   }
+
   if (!cart.hydrated) return <p role="status">Loading your basket…</p>;
   if (!cart.lines.length || !cart.outletId)
     return (
-      <div className="mx-auto max-w-lg rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-8 text-center shadow-xs">
-        <h1 className="text-2xl font-bold text-[#133d34]">Your basket is empty</h1>
-        <p className="my-4 text-sm text-[#635b50]">
+      <div className="mx-auto max-w-lg rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-10 text-center shadow-xs">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#e3d4be] bg-[#fcf6eb] text-[#c99b53]">
+          <ShoppingBag className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <h1 className="font-display text-2xl font-bold text-[#0f352d]">
+          Your basket is empty
+        </h1>
+        <p className="my-3 text-sm text-[#5f574c]">
           Choose something delicious before checking out.
         </p>
         <Link
           href="/order"
-          className="inline-flex min-h-12 items-center rounded-xl bg-[#133d34] px-6 text-sm font-bold text-white transition hover:bg-[#0c2a23] shadow-xs active:scale-[0.99]"
+          className="mt-2 inline-flex min-h-12 items-center rounded-xl bg-[#0f352d] px-6 text-sm font-bold text-white shadow-xs transition hover:bg-[#08231d] active:scale-[0.99]"
         >
           Explore the menu
         </Link>
@@ -115,12 +131,13 @@ export function CheckoutExperience() {
     );
   if (menuError)
     return (
-      <div role="alert">
-        <p>{menuError}</p>
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <p className="mb-3 text-sm text-red-800">{menuError}</p>
         <Button onClick={retry}>Reload menu</Button>
       </div>
     );
   if (!menu) return <p role="status">Checking your menu…</p>;
+
   return (
     <>
       <PageHeader
@@ -128,17 +145,20 @@ export function CheckoutExperience() {
         title="A few details. Then dinner."
         description={`${menu.outlet.name} · FSSAI ${menu.outlet.fssaiLicense}. Provisional preparation time: ${menu.outlet.minimumPrepMinutes + menu.outlet.packingMinutes} minutes. Delivery is simulated.`}
       />
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_370px]">
         <form
           onSubmit={submit}
           aria-busy={pending}
-          className="space-y-6 rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 sm:p-8 shadow-xs"
+          className="space-y-6 rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-[0_12px_36px_rgba(20,18,14,0.05)] sm:p-8"
         >
+          {/* Delivery Address */}
           <div>
             <label
               htmlFor="delivery-address"
-              className="mb-2 block text-sm font-bold text-[#133d34]"
+              className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0f352d]"
             >
+              <MapPin className="h-4 w-4 text-[#c99b53]" aria-hidden="true" />
               Delivery address
             </label>
             <textarea
@@ -149,22 +169,32 @@ export function CheckoutExperience() {
               minLength={10}
               maxLength={240}
               disabled={pending}
-              placeholder="Building, street, landmark and area"
+              placeholder="Building, flat number, street, landmark and area"
               rows={3}
-              className="w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] px-4 py-3 text-base text-[#25221e] outline-none transition focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+              className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-4 py-3 text-sm font-medium text-[#1f1c18] outline-none transition placeholder:font-normal placeholder:text-[#9c9283] focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
             />
             <p className="mt-2 text-xs leading-5 text-[#6b6255]">
               The location pin you selected determines serviceability. This
               address is saved only when you confirm the order.
             </p>
           </div>
-          <div>
+
+          {/* Coupon Code */}
+          <div className="border-t border-[#ece3d5] pt-5">
             <label
               htmlFor="coupon-code"
-              className="mb-2 block text-sm font-bold text-[#133d34]"
+              className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0f352d]"
             >
-              Coupon{" "}
-              <span className="font-normal text-[#6b6255]">· optional</span>
+              <TicketPercent
+                className="h-4 w-4 text-[#4a1d5a]"
+                aria-hidden="true"
+              />
+              <span>
+                Coupon{" "}
+                <span className="font-normal normal-case text-[#6b6255]">
+                  · optional
+                </span>
+              </span>
             </label>
             <input
               id="coupon-code"
@@ -172,20 +202,45 @@ export function CheckoutExperience() {
               onChange={(event) => setCouponCode(event.target.value)}
               maxLength={32}
               disabled={pending}
-              placeholder="Enter a code"
-              className="min-h-12 w-full rounded-xl border border-[#ded5c6] bg-[#fffdfa] px-4 uppercase text-[#25221e] outline-none transition focus:border-[#133d34] focus:ring-2 focus:ring-[#f5effa]"
+              placeholder="Enter a code (e.g. DIRECT10)"
+              className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-4 font-mono text-sm font-bold uppercase text-[#1f1c18] outline-none transition placeholder:font-sans placeholder:font-normal placeholder:normal-case placeholder:text-[#9c9283] focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
             />
-            <p className="mt-2 text-xs font-semibold text-[#4a1d5a]">
-              Try DIRECT10: 10% off orders from ₹300, up to ₹100.
-            </p>
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3.5 py-2 text-xs">
+              <span className="font-semibold text-[#4a1d5a]">
+                Try DIRECT10: 10% off orders from ₹300, up to ₹100.
+              </span>
+              {couponCode.toUpperCase() !== "DIRECT10" && (
+                <button
+                  type="button"
+                  onClick={() => setCouponCode("DIRECT10")}
+                  className="rounded-lg bg-[#3b1747] px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] transition hover:bg-[#290e32]"
+                >
+                  Apply code
+                </button>
+              )}
+            </div>
           </div>
-          <PaymentMethodPicker
-            value={method}
-            onChange={setMethod}
-            disabled={pending}
-          />
+
+          {/* Payment Method */}
+          <div className="border-t border-[#ece3d5] pt-5">
+            <PaymentMethodPicker
+              value={method}
+              onChange={setMethod}
+              disabled={pending}
+            />
+          </div>
+
+          {/* Authoritative Quote Breakdown */}
           {quote && (
-            <div className="rounded-2xl border border-[#ded5c6] bg-[#faf7f2] p-5">
+            <div className="rounded-2xl border border-[#d6e8e2] bg-gradient-to-b from-[#eef6f4]/60 to-[#faf7f2] p-5 shadow-2xs">
+              <div className="mb-3 flex items-center justify-between border-b border-[#dce7e2] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0f352d]">
+                  Authoritative Bill Summary
+                </span>
+                <span className="rounded-full bg-[#0f352d] px-2.5 py-0.5 text-[10px] font-bold text-[#f4d6a9]">
+                  Price Locked 5m
+                </span>
+              </div>
               <PriceBreakdown summary={quote} />
               <p className="mt-3 text-xs text-[#6b6255]">
                 Quote valid for five minutes. Stock and prices are checked again
@@ -193,18 +248,20 @@ export function CheckoutExperience() {
               </p>
             </div>
           )}
+
           {error && (
             <p
               role="alert"
-              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-800"
             >
               {error}
             </p>
           )}
+
           <Button
             type="submit"
             variant="primary"
-            className="w-full"
+            className="min-h-13 w-full text-base font-bold"
             disabled={pending || !menu.isOpen}
           >
             {pending
@@ -212,17 +269,27 @@ export function CheckoutExperience() {
               : quote
                 ? "Continue to test payment"
                 : "Review total"}
+            {!pending && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
           </Button>
-          <p className="text-xs leading-6 text-stone-500">
-            Test mode only. No money is collected. All prices include 5% GST.
-          </p>
-          <Link
-            href="/order"
-            className="inline-block text-sm text-stone-500 underline underline-offset-4"
-          >
-            Back to menu
-          </Link>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ece3d5] pt-4 text-xs text-[#655c50]">
+            <p className="flex items-center gap-1.5">
+              <ShieldCheck
+                className="h-4 w-4 text-[#0f352d]"
+                aria-hidden="true"
+              />
+              Test mode only. No money is collected. All prices include 5% GST.
+            </p>
+            <Link
+              href="/order"
+              className="inline-flex items-center gap-1 font-bold text-[#0f352d] underline underline-offset-4 hover:text-[#08231d]"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              Back to menu
+            </Link>
+          </div>
         </form>
+
         <div
           className={pending ? "pointer-events-none opacity-60" : ""}
           inert={pending || undefined}

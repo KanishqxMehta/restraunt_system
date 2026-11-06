@@ -164,6 +164,15 @@ Respond strictly with valid JSON with these keys:
   const effectivePrep = Math.max(aiMinutes, outlet.minimumPrepMinutes);
   const promisedMinutes = effectivePrep + outlet.packingMinutes;
 
+  console.log("[AI Prep Estimation]", {
+    aiEstimatedMinutes: aiMinutes,
+    promisedMinutes,
+    explanation,
+    estimateSource,
+    confidence,
+    activeTicketCount: load.activeTicketCount,
+  });
+
   return {
     aiEstimatedMinutes: aiMinutes,
     promisedMinutes,

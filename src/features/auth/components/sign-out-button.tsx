@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { authClient } from "../client";
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +28,13 @@ export function SignOutButton() {
   }
   return (
     <div className="text-right">
-      <Button variant="secondary" onClick={signOut} disabled={pending}>
+      <Button
+        variant="secondary"
+        onClick={signOut}
+        disabled={pending}
+        className="min-h-10 px-3.5 py-2 text-xs sm:text-sm"
+      >
+        <LogOut className="h-3.5 w-3.5 text-[#655c50]" aria-hidden="true" />
         {pending ? "Signing out…" : "Sign out"}
       </Button>
       {error && (

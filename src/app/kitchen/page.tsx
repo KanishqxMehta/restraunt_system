@@ -51,16 +51,18 @@ export default async function KitchenPage() {
 
   return (
     <WorkspaceShell viewer={viewer}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader
-          eyebrow="Outlet workspace"
-          title="Kitchen display"
-          description={
-            (outletNames || "No outlet assigned") +
-            (viewer.role === "CENTRAL_ADMIN" ? " · Network view" : "")
-          }
-        />
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs sm:p-8">
+        <div className="[&>header]:mb-0">
+          <PageHeader
+            eyebrow="Outlet workspace · Live KDS"
+            title="Kitchen display"
+            description={
+              (outletNames || "No outlet assigned") +
+              (viewer.role === "CENTRAL_ADMIN" ? " · Network view" : "")
+            }
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           {activeOutlet && viewer.role === "KITCHEN_STAFF" && (
             <KitchenStockControl
               outletId={activeOutlet.id}
@@ -71,6 +73,7 @@ export default async function KitchenPage() {
           <RefreshStatus />
         </div>
       </div>
+
       <KitchenBoard
         tickets={orders}
         canAdvance={viewer.role === "KITCHEN_STAFF"}

@@ -130,52 +130,74 @@ export function EditPricesModal({
   return (
     <Modal title={`Manage pricing: ${item.name}`} onClose={onClose}>
       <div className="space-y-6">
-        <p className="text-xs text-stone-500">
-          All city prices include 5% GST. Customer checkout will extract the inclusive tax automatically.
+        <p className="text-xs leading-5 text-[#5f574c]">
+          All city prices include 5% GST. Customer checkout will extract the
+          inclusive tax automatically.
         </p>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          >
             {error}
           </div>
         )}
         {success && (
-          <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+          >
             {success}
           </div>
         )}
 
         {/* Existing Portions */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-stone-900">Current portions & city prices</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[#0f352d]">
+            Current portions & city prices
+          </h3>
           {(item.portions || []).map((portion) => (
-            <div key={portion.id} className="rounded-xl border border-stone-200 bg-stone-50 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-stone-900">{portion.name}</span>
-                <span className="text-xs text-stone-500">
-                  {portion.prepMinutesOverride ? `Prep: ${portion.prepMinutesOverride}m` : "Uses base prep"}
+            <div
+              key={portion.id}
+              className="rounded-2xl border border-[#e5dbc9] bg-[#faf7f2] p-4"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <span className="font-display font-bold text-[#0f352d]">
+                  {portion.name}
+                </span>
+                <span className="text-xs text-[#655c50]">
+                  {portion.prepMinutesOverride
+                    ? `Prep: ${portion.prepMinutesOverride}m`
+                    : "Uses base prep"}
                 </span>
               </div>
 
               <div className="space-y-2">
                 {(portion.prices || []).map((p) => (
                   <div key={p.id} className="flex items-center gap-3">
-                    <span className="w-28 text-sm text-stone-700 font-medium">{p.city}</span>
+                    <span className="w-28 text-sm font-semibold text-[#4e473d]">
+                      {p.city}
+                    </span>
                     <div className="relative flex-1">
-                      <span className="absolute left-3 top-2.5 text-stone-400 text-sm">₹</span>
+                      <span className="absolute top-2.5 left-3 text-sm text-[#7a7062]">
+                        ₹
+                      </span>
                       <input
                         type="number"
                         step="1"
                         min="0"
                         value={pricesState[portion.id]?.[p.city] ?? ""}
-                        onChange={(e) => handlePriceChange(portion.id, p.city, e.target.value)}
-                        className="h-10 w-full rounded-lg border border-stone-300 pl-7 pr-3 text-sm outline-none focus:border-stone-800 bg-white"
+                        onChange={(e) =>
+                          handlePriceChange(portion.id, p.city, e.target.value)
+                        }
+                        className="font-mono-tabular h-10 w-full rounded-xl border border-[#dcd2c2] bg-white pr-3 pl-7 text-sm font-bold outline-none focus:border-[#0f352d]"
                       />
                     </div>
                     <Button
                       type="button"
                       variant="secondary"
-                      className="min-h-10 px-3 text-xs"
+                      className="min-h-10 px-3.5 text-xs"
                       disabled={submitting}
                       onClick={() => handleSavePortionPrices(portion.id)}
                     >
@@ -189,8 +211,13 @@ export function EditPricesModal({
         </div>
 
         {/* Add New Portion */}
-        <form onSubmit={handleAddNewPortion} className="rounded-xl border border-dashed border-stone-300 p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-stone-800">+ Add new portion</h4>
+        <form
+          onSubmit={handleAddNewPortion}
+          className="space-y-3 rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2]/60 p-4"
+        >
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+            + Add new portion
+          </h4>
           <div className="grid gap-3 sm:grid-cols-3">
             <InputField
               label="Portion name"
@@ -217,13 +244,17 @@ export function EditPricesModal({
             />
           </div>
           <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={submitting} className="min-h-10 text-xs">
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="min-h-10 text-xs"
+            >
               Add portion
             </Button>
           </div>
         </form>
 
-        <div className="flex justify-end pt-3 border-t border-stone-200">
+        <div className="flex justify-end border-t border-[#ece3d5] pt-3">
           <Button type="button" variant="secondary" onClick={onClose}>
             Done
           </Button>

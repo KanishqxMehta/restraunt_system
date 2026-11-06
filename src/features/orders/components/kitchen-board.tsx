@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Sliders, AlertTriangle } from "lucide-react";
+import {
+  Sparkles,
+  Sliders,
+  AlertTriangle,
+  Flame,
+  BellRing,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { InputField } from "@/components/ui/input-field";
@@ -20,6 +28,31 @@ const laneLabels: Record<KitchenStage, string> = {
   NEW: "New orders",
   PREPARING: "Preparing",
   READY: "Ready for pickup",
+};
+
+const laneStyles: Record<
+  KitchenStage,
+  {
+    accent: string;
+    badgeBg: string;
+    icon: typeof BellRing;
+  }
+> = {
+  NEW: {
+    accent: "from-[#c99b53] to-[#9e712a]",
+    badgeBg: "border-amber-300 bg-amber-50 text-amber-950",
+    icon: BellRing,
+  },
+  PREPARING: {
+    accent: "from-[#3b1747] to-[#5e2570]",
+    badgeBg: "border-[#dec9ec] bg-[#f7f2fa] text-[#3b1747]",
+    icon: Flame,
+  },
+  READY: {
+    accent: "from-[#0f352d] to-[#1a574a]",
+    badgeBg: "border-emerald-300 bg-emerald-50 text-emerald-950",
+    icon: CheckCircle2,
+  },
 };
 
 function duration(ms: number) {
@@ -47,26 +80,43 @@ export function KitchenBoard({
   }, []);
 
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-3">
+    <div className="grid items-start gap-6 lg:grid-cols-3">
       {kitchenStages.map((stage) => {
         const orders = tickets.filter((ticket) => ticket.status === stage);
+        const style = laneStyles[stage];
+        const Icon = style.icon;
         return (
           <section
             key={stage}
             aria-label={laneLabels[stage]}
-            className="min-w-0 rounded-2xl border border-[#ded5c6] bg-[#f4efe5] p-4 shadow-xs"
+            className="min-w-0 overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#f4ede2]/90 shadow-xs"
           >
-            <header className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-xl font-bold tracking-tight text-[#133d34]">{laneLabels[stage]}</h2>
-              <span className="rounded-full border border-[#ded5c6] bg-[#fffdfa] px-3 py-1 text-sm font-bold text-[#4a1d5a]">
+            <div className={cn("h-1.5 w-full bg-gradient-to-r", style.accent)} />
+            <header className="flex items-center justify-between gap-2 border-b border-[#e4dac9] bg-[#fffdfa] px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <Icon
+                  className="h-4 w-4 text-[#0f352d]"
+                  aria-hidden="true"
+                />
+                <h2 className="font-display text-lg font-bold tracking-tight text-[#0f352d]">
+                  {laneLabels[stage]}
+                </h2>
+              </div>
+              <span
+                className={cn(
+                  "font-mono-tabular rounded-full border px-3 py-0.5 text-xs font-extrabold",
+                  style.badgeBg,
+                )}
+              >
                 {orders.length}
               </span>
             </header>
-            <div className="space-y-3">
+
+            <div className="space-y-4 p-4">
               {orders.length === 0 && (
-                <p className="rounded-xl border border-dashed border-[#ded5c6] bg-[#faf8f4] p-5 text-sm text-[#635b50]">
+                <div className="rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2] px-5 py-10 text-center text-xs font-medium text-[#655c50]">
                   No tickets in this stage.
-                </p>
+                </div>
               )}
               {orders.map((ticket) => (
                 <KitchenTicket
@@ -105,7 +155,9 @@ function KitchenTicket({
 
   // Override Form State
   const [extraMinutes, setExtraMinutes] = useState(10);
-  const [overrideReason, setOverrideReason] = useState("Station backlog / Dum batch release");
+  const [overrideReason, setOverrideReason] = useState(
+    "Station backlog / Dum batch release",
+  );
   const [overrideSaving, setOverrideSaving] = useState(false);
   const [overrideError, setOverrideError] = useState("");
 
@@ -115,7 +167,9 @@ function KitchenTicket({
     stage !== "READY" && (remaining === null ? ticket.isLate : remaining < 0);
   const criticalLate =
     stage !== "READY" &&
-    (remaining === null ? ticket.isCriticalLate : remaining <= -10 * 60 * 1000);
+    (remaining === null
+      ? ticket.isCriticalLate
+      : remaining <= -10 * 60 * 1000);
 
   const age =
     now === null ? null : Math.max(0, now - ticket.queuedAt.getTime());
@@ -160,7 +214,9 @@ function KitchenTicket({
 
     try {
       await requestJson(
-        "/api/kitchen/orders/" + encodeURIComponent(ticket.id) + "/override-promise",
+        "/api/kitchen/orders/" +
+          encodeURIComponent(ticket.id) +
+          "/override-promise",
         {
           method: "POST",
           body: JSON.stringify({
@@ -181,28 +237,28 @@ function KitchenTicket({
   return (
     <article
       className={cn(
-        "min-w-0 rounded-xl border p-4 transition shadow-xs",
+        "min-w-0 rounded-2xl border p-4 transition-all shadow-xs",
         criticalLate
-          ? "border-2 border-red-600 bg-red-50/40 ring-2 ring-red-400/50"
+          ? "border-2 border-red-600 bg-red-50/70 ring-2 ring-red-400/50"
           : late
-            ? "border-red-400 bg-red-50/20"
-            : "border-[#ded5c6] bg-[#fffdfa] hover:border-[#133d34]/40",
+            ? "border-red-400 bg-red-50/35"
+            : "border-[#dfd4c2] bg-[#fffdfa] hover:border-[#0f352d]/45 hover:shadow-md",
       )}
     >
       {/* Critical 10+ Min Lateness Alert Banner */}
       {criticalLate && (
-        <div className="mb-3 flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-center text-xs font-bold text-white tracking-wider animate-pulse uppercase">
-          <AlertTriangle className="h-4 w-4" />
+        <div className="mb-3 flex animate-pulse items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-center text-xs font-bold tracking-wider uppercase text-white">
+          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
           10+ Min Late · Manager Alert
         </div>
       )}
 
       {/* Catering Banner */}
       {ticket.isCatering && (
-        <div className="mb-3 flex items-center justify-between rounded-lg border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-1.5 text-xs font-bold text-[#3b1747] shadow-xs">
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3 py-1.5 text-xs font-bold text-[#3b1747] shadow-2xs">
           <span>🎉 Bulk Catering · {ticket.guestCount ?? 20} Guests</span>
           {ticket.eventDate && (
-            <span className="font-semibold text-[#6b21a8]">
+            <span className="font-mono font-semibold text-[#6b21a8]">
               Slot: {formatTime(new Date(ticket.eventDate))}
             </span>
           )}
@@ -211,51 +267,58 @@ function KitchenTicket({
 
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="break-all text-xl font-black text-[#133d34] tracking-tight">
+          <h3 className="font-mono text-xl font-black tracking-tight break-all text-[#0f352d]">
             {ticket.orderNumber}
           </h3>
-          <p className="mt-0.5 text-xs text-[#635b50] font-semibold">{ticket.outlet.name}</p>
+          <p className="mt-0.5 text-xs font-semibold text-[#635b50]">
+            {ticket.outlet.name}
+          </p>
         </div>
 
         {/* AI & Override Status Badges */}
         <div className="flex flex-col items-end gap-1">
           {ticket.estimateSource === "GEMINI_AI" && (
             <span className="inline-flex items-center gap-1 rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-2.5 py-0.5 text-[11px] font-bold text-[#065f46]">
-              <Sparkles className="h-3 w-3 text-[#059669]" /> Gemini AI
+              <Sparkles className="h-3 w-3 text-[#059669]" aria-hidden="true" />{" "}
+              Gemini AI
             </span>
           )}
           {ticket.estimateSource === "MANAGER_OVERRIDE" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#e4d3f1] bg-[#f5effa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
-              <Sliders className="h-3 w-3 text-[#6b21a8]" /> Override
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
+              <Sliders className="h-3 w-3 text-[#6b21a8]" aria-hidden="true" />{" "}
+              Override
             </span>
           )}
         </div>
       </div>
 
       {ticket.managerOverrideReason && (
-        <p className="mt-2 text-xs text-[#3b1747] bg-[#faf6fd] rounded-lg p-2 border border-[#e4d3f1]">
-          <strong className="text-[#4a1d5a]">Supervisor note:</strong> {ticket.managerOverrideReason}
+        <p className="mt-2.5 rounded-xl border border-[#dec9ec] bg-[#faf6fd] p-2.5 text-xs text-[#3b1747]">
+          <strong className="text-[#4a1d5a]">Supervisor note:</strong>{" "}
+          {ticket.managerOverrideReason}
         </p>
       )}
 
       {ticket.specialInstructions && (
-        <p className="mt-2 text-xs text-[#522960] bg-[#faf6fd] rounded-lg p-2 border border-[#e4d3f1]">
-          <strong className="text-[#3b1747]">Event note:</strong> {ticket.specialInstructions}
+        <p className="mt-2.5 rounded-xl border border-[#dec9ec] bg-[#faf6fd] p-2.5 text-xs text-[#522960]">
+          <strong className="text-[#3b1747]">Event note:</strong>{" "}
+          {ticket.specialInstructions}
         </p>
       )}
 
       {/* Timer & Due Display */}
       <div
         className={cn(
-          "mt-3 rounded-lg px-3 py-2 font-bold tabular-nums flex items-center justify-between text-sm",
+          "font-mono-tabular mt-3.5 flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold",
           criticalLate
             ? "bg-red-700 text-white"
             : late
-              ? "bg-red-100 text-red-900 border border-red-300"
-              : "bg-[#eef6f4] text-[#133d34] border border-[#a7f3d0]/60",
+              ? "border border-red-300 bg-red-100 text-red-900"
+              : "border border-[#a7f3d0]/70 bg-[#eef6f4] text-[#0f352d]",
         )}
       >
-        <span>
+        <span className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {stage === "READY"
             ? pickupWait === null
               ? "Waiting for pickup"
@@ -272,29 +335,29 @@ function KitchenTicket({
       </div>
 
       {stage !== "READY" && age !== null && (
-        <p className="mt-2 text-xs text-stone-500">
+        <p className="mt-2 text-xs text-[#655c50]">
           Accepted {duration(age)} ago
         </p>
       )}
 
       {/* Items List */}
-      <ul className="my-4 divide-y divide-stone-100">
+      <ul className="my-4 divide-y divide-[#ece3d5] rounded-xl border border-[#ece3d5] bg-[#faf7f2] px-3.5 py-1">
         {ticket.items.map((item, index) => {
           const addons = snapshotAddons(item.addons);
           return (
             <li key={index} className="py-2.5">
-              <p className="text-base font-bold text-stone-900">
+              <p className="text-sm font-extrabold text-[#1f1c18]">
                 {item.quantity} × {item.name}
               </p>
-              <p className="text-xs text-stone-600">
+              <p className="text-xs font-medium text-[#575046]">
                 {item.portionName}
                 {addons.length > 0 &&
                   " · " + addons.map((addon) => addon.name).join(", ")}
               </p>
-              <div className="mt-1 flex flex-wrap gap-x-2 items-center">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <DietaryMark isVeg={item.isVeg} />
                 {item.allergens.length > 0 && (
-                  <p className="text-xs text-amber-800 font-medium">
+                  <p className="text-[11px] font-semibold text-amber-900">
                     Allergens: {item.allergens.join(", ")}
                   </p>
                 )}
@@ -305,7 +368,7 @@ function KitchenTicket({
       </ul>
 
       {error && (
-        <p role="alert" className="mb-3 text-xs text-red-800">
+        <p role="alert" className="mb-3 text-xs font-medium text-red-800">
           {error}
         </p>
       )}
@@ -315,7 +378,7 @@ function KitchenTicket({
         {canAdvance && (
           <Button
             variant="primary"
-            className="flex-1 font-bold"
+            className="min-h-11 flex-1 font-bold"
             disabled={saving || refreshing}
             onClick={() =>
               stage === "READY" ? setConfirming(true) : void advance()
@@ -329,10 +392,10 @@ function KitchenTicket({
           <button
             type="button"
             onClick={() => setOverriding(true)}
-            className="flex items-center justify-center gap-1 rounded-xl border border-[#dcc8ea] bg-[#f5effa] px-3 py-2 text-xs font-bold text-[#3b1747] transition hover:bg-[#ede0f5] shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-[#d8bfe8] bg-[#f7f2fa] px-3.5 py-2 text-xs font-bold text-[#3b1747] shadow-2xs transition hover:bg-[#ede0f5]"
             title="Adjust promised preparation time"
           >
-            <Sliders className="h-4 w-4" />
+            <Sliders className="h-3.5 w-3.5" aria-hidden="true" />
             Adjust
           </button>
         )}
@@ -344,14 +407,20 @@ function KitchenTicket({
           title="Confirm rider handoff"
           onClose={() => setConfirming(false)}
         >
-          <p className="mb-5 text-[#544d42]">
-            Confirm that the delivery partner has collected {ticket.orderNumber}.
+          <p className="mb-6 text-sm leading-6 text-[#4e473d]">
+            Confirm that the delivery partner has collected{" "}
+            <strong className="font-mono text-[#0f352d]">
+              {ticket.orderNumber}
+            </strong>
+            .
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
             <Button variant="secondary" onClick={() => setConfirming(false)}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={() => void advance()}>Confirm collected</Button>
+            <Button variant="primary" onClick={() => void advance()}>
+              Confirm collected
+            </Button>
           </div>
         </Modal>
       )}
@@ -363,21 +432,26 @@ function KitchenTicket({
           onClose={() => setOverriding(false)}
         >
           <form onSubmit={handleOverride} className="space-y-4">
-            <p className="text-xs text-[#544d42]">
-              Kitchen supervisors can adjust the promised ready time if unexpected delays occur. The customer&apos;s live tracking screen will update immediately.
+            <p className="text-xs leading-5 text-[#544d42]">
+              Kitchen supervisors can adjust the promised ready time if
+              unexpected delays occur. The customer&apos;s live tracking screen
+              will update immediately.
             </p>
 
             {overrideError && (
-              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <div
+                role="alert"
+                className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800"
+              >
                 {overrideError}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-bold text-[#133d34] mb-2">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-[#0f352d]">
                 Extend ready time from now by:
               </label>
-              <div className="flex gap-2 mb-2">
+              <div className="mb-3 flex gap-2">
                 {[5, 10, 15, 20].map((mins) => (
                   <button
                     key={mins}
@@ -386,8 +460,8 @@ function KitchenTicket({
                     className={cn(
                       "flex-1 rounded-xl border py-2 text-xs font-bold transition",
                       extraMinutes === mins
-                        ? "bg-[#3b1747] text-white border-[#3b1747] shadow-xs"
-                        : "bg-[#f5efe5] text-[#544d42] border-[#ded5c6] hover:bg-[#ede3f5] hover:text-[#4a1d5a]",
+                        ? "border-[#3b1747] bg-[#3b1747] text-white shadow-xs"
+                        : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:bg-[#f7f2fa] hover:text-[#4a1d5a]",
                     )}
                   >
                     +{mins} min
@@ -406,19 +480,29 @@ function KitchenTicket({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-stone-800 mb-1">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#433d35]">
                 Reason for delay:
               </label>
               <select
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-stone-800 mb-2"
+                className="mb-3 min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3 text-sm font-medium outline-none focus:border-[#0f352d]"
               >
-                <option value="Station backlog / Dum batch release">Station backlog / Dum batch release</option>
-                <option value="Hand-crafted dum pot slow to seal">Hand-crafted dum pot slow to seal</option>
-                <option value="Ingredient restocking from storage">Ingredient restocking from storage</option>
-                <option value="Peak rush container packaging backlog">Peak rush container packaging backlog</option>
-                <option value="Delivery partner rider delayed">Delivery partner rider delayed</option>
+                <option value="Station backlog / Dum batch release">
+                  Station backlog / Dum batch release
+                </option>
+                <option value="Hand-crafted dum pot slow to seal">
+                  Hand-crafted dum pot slow to seal
+                </option>
+                <option value="Ingredient restocking from storage">
+                  Ingredient restocking from storage
+                </option>
+                <option value="Peak rush container packaging backlog">
+                  Peak rush container packaging backlog
+                </option>
+                <option value="Delivery partner rider delayed">
+                  Delivery partner rider delayed
+                </option>
               </select>
               <InputField
                 label="Or custom explanation"
@@ -428,8 +512,12 @@ function KitchenTicket({
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
-              <Button type="button" variant="secondary" onClick={() => setOverriding(false)}>
+            <div className="flex justify-end gap-3 border-t border-[#ece3d5] pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setOverriding(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={overrideSaving}>

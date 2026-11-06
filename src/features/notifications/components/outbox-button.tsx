@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
-import { VirtualOutboxDrawer, type MockNotificationItem } from "./virtual-outbox-drawer";
+import {
+  VirtualOutboxDrawer,
+  type MockNotificationItem,
+} from "./virtual-outbox-drawer";
 import { requestJson } from "@/lib/http-client";
 
 interface OutboxButtonProps {
@@ -44,13 +47,13 @@ export function OutboxButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl border border-[#dcc8ea] bg-[#f5effa] px-3.5 py-1.5 text-xs font-bold text-[#3b1747] transition hover:bg-[#ede0f5] shadow-xs cursor-pointer active:scale-95"
+        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#d8bfe8] bg-gradient-to-b from-[#faf5fd] to-[#f2e8f9] px-3.5 py-2 text-xs font-bold text-[#3b1747] shadow-2xs transition hover:border-[#c39fdb] hover:from-[#f5ecfb] hover:to-[#ead9f5] active:scale-95"
         title="View simulated SMS & WhatsApp order updates"
       >
-        <MessageSquare className="h-3.5 w-3.5 text-[#6b21a8]" />
+        <MessageSquare className="h-3.5 w-3.5 text-[#6b21a8]" aria-hidden="true" />
         <span>Mock Outbox</span>
         {count > 0 && (
-          <span className="rounded-full bg-[#3b1747] px-1.5 py-0.2 text-[10px] font-extrabold text-white">
+          <span className="rounded-full bg-[#3b1747] px-2 py-0.5 text-[10px] font-extrabold text-[#f4d6a9]">
             {count}
           </span>
         )}

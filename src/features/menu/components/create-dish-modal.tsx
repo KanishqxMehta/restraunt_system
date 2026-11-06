@@ -27,7 +27,14 @@ const PRESET_IMAGES = [
   { label: "Double ka meetha", url: "/menu/meetha.jpg" },
 ];
 
-const CATEGORIES = ["Biryani", "Sides", "Desserts", "Breads", "Beverages", "Curries"];
+const CATEGORIES = [
+  "Biryani",
+  "Sides",
+  "Desserts",
+  "Breads",
+  "Beverages",
+  "Curries",
+];
 
 interface CreateDishModalProps {
   onClose: () => void;
@@ -128,7 +135,10 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
     <Modal title="Add menu item" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          >
             {error}
           </div>
         )}
@@ -142,11 +152,13 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
             placeholder="e.g. Mutton Rogan Josh"
           />
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">Category</label>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="min-h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm outline-none focus:border-stone-800"
+              className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -158,23 +170,27 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Description</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Description
+          </label>
           <textarea
             required
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Fragrant basmati layered with spices and slow dum cooking."
-            className="w-full rounded-xl border border-stone-300 p-3 text-sm outline-none focus:border-stone-800"
+            className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] p-3 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
           />
         </div>
 
         {/* Dietary & Spice */}
-        <div className="grid gap-4 sm:grid-cols-2 rounded-xl bg-stone-50 p-4 border border-stone-200">
+        <div className="grid gap-4 rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">Dietary classification</label>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+              Dietary classification
+            </label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm font-semibold text-emerald-800 cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-emerald-800">
                 <input
                   type="radio"
                   name="isVeg"
@@ -182,9 +198,9 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
                   onChange={() => setIsVeg(true)}
                   className="accent-emerald-700"
                 />
-                ▣ Veg
+                ● Veg
               </label>
-              <label className="flex items-center gap-2 text-sm font-semibold text-red-800 cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-red-800">
                 <input
                   type="radio"
                   name="isVeg"
@@ -198,7 +214,7 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
               Spice level ({["Mild", "Gentle", "Medium", "Hot"][spiceLevel]})
             </label>
             <input
@@ -207,14 +223,14 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
               max={3}
               value={spiceLevel}
               onChange={(e) => setSpiceLevel(Number(e.target.value))}
-              className="w-full accent-orange-700 cursor-pointer"
+              className="w-full cursor-pointer accent-[#0f352d]"
             />
           </div>
         </div>
 
         {/* Portion and City Price */}
-        <div className="rounded-xl bg-amber-50/50 p-4 border border-amber-200 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+        <div className="space-y-3 rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#4e3f28]">
             Initial portion & city pricing (GST included)
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -274,25 +290,30 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
         </div>
 
         {/* Time-based Service Window */}
-        <div className="rounded-xl border border-stone-200 p-4 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-[#e5dbc9] bg-[#faf7f2] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-stone-900">Time-based service window</p>
-              <p className="text-xs text-stone-500">Restricts orderability to specific hours (e.g. Haleem dinner only)</p>
+              <p className="text-sm font-bold text-[#0f352d]">
+                Time-based service window
+              </p>
+              <p className="text-xs text-[#655c50]">
+                Restricts orderability to specific hours (e.g. Haleem dinner
+                only)
+              </p>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={timeRestricted}
                 onChange={(e) => setTimeRestricted(e.target.checked)}
-                className="h-4 w-4 rounded accent-stone-900"
+                className="h-4 w-4 rounded accent-[#0f352d]"
               />
-              <span className="font-semibold text-stone-700">Enable</span>
+              <span className="font-bold text-[#0f352d]">Enable</span>
             </label>
           </div>
 
           {timeRestricted && (
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
+            <div className="grid grid-cols-2 gap-3 border-t border-[#e5dbc9] pt-3">
               <InputField
                 label="Available from (HH:MM)"
                 value={fromTime}
@@ -311,17 +332,19 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
 
         {/* Photo Selection */}
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Photo</label>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Photo
+          </label>
+          <div className="mb-3 flex flex-wrap gap-2">
             {PRESET_IMAGES.map((img) => (
               <button
                 type="button"
                 key={img.url}
                 onClick={() => setImageUrl(img.url)}
-                className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
                   imageUrl === img.url
-                    ? "bg-stone-900 text-white border-stone-900"
-                    : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                    ? "border-[#0f352d] bg-[#0f352d] text-white"
+                    : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:bg-white"
                 }`}
               >
                 {img.label}
@@ -338,15 +361,17 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
 
         {/* Allergens */}
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Allergens</label>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Allergens
+          </label>
           <div className="flex flex-wrap gap-2">
             {COMMON_ALLERGENS.map((allergen) => (
               <label
                 key={allergen}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium cursor-pointer border transition ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition ${
                   allergens.includes(allergen)
-                    ? "bg-amber-100 text-amber-900 border-amber-300"
-                    : "bg-stone-50 text-stone-600 border-stone-200"
+                    ? "border-[#dec9ec] bg-[#3b1747] text-white"
+                    : "border-[#dfd4c2] bg-[#faf7f2] text-[#575046]"
                 }`}
               >
                 <input
@@ -361,8 +386,13 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-stone-200">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
+        <div className="flex justify-end gap-3 border-t border-[#ece3d5] pt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>

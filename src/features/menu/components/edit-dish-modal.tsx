@@ -27,7 +27,14 @@ const PRESET_IMAGES = [
   { label: "Double ka meetha", url: "/menu/meetha.jpg" },
 ];
 
-const CATEGORIES = ["Biryani", "Sides", "Desserts", "Breads", "Beverages", "Curries"];
+const CATEGORIES = [
+  "Biryani",
+  "Sides",
+  "Desserts",
+  "Breads",
+  "Beverages",
+  "Curries",
+];
 
 interface EditDishModalProps {
   item: AdminMenuItem;
@@ -35,7 +42,11 @@ interface EditDishModalProps {
   onUpdated: (item: AdminMenuItem) => void;
 }
 
-export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) {
+export function EditDishModal({
+  item,
+  onClose,
+  onUpdated,
+}: EditDishModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,11 +57,14 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
   const [isVeg, setIsVeg] = useState(item.isVeg);
   const [spiceLevel, setSpiceLevel] = useState(item.spiceLevel ?? 1);
   const [allergens, setAllergens] = useState<string[]>(item.allergens ?? []);
-  const [basePrepMinutes, setBasePrepMinutes] = useState(item.basePrepMinutes ?? 15);
+  const [basePrepMinutes, setBasePrepMinutes] = useState(
+    item.basePrepMinutes ?? 15,
+  );
   const [prepStation, setPrepStation] = useState(item.prepStation ?? "MAIN");
   const [batchCapacity, setBatchCapacity] = useState(item.batchCapacity ?? 1);
 
-  const initialHasTime = item.availableFromMinute != null && item.availableToMinute != null;
+  const initialHasTime =
+    item.availableFromMinute != null && item.availableToMinute != null;
   const [timeRestricted, setTimeRestricted] = useState(initialHasTime);
   const [fromTime, setFromTime] = useState(
     initialHasTime ? formatMinuteToTime(item.availableFromMinute) : "17:00",
@@ -98,10 +112,13 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
         availableToMinute: toMinute,
       };
 
-      const res = await requestJson<{ item: AdminMenuItem }>(`/api/admin/menu/${item.id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      const res = await requestJson<{ item: AdminMenuItem }>(
+        `/api/admin/menu/${item.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      );
 
       onUpdated(res.item);
       onClose();
@@ -116,7 +133,10 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
     <Modal title={`Edit dish: ${item.name}`} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          >
             {error}
           </div>
         )}
@@ -129,11 +149,13 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
             onChange={(e) => setName(e.target.value)}
           />
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">Category</label>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="min-h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm outline-none focus:border-stone-800"
+              className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -145,22 +167,26 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Description</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Description
+          </label>
           <textarea
             required
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl border border-stone-300 p-3 text-sm outline-none focus:border-stone-800"
+            className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] p-3 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
           />
         </div>
 
         {/* Dietary & Spice */}
-        <div className="grid gap-4 sm:grid-cols-2 rounded-xl bg-stone-50 p-4 border border-stone-200">
+        <div className="grid gap-4 rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">Dietary classification</label>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+              Dietary classification
+            </label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm font-semibold text-emerald-800 cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-emerald-800">
                 <input
                   type="radio"
                   name="editIsVeg"
@@ -168,9 +194,9 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
                   onChange={() => setIsVeg(true)}
                   className="accent-emerald-700"
                 />
-                ▣ Veg
+                ● Veg
               </label>
-              <label className="flex items-center gap-2 text-sm font-semibold text-red-800 cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-red-800">
                 <input
                   type="radio"
                   name="editIsVeg"
@@ -184,7 +210,7 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-800 mb-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
               Spice level ({["Mild", "Gentle", "Medium", "Hot"][spiceLevel]})
             </label>
             <input
@@ -193,7 +219,7 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
               max={3}
               value={spiceLevel}
               onChange={(e) => setSpiceLevel(Number(e.target.value))}
-              className="w-full accent-orange-700 cursor-pointer"
+              className="w-full cursor-pointer accent-[#0f352d]"
             />
           </div>
         </div>
@@ -227,25 +253,29 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
         </div>
 
         {/* Time-based Service Window */}
-        <div className="rounded-xl border border-stone-200 p-4 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-[#e5dbc9] bg-[#faf7f2] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-stone-900">Time-based service window</p>
-              <p className="text-xs text-stone-500">Restricts orderability to specific hours</p>
+              <p className="text-sm font-bold text-[#0f352d]">
+                Time-based service window
+              </p>
+              <p className="text-xs text-[#655c50]">
+                Restricts orderability to specific hours
+              </p>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={timeRestricted}
                 onChange={(e) => setTimeRestricted(e.target.checked)}
-                className="h-4 w-4 rounded accent-stone-900"
+                className="h-4 w-4 rounded accent-[#0f352d]"
               />
-              <span className="font-semibold text-stone-700">Enable</span>
+              <span className="font-bold text-[#0f352d]">Enable</span>
             </label>
           </div>
 
           {timeRestricted && (
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
+            <div className="grid grid-cols-2 gap-3 border-t border-[#e5dbc9] pt-3">
               <InputField
                 label="Available from (HH:MM)"
                 value={fromTime}
@@ -264,17 +294,19 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
 
         {/* Photo Selection */}
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Photo</label>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Photo
+          </label>
+          <div className="mb-3 flex flex-wrap gap-2">
             {PRESET_IMAGES.map((img) => (
               <button
                 type="button"
                 key={img.url}
                 onClick={() => setImageUrl(img.url)}
-                className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
                   imageUrl === img.url
-                    ? "bg-stone-900 text-white border-stone-900"
-                    : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                    ? "border-[#0f352d] bg-[#0f352d] text-white"
+                    : "border-[#dfd4c2] bg-[#faf7f2] text-[#544d42] hover:bg-white"
                 }`}
               >
                 {img.label}
@@ -290,15 +322,17 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
 
         {/* Allergens */}
         <div>
-          <label className="block text-sm font-medium text-stone-800 mb-2">Allergens</label>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
+            Allergens
+          </label>
           <div className="flex flex-wrap gap-2">
             {COMMON_ALLERGENS.map((allergen) => (
               <label
                 key={allergen}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium cursor-pointer border transition ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition ${
                   allergens.includes(allergen)
-                    ? "bg-amber-100 text-amber-900 border-amber-300"
-                    : "bg-stone-50 text-stone-600 border-stone-200"
+                    ? "border-[#dec9ec] bg-[#3b1747] text-white"
+                    : "border-[#dfd4c2] bg-[#faf7f2] text-[#575046]"
                 }`}
               >
                 <input
@@ -313,8 +347,13 @@ export function EditDishModal({ item, onClose, onUpdated }: EditDishModalProps) 
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-stone-200">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
+        <div className="flex justify-end gap-3 border-t border-[#ece3d5] pt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>

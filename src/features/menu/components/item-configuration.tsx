@@ -1,11 +1,14 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { ShoppingBag, Sparkles, ShieldAlert } from "lucide-react";
 import type { CustomerMenuItem } from "../types";
 import { useCart } from "@/features/cart/context";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { DietaryMark } from "./dietary-mark";
+import { cn } from "@/lib/classes";
+
 export function ItemConfiguration({
   item,
   onClose,
@@ -22,96 +25,135 @@ export function ItemConfiguration({
     item.addons
       .filter((addon) => addonIds.includes(addon.id))
       .reduce((sum, addon) => sum + addon.pricePaise, 0);
+
   function add(event: FormEvent) {
     event.preventDefault();
     if (!portion) return;
     cart.addLine({ portionId, addonIds, quantity: 1 });
     onClose();
   }
+
   return (
     <Modal title={item.name} onClose={onClose}>
       <form onSubmit={add} className="space-y-6">
-        <div>
-          <DietaryMark isVeg={item.isVeg} />
-          <p className="mt-3 text-sm leading-6 text-stone-600">
+        {/* Dish Summary Banner */}
+        <div className="rounded-2xl border border-[#e6dccb] bg-[#faf7f2] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <DietaryMark isVeg={item.isVeg} />
+            <span className="rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
+              {item.category}
+            </span>
+          </div>
+          <p className="mt-2.5 text-sm leading-6 text-[#4e473d]">
             {item.description}
           </p>
-          <p className="mt-2 text-xs text-stone-500">
-            Allergens: {item.allergens.join(", ") || "None declared"}
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-[#6e6456]">
+            <ShieldAlert className="h-3.5 w-3.5 text-[#c99b53]" aria-hidden="true" />
+            <span>
+              Allergens: {item.allergens.join(", ") || "None declared"}
+            </span>
           </p>
         </div>
+
+        {/* Portion Selection */}
         <fieldset>
-          <legend className="mb-3 font-bold text-[#133d34]">Choose a portion</legend>
-          <div className="space-y-2">
-            {item.portions.map((portion) => (
-              <label
-                key={portion.id}
-                className={`flex min-h-14 items-center gap-3 rounded-xl border px-4 transition cursor-pointer ${
-                  portionId === portion.id
-                    ? "border-[#133d34] bg-[#eef6f4] text-[#133d34] font-bold shadow-xs"
-                    : "border-[#ded5c6] bg-[#fffdfa] text-[#544d42] hover:border-[#4a1d5a]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="portion"
-                  value={portion.id}
-                  checked={portionId === portion.id}
-                  onChange={() => setPortion(portion.id)}
-                  className="accent-[#133d34]"
-                />
-                <span className="flex-1 text-sm">{portion.name}</span>
-                <span className="text-sm font-bold text-[#133d34]">
-                  {formatMoney(portion.pricePaise)}
-                </span>
-              </label>
-            ))}
+          <legend className="mb-3 flex items-center justify-between w-full text-sm font-bold uppercase tracking-wider text-[#0f352d]">
+            <span>1. Choose a portion</span>
+            <span className="rounded-md bg-[#eef6f4] px-2 py-0.5 text-[10px] font-bold text-[#0f352d]">
+              Required
+            </span>
+          </legend>
+          <div className="space-y-2.5">
+            {item.portions.map((portion) => {
+              const selected = portionId === portion.id;
+              return (
+                <label
+                  key={portion.id}
+                  className={cn(
+                    "flex min-h-14 cursor-pointer items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all",
+                    selected
+                      ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] font-bold shadow-xs"
+                      : "border-[#dfd4c2] bg-[#fffdfa] text-[#4e473d] hover:border-[#4a1d5a]/50 hover:bg-[#faf7f2]",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="portion"
+                    value={portion.id}
+                    checked={selected}
+                    onChange={() => setPortion(portion.id)}
+                    className="h-4 w-4 accent-[#0f352d]"
+                  />
+                  <span className="flex-1 text-sm">{portion.name}</span>
+                  <span className="font-mono-tabular text-sm font-extrabold text-[#0f352d]">
+                    {formatMoney(portion.pricePaise)}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </fieldset>
+
+        {/* Accompaniments / Add-ons */}
         {item.addons.length > 0 && (
           <fieldset>
-            <legend className="mb-3 font-bold text-[#133d34]">
-              Make it yours{" "}
-              <span className="text-sm font-semibold text-[#4a1d5a]">
-                · optional
+            <legend className="mb-3 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-[#0f352d]">
+              <Sparkles className="h-3.5 w-3.5 text-[#c99b53]" aria-hidden="true" />
+              <span>2. Make it yours</span>
+              <span className="ml-1 text-xs font-semibold normal-case text-[#4a1d5a]">
+                · optional accompaniments
               </span>
             </legend>
-            {item.addons.map((addon) => (
-              <label
-                key={addon.id}
-                className="flex min-h-12 items-center gap-3 text-sm text-[#25221e] cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={addonIds.includes(addon.id)}
-                  onChange={(event) =>
-                    setAddons((ids) =>
-                      event.target.checked
-                        ? [...ids, addon.id]
-                        : ids.filter((id) => id !== addon.id),
-                    )
-                  }
-                  className="h-4 w-4 accent-[#133d34]"
-                />
-                <span className="flex-1 font-medium">
-                  {addon.name}
-                  {addon.allergens.length > 0 && (
-                    <span className="block text-xs text-[#877d70]">
-                      Contains {addon.allergens.join(", ")}
+            <div className="space-y-2">
+              {item.addons.map((addon) => {
+                const checked = addonIds.includes(addon.id);
+                return (
+                  <label
+                    key={addon.id}
+                    className={cn(
+                      "flex min-h-13 cursor-pointer items-center gap-3.5 rounded-2xl border px-4 py-2.5 text-sm transition-all",
+                      checked
+                        ? "border-[#3b1747] bg-[#f7f2fa] text-[#25221e]"
+                        : "border-[#e5dbc9] bg-[#fffdfa] text-[#25221e] hover:border-[#c99b53]",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        setAddons((ids) =>
+                          event.target.checked
+                            ? [...ids, addon.id]
+                            : ids.filter((id) => id !== addon.id),
+                        )
+                      }
+                      className="h-4 w-4 rounded accent-[#0f352d]"
+                    />
+                    <span className="flex-1 font-semibold">
+                      {addon.name}
+                      {addon.allergens.length > 0 && (
+                        <span className="block text-xs font-normal text-[#7a7062]">
+                          Contains {addon.allergens.join(", ")}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <span className="font-bold text-[#133d34]">+{formatMoney(addon.pricePaise)}</span>
-              </label>
-            ))}
+                    <span className="font-mono-tabular font-bold text-[#0f352d]">
+                      +{formatMoney(addon.pricePaise)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </fieldset>
         )}
+
         <Button
           type="submit"
           variant="primary"
-          className="w-full"
+          className="min-h-13 w-full text-base font-bold"
           disabled={!portion}
         >
+          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
           Add to basket · {formatMoney(total)}
         </Button>
       </form>

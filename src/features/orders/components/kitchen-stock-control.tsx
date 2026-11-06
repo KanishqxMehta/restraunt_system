@@ -69,16 +69,16 @@ export function KitchenStockControl({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition border cursor-pointer ${
+          className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold shadow-2xs transition cursor-pointer sm:text-sm ${
             outOfStockCount > 0
-              ? "border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] hover:bg-[#ede0f5]"
-              : "border-[#ded5c6] bg-[#fffdfa] text-[#25221e] hover:bg-[#faf7f2]"
+              ? "border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a] hover:bg-[#ede0f5]"
+              : "border-[#dfd4c2] bg-[#fffdfa] text-[#25221e] hover:bg-[#faf7f2]"
           }`}
         >
-          <Package className="h-4 w-4" />
+          <Package className="h-4 w-4 text-[#0f352d]" aria-hidden="true" />
           <span>Outlet Stock</span>
           {outOfStockCount > 0 && (
-            <span className="rounded-full bg-[#3b1747] px-2 py-0.5 text-xs font-bold text-white">
+            <span className="rounded-full bg-[#3b1747] px-2 py-0.5 text-[11px] font-bold text-[#f4d6a9]">
               {outOfStockCount} paused
             </span>
           )}
@@ -86,43 +86,54 @@ export function KitchenStockControl({
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a0f20]/60 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-[#ded5c6] bg-[#fffdfa] p-6 shadow-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#ede6da] pb-4 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#140d18]/60 p-4 backdrop-blur-xs">
+          <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] shadow-2xl">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
+            <div className="flex items-center justify-between border-b border-[#ece3d5] bg-[#faf7f2] px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-[#133d34]">Kitchen Stock Controls</h2>
-                <p className="text-xs text-[#635b50]">
-                  {outletName} · Pause items when sold out to protect promise times
+                <h2 className="font-display text-xl font-bold text-[#0f352d]">
+                  Kitchen Stock Controls
+                </h2>
+                <p className="mt-0.5 text-xs text-[#635b50]">
+                  {outletName} · Pause items when sold out to protect promise
+                  times
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5efe5] text-[#25221e] hover:bg-[#ebdcf5] hover:text-[#3b1747]"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8c7] bg-[#fffdfa] text-[#25221e] transition hover:bg-[#f7f2fa] hover:text-[#3b1747]"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
-            {error && (
-              <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            <div className="flex-1 overflow-y-auto p-6 space-y-2.5">
+              {error && (
+                <div
+                  role="alert"
+                  className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                >
+                  {error}
+                </div>
+              )}
 
-            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
               {items.map((item) => {
                 const isWorking = toggling === item.id;
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl border border-[#ded5c6] bg-[#fffdfa] p-3"
+                    className="flex items-center justify-between rounded-2xl border border-[#e3d8c6] bg-[#faf7f2] p-3.5"
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-3">
                       <DietaryMark isVeg={item.isVeg} />
                       <div>
-                        <p className="text-sm font-bold text-[#25221e]">{item.name}</p>
-                        <p className="text-xs text-[#877d70]">{item.category}</p>
+                        <p className="text-sm font-bold text-[#1f1c18]">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-[#787064]">
+                          {item.category}
+                        </p>
                       </div>
                     </div>
 
@@ -130,10 +141,10 @@ export function KitchenStockControl({
                       type="button"
                       disabled={isWorking}
                       onClick={() => handleToggle(item.id, item.isAvailable)}
-                      className={`min-h-9 px-3 text-xs font-bold rounded-lg transition disabled:opacity-50 cursor-pointer ${
+                      className={`min-h-9 rounded-xl px-3.5 text-xs font-bold transition disabled:opacity-50 cursor-pointer ${
                         item.isAvailable
                           ? "border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46] hover:bg-[#d1fae5]"
-                          : "border border-[#e4d3f1] bg-[#f5effa] text-[#4a1d5a] hover:bg-[#ede0f5]"
+                          : "border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a] hover:bg-[#ede0f5]"
                       }`}
                     >
                       {isWorking
@@ -147,8 +158,12 @@ export function KitchenStockControl({
               })}
             </div>
 
-            <div className="pt-4 mt-4 border-t border-[#ede6da] flex justify-end">
-              <Button type="button" variant="primary" onClick={() => setOpen(false)}>
+            <div className="flex justify-end border-t border-[#ece3d5] bg-[#faf7f2] px-6 py-4">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setOpen(false)}
+              >
                 Done
               </Button>
             </div>

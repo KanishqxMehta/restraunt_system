@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UtensilsCrossed, ShieldCheck, Sparkles } from "lucide-react";
 import type { Viewer } from "@/features/auth/policy";
 import { roleLabels } from "@/features/auth/roles";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { WorkspaceNav } from "./workspace-nav";
 
 export function WorkspaceShell({
   viewer,
@@ -11,92 +13,123 @@ export function WorkspaceShell({
   viewer: Viewer;
   children: ReactNode;
 }) {
+  const initials = viewer.name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:block focus:p-3"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-[#0f352d] focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg"
       >
         Skip to content
       </a>
-      <header className="border-b border-[#e8ded0] bg-[#fffdfa] shadow-xs">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <Link href="/" className="group font-bold tracking-tight text-[#133d34]">
-            <span className="text-lg">Restaurant System</span>
-            <span className="mt-0.5 block text-xs font-semibold tracking-wider uppercase text-[#4a1d5a]">
-              Company A · Hyderabad
+
+      {/* Top Royal Accent Ribbon */}
+      <div className="h-1 w-full bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
+
+      <header className="sticky top-0 z-30 border-b border-[#e3d8c6]/90 bg-[#fffdfa]/92 backdrop-blur-md shadow-[0_2px_16px_rgba(20,18,14,0.04)]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-8">
+          <Link
+            href="/"
+            className="group flex items-center gap-3 tracking-tight text-[#0f352d]"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#14453a] to-[#0a241e] text-[#f4d6a9] shadow-[0_2px_8px_rgba(15,53,45,0.2)] transition-transform duration-200 group-hover:scale-105"
+            >
+              <UtensilsCrossed className="h-5 w-5" />
             </span>
-          </Link>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            {viewer.role === "CUSTOMER" && (
-              <nav
-                aria-label="Customer navigation"
-                className="flex items-center gap-4 text-sm"
-              >
-                <Link
-                  href="/order"
-                  className="font-semibold text-[#133d34] transition hover:text-[#0c2a23] hover:underline"
-                >
-                  Order food
-                </Link>
-                <Link
-                  href="/party-orders"
-                  className="font-semibold text-[#4a1d5a] transition hover:text-[#2d1136] hover:underline"
-                >
-                  Party catering
-                </Link>
-                <Link
-                  href="/account"
-                  className="text-[#635b50] transition hover:text-[#4a1d5a] hover:underline"
-                >
-                  My orders
-                </Link>
-              </nav>
-            )}
-            {viewer.role === "CENTRAL_ADMIN" && (
-              <nav
-                aria-label="Admin navigation"
-                className="flex items-center gap-4 text-sm"
-              >
-                <Link
-                  href="/admin/dashboard"
-                  className="font-semibold text-[#133d34] transition hover:text-[#0c2a23] hover:underline"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/menu"
-                  className="font-semibold text-[#4a1d5a] transition hover:text-[#2d1136] hover:underline"
-                >
-                  Menu & Stock
-                </Link>
-                <Link
-                  href="/kitchen"
-                  className="text-[#635b50] transition hover:text-[#133d34] hover:underline"
-                >
-                  Kitchen KDS
-                </Link>
-              </nav>
-            )}
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-semibold text-[#25221e]">{viewer.name}</p>
-              <span className="inline-block mt-0.5 rounded-full border border-[#e2d0ee] bg-[#f5effa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
-                {roleLabels[viewer.role]}
+            <div>
+              <span className="font-display block text-lg font-bold leading-none text-[#0f352d]">
+                Restaurant System
+              </span>
+              <span className="mt-1 block text-[11px] font-bold tracking-[0.18em] uppercase text-[#4a1d5a]">
+                Company A · Hyderabad
               </span>
             </div>
+          </Link>
+
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
+            <WorkspaceNav role={viewer.role} />
+
+            <div className="hidden items-center gap-2.5 rounded-2xl border border-[#e7ddd0] bg-[#faf7f2] py-1.5 pr-3 pl-2 lg:flex">
+              <span
+                aria-hidden="true"
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3b1747] text-xs font-extrabold text-[#f4d6a9]"
+              >
+                {initials || "CA"}
+              </span>
+              <div className="text-left leading-tight">
+                <p className="text-xs font-bold text-[#1f1c18]">{viewer.name}</p>
+                <span className="inline-block text-[10px] font-bold tracking-wide uppercase text-[#4a1d5a]">
+                  {roleLabels[viewer.role]}
+                </span>
+              </div>
+            </div>
+
             <SignOutButton />
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+
+      <main
+        id="main"
+        className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-8 sm:py-10"
+      >
         {process.env.ENABLE_DEMO_DATA === "true" && (
-          <p className="mb-8 rounded-xl border border-[#ded5c6] bg-[#fbf9f4] px-4 py-3 text-xs leading-5 text-[#544d42]">
-            <strong className="text-[#133d34]">Demo environment</strong> · All accounts, licence numbers and business data
-            are synthetic.
-          </p>
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#e2d4be] bg-gradient-to-r from-[#fcf8f0] via-[#fffdfa] to-[#f7f2fa] px-4 py-2.5 text-xs text-[#544d42] shadow-2xs">
+            <p className="flex items-center gap-2 leading-5">
+              <Sparkles
+                className="h-3.5 w-3.5 shrink-0 text-[#c99b53]"
+                aria-hidden="true"
+              />
+              <span>
+                <strong className="font-bold text-[#0f352d]">
+                  Demo environment
+                </strong>{" "}
+                · All accounts, FSSAI licence numbers and business metrics are
+                synthetic.
+              </span>
+            </p>
+            <span className="hidden rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#4a1d5a] sm:inline-block">
+              Zero Aggregator Markup
+            </span>
+          </div>
         )}
         {children}
       </main>
-    </>
+
+      <footer className="mt-16 border-t border-[#e5dbc9] bg-[#f6f1e7]/80">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6 text-xs text-[#655c50] sm:px-8">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck
+              className="h-4 w-4 text-[#0f352d]"
+              aria-hidden="true"
+            />
+            <span>
+              <strong className="font-bold text-[#0f352d]">
+                Company A · Royal Kitchens of Hyderabad
+              </strong>{" "}
+              · Direct Ordering & Live Kitchen Dispatch
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 font-semibold">
+            <span>All prices inclusive of 5% GST</span>
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/photo-credits"
+              className="text-[#4a1d5a] underline decoration-[#d8bfe8] underline-offset-4 transition hover:text-[#290e32]"
+            >
+              Photography credits
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
