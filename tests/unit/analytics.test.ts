@@ -6,6 +6,9 @@ import {
   calculateTargetProgressPercent,
   calculateMarketingOptInPercent,
   calculateOnTimeSlaPercent,
+  calculateCancellationRatePercent,
+  calculateRepeatCustomerRatePercent,
+  calculateCustomDirectSavings,
   ANNUAL_SAVINGS_TARGET_PAISE,
   NET_DIRECT_SAVINGS_RATE,
   BULK_CATERING_MARGIN_RATE,
@@ -55,5 +58,26 @@ describe("Executive Analytics Calculator", () => {
   it("computes Kitchen on-time SLA percentage", () => {
     expect(calculateOnTimeSlaPercent(95, 100)).toBe(95);
     expect(calculateOnTimeSlaPercent(0, 0)).toBe(100); // 0 completed defaults to 100%
+  });
+
+  it("computes order cancellation rate percentage", () => {
+    expect(calculateCancellationRatePercent(2, 30)).toBe(6.7);
+    expect(calculateCancellationRatePercent(0, 25)).toBe(0);
+    expect(calculateCancellationRatePercent(0, 0)).toBe(0);
+  });
+
+  it("computes repeat customer retention rate percentage", () => {
+    expect(calculateRepeatCustomerRatePercent(7, 20)).toBe(35);
+    expect(calculateRepeatCustomerRatePercent(0, 10)).toBe(0);
+    expect(calculateRepeatCustomerRatePercent(0, 0)).toBe(0);
+  });
+
+  it("computes custom direct commission savings from admin-configured rates", () => {
+    // 25% aggregator - 10% direct cost = 15% net saved
+    expect(calculateCustomDirectSavings(1_000_000, 25, 10)).toBe(150_000);
+    // 30% aggregator - 12% direct cost = 18% net saved
+    expect(calculateCustomDirectSavings(1_000_000, 30, 12)).toBe(180_000);
+    // Never negative if direct cost >= aggregator rate
+    expect(calculateCustomDirectSavings(1_000_000, 10, 15)).toBe(0);
   });
 });

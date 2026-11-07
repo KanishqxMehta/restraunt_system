@@ -14,8 +14,6 @@ import {
   AlertTriangle,
   Edit2,
   Trash2,
-  CheckCircle2,
-  XCircle,
   PauseCircle,
   PlayCircle,
 } from "lucide-react";

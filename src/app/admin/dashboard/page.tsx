@@ -11,9 +11,9 @@ export default async function AdminDashboardPage() {
   return (
     <WorkspaceShell viewer={viewer}>
       <PageHeader
-        eyebrow="Central Leadership & Marketing"
-        title="Executive Margin & Operations"
-        description="Live commission savings counter, bulk catering recovery, first-party DPDP customer database metrics, and kitchen SLA compliance across all Hyderabad outlets."
+        eyebrow="Central Analytics & Operations"
+        title="Outlet Operations & Business Analytics"
+        description="Monitor order volume, preparation times, kitchen SLA compliance, cancellations, repeat customer retention, and configurable commission benchmarks across all outlets."
       />
       <ExecutiveDashboard summary={summary} />
     </WorkspaceShell>

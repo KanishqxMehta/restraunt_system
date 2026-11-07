@@ -515,6 +515,63 @@ async function seed() {
             { name: "Royal Zafrani Chicken Dum Handi", portionName: "10 kg Handi", quantity: 2, unitPricePaise: 700000, prepMinutes: 120, isVeg: false, allergens: ["Milk"] },
           ],
         },
+        // --- Historical Handed-Off & Cancelled Orders for Analytics ---
+        {
+          id: "order-web-778190",
+          orderNumber: "WEB-778190",
+          customerId: "demo-customer",
+          outletId: "outlet-kondapur",
+          status: "HANDED_OFF" as const,
+          paymentMethod: "UPI" as const,
+          totalPaise: 94000,
+          placedMinutesAgo: 95,
+          promiseMinutesFromNow: -65,
+          items: [
+            { name: "Chicken dum biryani", portionName: "Family pack", quantity: 1, unitPricePaise: 94000, prepMinutes: 20, isVeg: false, allergens: ["Milk"] },
+          ],
+        },
+        {
+          id: "order-web-778191",
+          orderNumber: "WEB-778191",
+          customerId: "demo-customer-two",
+          outletId: "outlet-gachibowli",
+          status: "HANDED_OFF" as const,
+          paymentMethod: "CARD" as const,
+          totalPaise: 70000,
+          placedMinutesAgo: 80,
+          promiseMinutesFromNow: -55,
+          items: [
+            { name: "Mutton haleem", portionName: "Regular", quantity: 2, unitPricePaise: 35000, prepMinutes: 12, isVeg: false, allergens: ["Wheat", "Milk"] },
+          ],
+        },
+        {
+          id: "order-web-778192",
+          orderNumber: "WEB-778192",
+          customerId: "demo-customer-two",
+          outletId: "outlet-kondapur",
+          status: "CANCELLED" as const,
+          paymentMethod: "UPI" as const,
+          totalPaise: 40000,
+          placedMinutesAgo: 110,
+          promiseMinutesFromNow: -80,
+          items: [
+            { name: "Chicken dum biryani", portionName: "Regular", quantity: 1, unitPricePaise: 40000, prepMinutes: 20, isVeg: false, allergens: ["Milk"] },
+          ],
+        },
+        {
+          id: "order-web-778193",
+          orderNumber: "WEB-778193",
+          customerId: "demo-customer",
+          outletId: "outlet-kukatpally",
+          status: "CANCELLED" as const,
+          paymentMethod: "CARD" as const,
+          totalPaise: 50000,
+          placedMinutesAgo: 120,
+          promiseMinutesFromNow: -90,
+          items: [
+            { name: "Veg biryani", portionName: "Regular", quantity: 2, unitPricePaise: 25000, prepMinutes: 15, isVeg: true, allergens: ["Milk"] },
+          ],
+        },
       ];
 
       for (const sample of samples) {
@@ -532,8 +589,12 @@ async function seed() {
             ...(sample.isCatering
               ? {
                   cateringStatus: sample.cateringStatus,
-                  cateringNotes: (sample as any).cateringNotes,
-                  cateringConfirmedBy: (sample as any).cateringConfirmedBy,
+                  cateringNotes:
+                    "cateringNotes" in sample ? sample.cateringNotes : undefined,
+                  cateringConfirmedBy:
+                    "cateringConfirmedBy" in sample
+                      ? sample.cateringConfirmedBy
+                      : undefined,
                 }
               : {}),
           },

@@ -3,18 +3,37 @@ export interface OutletPerformance {
   name: string;
   city: string;
   isCloudKitchen: boolean;
-  totalOrders: number;
+  minimumPrepMinutes: number;
+  // Orders breakdown
+  totalOrders: number; // All paid + cancelled orders
+  paidOrders: number;
+  activeKitchenOrders: number; // NEW + PREPARING + READY
+  completedOrders: number; // READY + HANDED_OFF
+  cancelledOrders: number;
+  cancellationRatePercent: number;
+  // Revenue
   totalRevenuePaise: number;
+  directRegularRevenuePaise: number;
+  averageOrderValuePaise: number;
   commissionSavedPaise: number;
+  // Catering
   cateringOrders: number;
   cateringRevenuePaise: number;
+  // Prep Time & SLA
+  onTimeOrders: number;
+  lateOrders: number;
   onTimePercent: number;
   avgPrepMinutes: number;
+  // Repeat Customer Retention
+  uniqueCustomers: number;
+  repeatCustomers: number;
+  repeatCustomerRatePercent: number;
 }
 
 export interface RecentExecutiveOrder {
   id: string;
   orderNumber: string;
+  outletId: string;
   outletName: string;
   customerName: string;
   totalPaise: number;
@@ -22,29 +41,44 @@ export interface RecentExecutiveOrder {
   isCatering: boolean;
   guestCount?: number | null;
   commissionSavedPaise: number;
+  prepMinutes?: number;
+  isLate?: boolean;
   createdAt: string;
 }
 
 export interface ExecutiveAnalyticsSummary {
-  // Financial Impact (₹1.14 Cr Target)
-  totalDirectGMVPaise: number;
+  // Core Operational Metrics (100% database-driven)
+  totalOrdersCount: number; // All paid + cancelled orders
+  totalPaidOrders: number;
+  activeKitchenOrdersCount: number;
+  completedOrders: number;
+  cancelledOrdersCount: number;
+  cancellationRatePercent: number;
+
+  // Revenue & Average Order Value
+  totalDirectGMVPaise: number; // Direct regular GMV
   directOrdersCount: number;
-  commissionSavedPaise: number; // 15% net savings on direct regular orders
   cateringGMVPaise: number;
   cateringOrdersCount: number;
-  cateringMarginCapturedPaise: number; // 30% margin on bulk catering
-  totalValueCapturedPaise: number; // commissionSaved + cateringMargin
-  annualTargetPaise: number; // ₹1,14,48,000
+  totalRevenuePaise: number; // Direct + Catering GMV
+  averageOrderValuePaise: number;
+
+  // Default Financial Benchmarks (recalculated dynamically on client when admin customizes rates)
+  commissionSavedPaise: number;
+  cateringMarginCapturedPaise: number;
+  totalValueCapturedPaise: number;
+  annualTargetPaise: number;
   targetProgressPercent: number;
 
-  // First-party Customer Relationship Ownership (DPDP 2023)
+  // Customer Retention & First-Party DPDP Database
   totalCustomers: number;
+  orderingCustomersCount: number;
+  repeatCustomersCount: number;
+  repeatCustomerRatePercent: number;
   marketingOptedInCount: number;
   marketingOptInPercent: number;
 
-  // Kitchen SLA & Operations
-  totalPaidOrders: number;
-  completedOrders: number;
+  // Kitchen SLA & Prep Time Operations
   onTimeOrders: number;
   onTimeSlaPercent: number;
   criticalLateOrders: number; // >10 min late

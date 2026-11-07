@@ -4,18 +4,43 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
-  ShieldCheck,
-  Users,
   Building2,
   ChevronRight,
-  Info,
-  DollarSign,
-  Sparkles,
-  Award,
+  Sliders,
+  ShoppingBag,
+  Clock,
+  XCircle,
+  Repeat,
+  Search,
+  RotateCcw,
   ArrowUpRight,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import type { ExecutiveAnalyticsSummary } from "../types";
 import { cn } from "@/lib/classes";
+
+const STORAGE_KEY = "company_a_analytics_benchmarks_v1";
+
+interface AnalyticsBenchmarks {
+  aggregatorCommissionPercent: number;
+  directFulfillmentCostPercent: number;
+  cateringMarginPercent: number;
+  targetPrepMinutes: number;
+  targetRepeatRatePercent: number;
+  enableSavingsGoal: boolean;
+  customSavingsGoalRupees: number;
+}
+
+const DEFAULT_BENCHMARKS: AnalyticsBenchmarks = {
+  aggregatorCommissionPercent: 27,
+  directFulfillmentCostPercent: 12,
+  cateringMarginPercent: 30,
+  targetPrepMinutes: 25,
+  targetRepeatRatePercent: 35,
+  enableSavingsGoal: true,
+  customSavingsGoalRupees: 100000, // ₹1,00,000 default monthly/quarterly goal, 100% editable by admin
+};
 
 function formatRupees(paise: number): string {
   const rupees = paise / 100;
@@ -26,231 +51,495 @@ function formatRupees(paise: number): string {
   }).format(rupees);
 }
 
+type SortKey = "ORDERS" | "REVENUE" | "PREP" | "REPEAT" | "CANCELLATIONS";
+
 export function ExecutiveDashboard({
   summary,
 }: {
   summary: ExecutiveAnalyticsSummary;
 }) {
-  const [showFormulaModal, setShowFormulaModal] = useState(false);
+  const [selectedOutletId, setSelectedOutletId] = useState<string>("ALL");
   const [filterType, setFilterType] = useState<
     "ALL" | "DINE_IN" | "CLOUD_KITCHEN"
   >("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("ORDERS");
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const filteredOutlets = summary.outlets.filter((outlet) => {
-    if (filterType === "DINE_IN") return !outlet.isCloudKitchen;
-    if (filterType === "CLOUD_KITCHEN") return outlet.isCloudKitchen;
-    return true;
+  // Admin-configurable benchmarks (persisted in localStorage)
+  const [benchmarks, setBenchmarks] = useState<AnalyticsBenchmarks>(() => {
+    if (typeof window === "undefined") return DEFAULT_BENCHMARKS;
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<AnalyticsBenchmarks>;
+        return { ...DEFAULT_BENCHMARKS, ...parsed };
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return DEFAULT_BENCHMARKS;
   });
+  const [draftBenchmarks, setDraftBenchmarks] =
+    useState<AnalyticsBenchmarks>(benchmarks);
+
+  function handleSaveBenchmarks(e: React.FormEvent) {
+    e.preventDefault();
+    const sanitized: AnalyticsBenchmarks = {
+      aggregatorCommissionPercent: Math.min(
+        60,
+        Math.max(0, Number(draftBenchmarks.aggregatorCommissionPercent) || 0),
+      ),
+      directFulfillmentCostPercent: Math.min(
+        50,
+        Math.max(0, Number(draftBenchmarks.directFulfillmentCostPercent) || 0),
+      ),
+      cateringMarginPercent: Math.min(
+        90,
+        Math.max(0, Number(draftBenchmarks.cateringMarginPercent) || 0),
+      ),
+      targetPrepMinutes: Math.min(
+        120,
+        Math.max(5, Number(draftBenchmarks.targetPrepMinutes) || 25),
+      ),
+      targetRepeatRatePercent: Math.min(
+        100,
+        Math.max(1, Number(draftBenchmarks.targetRepeatRatePercent) || 35),
+      ),
+      enableSavingsGoal: Boolean(draftBenchmarks.enableSavingsGoal),
+      customSavingsGoalRupees: Math.max(
+        1000,
+        Number(draftBenchmarks.customSavingsGoalRupees) || 100000,
+      ),
+    };
+    setBenchmarks(sanitized);
+    setDraftBenchmarks(sanitized);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    } catch {
+      // Ignore storage errors
+    }
+    setShowSettingsModal(false);
+  }
+
+  function handleResetDefaults() {
+    setDraftBenchmarks(DEFAULT_BENCHMARKS);
+    setBenchmarks(DEFAULT_BENCHMARKS);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  // Scope metrics either to "ALL" or a single selected outlet
+  const selectedOutlet =
+    selectedOutletId === "ALL"
+      ? null
+      : summary.outlets.find((o) => o.id === selectedOutletId) ?? null;
+
+  const scopedMetrics = selectedOutlet
+    ? {
+        label: selectedOutlet.name,
+        totalOrdersCount: selectedOutlet.totalOrders,
+        totalPaidOrders: selectedOutlet.paidOrders,
+        activeKitchenOrdersCount: selectedOutlet.activeKitchenOrders,
+        completedOrders: selectedOutlet.completedOrders,
+        cancelledOrdersCount: selectedOutlet.cancelledOrders,
+        cancellationRatePercent: selectedOutlet.cancellationRatePercent,
+        totalRevenuePaise: selectedOutlet.totalRevenuePaise,
+        directRegularGMVPaise: selectedOutlet.directRegularRevenuePaise,
+        cateringGMVPaise: selectedOutlet.cateringRevenuePaise,
+        cateringOrdersCount: selectedOutlet.cateringOrders,
+        averageOrderValuePaise: selectedOutlet.averageOrderValuePaise,
+        avgPrepMinutes: selectedOutlet.avgPrepMinutes,
+        onTimeSlaPercent: selectedOutlet.onTimePercent,
+        lateOrdersCount: selectedOutlet.lateOrders,
+        orderingCustomersCount: selectedOutlet.uniqueCustomers,
+        repeatCustomersCount: selectedOutlet.repeatCustomers,
+        repeatCustomerRatePercent: selectedOutlet.repeatCustomerRatePercent,
+      }
+    : {
+        label: `All ${summary.outlets.length} Outlets`,
+        totalOrdersCount: summary.totalOrdersCount,
+        totalPaidOrders: summary.totalPaidOrders,
+        activeKitchenOrdersCount: summary.activeKitchenOrdersCount,
+        completedOrders: summary.completedOrders,
+        cancelledOrdersCount: summary.cancelledOrdersCount,
+        cancellationRatePercent: summary.cancellationRatePercent,
+        totalRevenuePaise: summary.totalRevenuePaise,
+        directRegularGMVPaise: summary.totalDirectGMVPaise,
+        cateringGMVPaise: summary.cateringGMVPaise,
+        cateringOrdersCount: summary.cateringOrdersCount,
+        averageOrderValuePaise: summary.averageOrderValuePaise,
+        avgPrepMinutes: summary.avgPrepMinutes,
+        onTimeSlaPercent: summary.onTimeSlaPercent,
+        lateOrdersCount: summary.criticalLateOrders,
+        orderingCustomersCount: summary.orderingCustomersCount,
+        repeatCustomersCount: summary.repeatCustomersCount,
+        repeatCustomerRatePercent: summary.repeatCustomerRatePercent,
+      };
+
+  // Dynamic commission & margin calculations driven by Admin's benchmarks
+  const netDirectSavingsRate = Math.max(
+    0,
+    (benchmarks.aggregatorCommissionPercent -
+      benchmarks.directFulfillmentCostPercent) /
+      100,
+  );
+  const cateringMarginRate = Math.max(0, benchmarks.cateringMarginPercent / 100);
+
+  const dynamicDirectSavingsPaise = Math.round(
+    scopedMetrics.directRegularGMVPaise * netDirectSavingsRate,
+  );
+  const dynamicCateringMarginPaise = Math.round(
+    scopedMetrics.cateringGMVPaise * cateringMarginRate,
+  );
+  const dynamicTotalValuePaise =
+    dynamicDirectSavingsPaise + dynamicCateringMarginPaise;
+
+  const customGoalPaise = benchmarks.customSavingsGoalRupees * 100;
+  const customGoalProgressPercent =
+    customGoalPaise > 0
+      ? Math.min(
+          100,
+          Math.round((dynamicTotalValuePaise / customGoalPaise) * 1000) / 10,
+        )
+      : 0;
+
+  // Filter and sort outlets for the comparison table
+  const filteredOutlets = summary.outlets
+    .filter((outlet) => {
+      if (filterType === "DINE_IN" && outlet.isCloudKitchen) return false;
+      if (filterType === "CLOUD_KITCHEN" && !outlet.isCloudKitchen) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          outlet.name.toLowerCase().includes(q) ||
+          outlet.city.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "ORDERS") return b.totalOrders - a.totalOrders;
+      if (sortBy === "REVENUE") return b.totalRevenuePaise - a.totalRevenuePaise;
+      if (sortBy === "PREP") return a.avgPrepMinutes - b.avgPrepMinutes;
+      if (sortBy === "REPEAT")
+        return b.repeatCustomerRatePercent - a.repeatCustomerRatePercent;
+      if (sortBy === "CANCELLATIONS")
+        return b.cancelledOrders - a.cancelledOrders;
+      return 0;
+    });
+
+  const filteredRecentOrders =
+    selectedOutletId === "ALL"
+      ? summary.recentOrders
+      : summary.recentOrders.filter((o) => o.outletId === selectedOutletId);
 
   return (
-    <div className="space-y-8">
-      {/* Target Realization Hero Banner */}
-      <section className="relative overflow-hidden rounded-[2.25rem] border border-[#1d4c41] bg-gradient-to-br from-[#0b2922] via-[#123d33] to-[#341440] p-6 text-white shadow-[0_18px_48px_rgba(15,53,45,0.18)] sm:p-9">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-20 -right-20 h-72 w-72 rounded-full bg-[#c99b53]/15 blur-3xl"
-        />
-        <div className="relative z-10">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f4d6a9]/35 bg-white/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#f4d6a9]">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                Strategic Disintermediation Tracker
-              </span>
-              <h2 className="font-display mt-3 text-3xl font-bold tracking-tight text-[#fffdfa] sm:text-4xl">
-                ₹1.14 Crore Annual Margin Recovery
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-200/90">
-                Tracking net commission saved on direct orders (15% net margin
-                recovery) plus direct party catering margin captured (30%
-                margin) against third-party aggregator disintermediation.
-              </p>
-            </div>
+    <div className="space-y-7">
+      {/* Top Filter & Admin Benchmark Control Bar */}
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] p-4 shadow-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-[#0f352d]" aria-hidden="true" />
+            <label
+              htmlFor="analytics-outlet-select"
+              className="text-xs font-bold uppercase tracking-wider text-[#635b50]"
+            >
+              Scope:
+            </label>
+            <select
+              id="analytics-outlet-select"
+              value={selectedOutletId}
+              onChange={(e) => setSelectedOutletId(e.target.value)}
+              className="h-9 rounded-xl border border-[#ded2bf] bg-[#faf7f2] px-3 text-xs font-bold text-[#0f352d] outline-none focus:border-[#0f352d]"
+            >
+              <option value="ALL">
+                All Outlets ({summary.outlets.length} locations)
+              </option>
+              <optgroup label="🍽️ Dine-in Outlets">
+                {summary.outlets
+                  .filter((o) => !o.isCloudKitchen)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      🍽️ {o.name} ({o.totalOrders} orders)
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="☁️ Cloud Kitchens">
+                {summary.outlets
+                  .filter((o) => o.isCloudKitchen)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      ☁️ {o.name} ({o.totalOrders} orders)
+                    </option>
+                  ))}
+              </optgroup>
+            </select>
+          </div>
+
+          {selectedOutletId !== "ALL" && (
             <button
               type="button"
-              onClick={() => setShowFormulaModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#f4d6a9]/35 bg-white/10 px-4 py-2.5 text-xs font-bold text-[#f4d6a9] backdrop-blur-xs transition hover:bg-white/20"
+              onClick={() => setSelectedOutletId("ALL")}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#dfd4c2] bg-[#faf7f2] px-2.5 py-1 text-xs font-bold text-[#4a1d5a] hover:bg-[#f0e8dc]"
             >
-              <Info className="h-4 w-4" aria-hidden="true" />
-              View financial model
+              <RotateCcw className="h-3 w-3" />
+              <span>View Chain Total</span>
             </button>
-          </div>
+          )}
+        </div>
 
-          {/* Progress Bar Bento Card */}
-          <div className="mt-7 rounded-2xl border border-white/15 bg-black/25 p-5 backdrop-blur-xs sm:p-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#f4d6a9]">
-                  Value Captured To Date
-                </span>
-                <p className="font-mono-tabular mt-1 text-3xl font-black text-white sm:text-4xl">
-                  {formatRupees(summary.totalValueCapturedPaise)}
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-300">
-                  Annual Benchmark
-                </span>
-                <p className="font-mono-tabular mt-1 text-xl font-bold text-[#f4d6a9]">
-                  {formatRupees(summary.annualTargetPaise)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 h-4 w-full overflow-hidden rounded-full bg-white/12 p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#34d399] via-[#f4d6a9] to-[#d8b4fe] transition-all duration-700"
-                style={{
-                  width: `${Math.max(2, Math.min(100, summary.targetProgressPercent))}%`,
-                }}
-              />
-            </div>
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-200">
-              <span>
-                Direct channel commission savings + Bulk catering captured
-              </span>
-              <span className="font-mono-tabular font-bold text-[#f4d6a9]">
-                {summary.targetProgressPercent}% of annual benchmark
-              </span>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-[11px] font-medium text-[#635b50]">
+            Benchmarks: <strong>{benchmarks.aggregatorCommissionPercent}%</strong>{" "}
+            aggregator vs{" "}
+            <strong>{benchmarks.directFulfillmentCostPercent}%</strong> direct ·
+            Prep SLA <strong>≤{benchmarks.targetPrepMinutes}m</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setDraftBenchmarks(benchmarks);
+              setShowSettingsModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#0f352d]/25 bg-[#eef6f4] px-3.5 py-2 text-xs font-bold text-[#0f352d] transition hover:bg-[#dcedea]"
+          >
+            <Sliders className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Configure Rates & Targets</span>
+          </button>
         </div>
       </section>
 
-      {/* 4 Core Executive Metric Cards */}
+      {/* 4 Primary Business & Operational KPI Cards */}
       <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Direct Commission Saved */}
+        {/* Card 1: Orders & Direct Revenue */}
         <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#0f352d]/40">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
-              Direct Channel Savings
+              Orders & Direct Revenue
             </span>
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d6e8e2] bg-[#eef6f4] text-[#0f352d]">
-              <TrendingUp className="h-5 w-5" aria-hidden="true" />
+              <ShoppingBag className="h-5 w-5" aria-hidden="true" />
             </div>
           </div>
-          <p className="font-mono-tabular mt-4 text-3xl font-black text-[#0f352d]">
-            {formatRupees(summary.commissionSavedPaise)}
-          </p>
-          <p className="mt-2 text-xs leading-5 text-[#544d42]">
-            <strong className="text-[#0f352d]">15% net saved</strong> on{" "}
-            {formatRupees(summary.totalDirectGMVPaise)} direct volume (
-            {summary.directOrdersCount} orders) vs 27% aggregator fee.
-          </p>
-        </div>
-
-        {/* Card 2: Bulk Catering Margin */}
-        <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#3b1747]/40">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
-              Bulk Catering Margin
+          <div className="mt-4 flex items-baseline gap-2.5">
+            <p className="font-mono-tabular text-3xl font-black text-[#0f352d]">
+              {scopedMetrics.totalPaidOrders}
+            </p>
+            <span className="text-xs font-bold text-[#635b50]">
+              paid orders ({formatRupees(scopedMetrics.totalRevenuePaise)})
             </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]">
-              <DollarSign className="h-5 w-5" aria-hidden="true" />
-            </div>
           </div>
-          <p className="font-mono-tabular mt-4 text-3xl font-black text-[#4a1d5a]">
-            {formatRupees(summary.cateringMarginCapturedPaise)}
-          </p>
           <p className="mt-2 text-xs leading-5 text-[#544d42]">
-            <strong className="text-[#4a1d5a]">30% margin captured</strong> on{" "}
-            {formatRupees(summary.cateringGMVPaise)} bulk orders (
-            {summary.cateringOrdersCount} events) recovering phone drop-offs.
-          </p>
-        </div>
-
-        {/* Card 3: First-Party Customer Database (DPDP 2023) */}
-        <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#c99b53]/50">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
-              Customer Database (DPDP)
-            </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] text-[#9e712a]">
-              <Users className="h-5 w-5" aria-hidden="true" />
-            </div>
-          </div>
-          <p className="font-mono-tabular mt-4 text-3xl font-black text-[#1f1c18]">
-            {summary.totalCustomers}{" "}
-            <span className="font-sans text-sm font-semibold text-[#635b50]">
-              Users
-            </span>
-          </p>
-          <p className="mt-2 text-xs leading-5 text-[#544d42]">
-            <strong className="text-[#1f1c18]">
-              {summary.marketingOptInPercent}% opt-in rate
+            Avg order{" "}
+            <strong className="text-[#0f352d]">
+              {formatRupees(scopedMetrics.averageOrderValuePaise)}
             </strong>{" "}
-            ({summary.marketingOptedInCount} opted-in). First-party contacts
-            owned by Company A.
+            ·{" "}
+            <strong className="text-[#0f352d]">
+              {scopedMetrics.activeKitchenOrdersCount}
+            </strong>{" "}
+            live in kitchen ·{" "}
+            <strong className="text-[#4a1d5a]">
+              {scopedMetrics.cateringOrdersCount}
+            </strong>{" "}
+            bulk catering.
           </p>
         </div>
 
-        {/* Card 4: Kitchen SLA & On-time Fulfillment */}
+        {/* Card 2: Prep Time & Kitchen SLA */}
         <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#0f352d]/40">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
-              Kitchen SLA Rate
+              Prep Time & SLA
             </span>
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]">
-              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              <Clock className="h-5 w-5" aria-hidden="true" />
             </div>
           </div>
-          <p className="font-mono-tabular mt-4 text-3xl font-black text-[#0f352d]">
-            {summary.onTimeSlaPercent}%
-          </p>
+          <div className="mt-4 flex items-baseline gap-2.5">
+            <p className="font-mono-tabular text-3xl font-black text-[#0f352d]">
+              {scopedMetrics.avgPrepMinutes}m
+            </p>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] font-bold",
+                scopedMetrics.avgPrepMinutes <= benchmarks.targetPrepMinutes
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-amber-50 text-amber-800",
+              )}
+            >
+              Target ≤{benchmarks.targetPrepMinutes}m
+            </span>
+          </div>
           <p className="mt-2 text-xs leading-5 text-[#544d42]">
-            Avg prep{" "}
-            <strong className="text-[#0f352d]">{summary.avgPrepMinutes}m</strong>{" "}
-            ·{" "}
-            {summary.criticalLateOrders > 0 ? (
+            <strong className="text-[#0f352d]">
+              {scopedMetrics.onTimeSlaPercent}% on-time
+            </strong>{" "}
+            completion ·{" "}
+            {scopedMetrics.lateOrdersCount > 0 ? (
               <span className="font-bold text-rose-700">
-                {summary.criticalLateOrders} late alerts
+                {scopedMetrics.lateOrdersCount} late order
+                {scopedMetrics.lateOrdersCount === 1 ? "" : "s"}
               </span>
             ) : (
               <span className="font-bold text-emerald-700">
-                Zero critical delays
+                0 late alerts
               </span>
             )}
           </p>
         </div>
+
+        {/* Card 3: Cancellations & Order Health */}
+        <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#3b1747]/40">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
+              Cancellations
+            </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-700">
+              <XCircle className="h-5 w-5" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2.5">
+            <p className="font-mono-tabular text-3xl font-black text-[#1f1c18]">
+              {scopedMetrics.cancellationRatePercent}%
+            </p>
+            <span className="text-xs font-bold text-[#635b50]">
+              ({scopedMetrics.cancelledOrdersCount} of{" "}
+              {scopedMetrics.totalOrdersCount} orders)
+            </span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-[#544d42]">
+            {scopedMetrics.cancellationRatePercent <= 5 ? (
+              <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Healthy fulfillment
+                rate
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 font-bold text-amber-800">
+                <AlertTriangle className="h-3.5 w-3.5" /> Review stock & prep
+                delays
+              </span>
+            )}{" "}
+            · {scopedMetrics.completedOrders} fulfilled.
+          </p>
+        </div>
+
+        {/* Card 4: Repeat Customers & First-Party Data */}
+        <div className="rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs transition hover:border-[#c99b53]/50">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#635b50]">
+              Repeat Customers
+            </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] text-[#9e712a]">
+              <Repeat className="h-5 w-5" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2.5">
+            <p className="font-mono-tabular text-3xl font-black text-[#1f1c18]">
+              {scopedMetrics.repeatCustomerRatePercent}%
+            </p>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] font-bold",
+                scopedMetrics.repeatCustomerRatePercent >=
+                  benchmarks.targetRepeatRatePercent
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-[#f7f2fa] text-[#4a1d5a]",
+              )}
+            >
+              Target {benchmarks.targetRepeatRatePercent}%
+            </span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-[#544d42]">
+            <strong className="text-[#1f1c18]">
+              {scopedMetrics.repeatCustomersCount} repeat
+            </strong>{" "}
+            of {scopedMetrics.orderingCustomersCount} ordering customers ·{" "}
+            <strong className="text-[#0f352d]">
+              {summary.marketingOptInPercent}%
+            </strong>{" "}
+            DPDP opt-in ({summary.totalCustomers} profiles).
+          </p>
+        </div>
       </section>
 
-      {/* Outlets Performance Table */}
+      {/* Outlet-by-Outlet Performance Table (Orders, Prep Time, Cancellations, Repeat Customers) */}
       <section className="overflow-hidden rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#ece3d5] pb-5">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a1d5a]">
-              Network Telemetry
+              Per-Outlet Breakdown
             </span>
-            <h3 className="font-display mt-0.5 text-xl font-bold text-[#0f352d]">
-              Outlet & Cloud Kitchen Performance
-            </h3>
+            <h2 className="font-display mt-0.5 text-xl font-bold text-[#0f352d]">
+              Orders, Prep Time, Cancellations & Repeat Customers by Outlet
+            </h2>
             <p className="mt-0.5 text-xs text-[#635b50]">
-              Comparative breakdown across dine-in outlets and cloud kitchens in
-              Hyderabad
+              Click any outlet row to scope the dashboard KPIs, or filter and
+              sort across all {summary.outlets.length} locations
             </p>
           </div>
-          <div className="flex items-center gap-1 rounded-2xl border border-[#dfd4c2] bg-[#faf7f2] p-1 text-xs font-bold">
-            {(
-              [
-                ["ALL", `All Outlets (${summary.outlets.length})`],
-                ["DINE_IN", "Dine-in"],
-                ["CLOUD_KITCHEN", "Cloud Kitchens"],
-              ] as const
-            ).map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setFilterType(val)}
-                className={cn(
-                  "rounded-xl px-3.5 py-1.5 transition",
-                  filterType === val
-                    ? "bg-[#0f352d] text-white shadow-2xs"
-                    : "text-[#544d42] hover:text-[#0f352d]",
-                )}
-              >
-                {label}
-              </button>
-            ))}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Search input */}
+            <label className="flex h-9 items-center gap-2 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-xs">
+              <Search className="h-3.5 w-3.5 text-[#7a6f60]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search outlet..."
+                className="w-32 bg-transparent font-medium text-[#1f1c18] outline-none placeholder:text-[#8f8474] sm:w-40"
+              />
+            </label>
+
+            {/* Format filter */}
+            <div className="flex items-center gap-1 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] p-1 text-xs font-bold">
+              {(
+                [
+                  ["ALL", `All (${summary.outlets.length})`],
+                  [
+                    "DINE_IN",
+                    `Dine-in (${summary.outlets.filter((o) => !o.isCloudKitchen).length})`,
+                  ],
+                  [
+                    "CLOUD_KITCHEN",
+                    `Cloud (${summary.outlets.filter((o) => o.isCloudKitchen).length})`,
+                  ],
+                ] as const
+              ).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setFilterType(val)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 transition",
+                    filterType === val
+                      ? "bg-[#0f352d] text-white shadow-2xs"
+                      : "text-[#544d42] hover:text-[#0f352d]",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort selector */}
+            <select
+              aria-label="Sort outlets by"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="h-9 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-2.5 text-xs font-bold text-[#0f352d] outline-none"
+            >
+              <option value="ORDERS">Sort: Most Orders</option>
+              <option value="REVENUE">Sort: Highest Revenue</option>
+              <option value="PREP">Sort: Fastest Prep Time</option>
+              <option value="REPEAT">Sort: Repeat Customer %</option>
+              <option value="CANCELLATIONS">Sort: Cancellations</option>
+            </select>
           </div>
         </div>
 
@@ -258,311 +547,604 @@ export function ExecutiveDashboard({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-[#dfd4c2] text-[11px] font-bold uppercase tracking-wider text-[#635b50]">
-                <th className="py-3.5 pr-4">Outlet Name</th>
+                <th className="py-3.5 pr-4">Outlet</th>
                 <th className="py-3.5 pr-4">Format</th>
                 <th className="py-3.5 pr-4 text-right">Orders</th>
                 <th className="py-3.5 pr-4 text-right">Direct Revenue</th>
-                <th className="py-3.5 pr-4 text-right">Commission Saved</th>
-                <th className="py-3.5 pr-4 text-right">Catering</th>
-                <th className="py-3.5 pr-4 text-right">On-time SLA</th>
-                <th className="py-3.5 text-right">Avg Prep</th>
+                <th className="py-3.5 pr-4 text-right">Avg Prep Time</th>
+                <th className="py-3.5 pr-4 text-right">On-Time SLA</th>
+                <th className="py-3.5 pr-4 text-right">Cancellations</th>
+                <th className="py-3.5 pr-4 text-right">Repeat Customers</th>
+                <th className="py-3.5 text-right">
+                  Est. Saved (
+                  {Math.max(
+                    0,
+                    benchmarks.aggregatorCommissionPercent -
+                      benchmarks.directFulfillmentCostPercent,
+                  )}
+                  %)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#ece3d5]">
-              {filteredOutlets.map((outlet) => (
-                <tr
-                  key={outlet.id}
-                  className="transition hover:bg-[#faf7f2]/80"
-                >
-                  <td className="py-4 pr-4 font-bold text-[#0f352d]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]">
-                        <Building2 className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                      <span>{outlet.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 pr-4">
-                    {outlet.isCloudKitchen ? (
-                      <span className="inline-block rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
-                        Cloud Kitchen
-                      </span>
-                    ) : (
-                      <span className="inline-block rounded-full border border-[#d6e8e2] bg-[#eef6f4] px-2.5 py-0.5 text-[10px] font-bold text-[#0f352d]">
-                        Dine-in Outlet
-                      </span>
-                    )}
-                  </td>
-                  <td className="font-mono-tabular py-4 pr-4 text-right font-semibold text-[#1f1c18]">
-                    {outlet.totalOrders}
-                  </td>
-                  <td className="font-mono-tabular py-4 pr-4 text-right font-bold text-[#0f352d]">
-                    {formatRupees(outlet.totalRevenuePaise)}
-                  </td>
-                  <td className="font-mono-tabular py-4 pr-4 text-right font-extrabold text-emerald-700">
-                    {formatRupees(outlet.commissionSavedPaise)}
-                  </td>
-                  <td className="py-4 pr-4 text-right font-semibold text-[#4a1d5a]">
-                    {outlet.cateringOrders > 0
-                      ? `${outlet.cateringOrders} orders`
-                      : "—"}
-                  </td>
-                  <td className="font-mono-tabular py-4 pr-4 text-right font-bold">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-0.5 text-[11px]",
-                        outlet.onTimePercent >= 90
-                          ? "bg-emerald-50 text-emerald-800"
-                          : "bg-amber-50 text-amber-800",
-                      )}
-                    >
-                      {outlet.onTimePercent}%
-                    </span>
-                  </td>
-                  <td className="font-mono-tabular py-4 text-right font-medium text-[#544d42]">
-                    {outlet.avgPrepMinutes}m
+              {filteredOutlets.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="py-10 text-center text-xs text-[#635b50]"
+                  >
+                    No outlets match your filter criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOutlets.map((outlet) => {
+                  const isSelected = selectedOutletId === outlet.id;
+                  const outletDirectSaved = Math.round(
+                    outlet.directRegularRevenuePaise * netDirectSavingsRate,
+                  );
+                  const outletCatSaved = Math.round(
+                    outlet.cateringRevenuePaise * cateringMarginRate,
+                  );
+                  const outletTotalSaved = outletDirectSaved + outletCatSaved;
+
+                  return (
+                    <tr
+                      key={outlet.id}
+                      onClick={() =>
+                        setSelectedOutletId(
+                          isSelected ? "ALL" : outlet.id,
+                        )
+                      }
+                      className={cn(
+                        "cursor-pointer transition",
+                        isSelected
+                          ? "bg-[#eef6f4]"
+                          : "hover:bg-[#faf7f2]/80",
+                      )}
+                    >
+                      <td className="py-4 pr-4 font-bold text-[#0f352d]">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#dec9ec] bg-[#f7f2fa] text-[#4a1d5a]">
+                            <Building2
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </span>
+                          <div>
+                            <span className="block">{outlet.name}</span>
+                            {outlet.activeKitchenOrders > 0 && (
+                              <span className="text-[10px] font-semibold text-emerald-700">
+                                {outlet.activeKitchenOrders} active in kitchen
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 pr-4">
+                        {outlet.isCloudKitchen ? (
+                          <span className="inline-block rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
+                            ☁️ Cloud Kitchen
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full border border-[#d6e8e2] bg-[#eef6f4] px-2.5 py-0.5 text-[10px] font-bold text-[#0f352d]">
+                            🍽️ Dine-in
+                          </span>
+                        )}
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right">
+                        <span className="font-bold text-[#1f1c18]">
+                          {outlet.paidOrders}
+                        </span>
+                        {outlet.cateringOrders > 0 && (
+                          <span className="block text-[10px] font-semibold text-[#4a1d5a]">
+                            incl. {outlet.cateringOrders} catering
+                          </span>
+                        )}
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right">
+                        <span className="font-bold text-[#0f352d]">
+                          {formatRupees(outlet.totalRevenuePaise)}
+                        </span>
+                        {outlet.averageOrderValuePaise > 0 && (
+                          <span className="block text-[10px] text-[#635b50]">
+                            AOV {formatRupees(outlet.averageOrderValuePaise)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right">
+                        <span
+                          className={cn(
+                            "font-bold",
+                            outlet.avgPrepMinutes <=
+                              benchmarks.targetPrepMinutes
+                              ? "text-[#0f352d]"
+                              : "text-amber-800",
+                          )}
+                        >
+                          {outlet.avgPrepMinutes}m
+                        </span>
+                        <span className="block text-[10px] text-[#635b50]">
+                          min {outlet.minimumPrepMinutes}m
+                        </span>
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right font-bold">
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[11px]",
+                            outlet.onTimePercent >= 90
+                              ? "bg-emerald-50 text-emerald-800"
+                              : "bg-amber-50 text-amber-800",
+                          )}
+                        >
+                          {outlet.onTimePercent}%
+                        </span>
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right">
+                        <span
+                          className={cn(
+                            "font-bold",
+                            outlet.cancelledOrders > 0
+                              ? "text-rose-700"
+                              : "text-[#544d42]",
+                          )}
+                        >
+                          {outlet.cancelledOrders}
+                        </span>
+                        <span className="block text-[10px] text-[#635b50]">
+                          {outlet.cancellationRatePercent}% rate
+                        </span>
+                      </td>
+                      <td className="font-mono-tabular py-4 pr-4 text-right">
+                        <span className="font-bold text-[#0f352d]">
+                          {outlet.repeatCustomerRatePercent}%
+                        </span>
+                        <span className="block text-[10px] text-[#635b50]">
+                          {outlet.repeatCustomers}/{outlet.uniqueCustomers}{" "}
+                          customers
+                        </span>
+                      </td>
+                      <td className="font-mono-tabular py-4 text-right font-extrabold text-emerald-700">
+                        {formatRupees(outletTotalSaved)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* Recent Orders & Channels Activity */}
+      {/* Bottom Split: Recent Orders Feed + Admin-Configurable Commission & Savings Estimator */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Recent High-Value Orders */}
+        {/* Recent Orders Stream */}
         <div className="rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-[#ece3d5] pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ece3d5] pb-4">
             <div>
               <h3 className="font-display text-lg font-bold text-[#0f352d]">
-                Recent Direct Orders
+                Recent Orders ({scopedMetrics.label})
               </h3>
               <p className="text-xs text-[#635b50]">
-                Latest paid customer orders across channels
+                Live order feed including status, preparation time, and channel
+                type
               </p>
             </div>
             <Link
               href="/kitchen"
               className="inline-flex items-center gap-1 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3 py-1.5 text-xs font-bold text-[#4a1d5a] transition hover:bg-[#ede0f5]"
             >
-              Open Kitchen Board{" "}
+              Open Kitchen KDS{" "}
               <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
 
           <div className="mt-3 divide-y divide-[#ece3d5]">
-            {summary.recentOrders.length === 0 ? (
+            {filteredRecentOrders.length === 0 ? (
               <p className="py-10 text-center text-xs text-[#635b50]">
-                No paid orders yet.
+                No orders recorded for this outlet yet.
               </p>
             ) : (
-              summary.recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3.5"
-                >
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-xs font-extrabold text-[#0f352d]">
-                        {order.orderNumber}
-                      </span>
-                      {order.isCatering ? (
-                        <span className="rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
-                          🎉 Bulk Catering ({order.guestCount} guests)
+              filteredRecentOrders.slice(0, 10).map((order) => {
+                const dynamicOrderSaved =
+                  order.status === "CANCELLED"
+                    ? 0
+                    : order.isCatering
+                      ? Math.round(order.totalPaise * cateringMarginRate)
+                      : Math.round(order.totalPaise * netDirectSavingsRate);
+
+                return (
+                  <div
+                    key={order.id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3.5"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-extrabold text-[#0f352d]">
+                          {order.orderNumber}
                         </span>
-                      ) : (
-                        <span className="rounded-full border border-[#d6e8e2] bg-[#eef6f4] px-2.5 py-0.5 text-[10px] font-bold text-[#0f352d]">
-                          Direct Food Order
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                            order.status === "CANCELLED"
+                              ? "bg-rose-100 text-rose-800"
+                              : order.status === "READY" ||
+                                  order.status === "HANDED_OFF"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-900",
+                          )}
+                        >
+                          {order.status.replace("_", " ")}
                         </span>
+                        {order.isCatering ? (
+                          <span className="rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
+                            🎉 Bulk Catering ({order.guestCount} guests)
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-[#d6e8e2] bg-[#eef6f4] px-2.5 py-0.5 text-[10px] font-bold text-[#0f352d]">
+                            Direct Order
+                          </span>
+                        )}
+                        {order.prepMinutes && order.status !== "CANCELLED" && (
+                          <span className="text-[11px] font-medium text-[#635b50]">
+                            · Prep ~{order.prepMinutes}m
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-[#635b50]">
+                        {order.outletName} · {order.customerName}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={cn(
+                          "font-mono-tabular font-extrabold",
+                          order.status === "CANCELLED"
+                            ? "text-stone-400 line-through"
+                            : "text-[#1f1c18]",
+                        )}
+                      >
+                        {formatRupees(order.totalPaise)}
+                      </p>
+                      {order.status !== "CANCELLED" && (
+                        <p className="font-mono-tabular text-[11px] font-bold text-emerald-700">
+                          +{formatRupees(dynamicOrderSaved)} net saved
+                        </p>
                       )}
                     </div>
-                    <p className="mt-1 text-xs text-[#635b50]">
-                      {order.outletName} · {order.customerName}
-                    </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono-tabular font-extrabold text-[#1f1c18]">
-                      {formatRupees(order.totalPaise)}
-                    </p>
-                    <p className="font-mono-tabular text-[11px] font-bold text-emerald-700">
-                      +{formatRupees(order.commissionSavedPaise)} margin saved
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Strategic Channels Summary */}
-        <div className="rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-[#c99b53]" aria-hidden="true" />
-            <h3 className="font-display text-lg font-bold text-[#0f352d]">
-              Channel Margin Health
-            </h3>
-          </div>
-          <p className="mt-0.5 text-xs text-[#635b50]">
-            Direct channel vs aggregator cost structure
-          </p>
-
-          <div className="mt-5 space-y-3.5">
-            <div className="rounded-2xl border border-[#a7f3d0] bg-[#ecfdf5]/60 p-4">
-              <div className="flex items-center justify-between text-xs font-bold text-[#0f352d]">
-                <span>Proprietary Direct Web</span>
-                <span className="rounded-md bg-[#0f352d] px-2 py-0.5 text-[10px] text-[#f4d6a9]">
-                  12% total cost
-                </span>
-              </div>
-              <p className="mt-1.5 text-xs leading-5 text-[#4e473d]">
-                Includes digital payment gateway fee + third-party rider
-                delivery. Leaves{" "}
-                <strong className="text-emerald-900">
-                  88% net to restaurant
-                </strong>
-                .
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] p-4">
-              <div className="flex items-center justify-between text-xs font-bold text-[#4a1d5a]">
-                <span>Party Catering Wizard</span>
-                <span className="rounded-md bg-[#3b1747] px-2 py-0.5 text-[10px] text-[#f4d6a9]">
-                  30% gross margin
-                </span>
-              </div>
-              <p className="mt-1.5 text-xs leading-5 text-[#4e473d]">
-                100% direct capture of ₹18,000 average bulk orders, eliminating
-                telephone drop-offs.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
-              <div className="flex items-center justify-between text-xs font-bold text-rose-900">
-                <span>Food Delivery Aggregators</span>
-                <span className="rounded-md bg-rose-200/80 px-2 py-0.5 text-[10px] text-rose-950">
-                  27% avg commission
-                </span>
-              </div>
-              <p className="mt-1.5 text-xs leading-5 text-[#4e473d]">
-                Withholds customer contact info; restaurant retains only 73% of
-                gross merchandise value.
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href="/admin/menu"
-            className="mt-5 flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-4 text-xs font-bold text-[#0f352d] transition hover:bg-[#f2ebe0]"
-          >
-            <span>Manage Central Menu & Pricing</span>
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
-
-      {/* Financial Formula Rationale Modal */}
-      {showFormulaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#140d18]/60 p-4 backdrop-blur-xs">
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-[#ece3d5] pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef6f4] text-[#0f352d]">
-                  <TrendingUp className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-xl font-bold text-[#0f352d]">
-                  Financial Model & ₹1.14 Cr Formula
+        {/* Admin-Configurable Commission & Margin Simulator */}
+        <div className="flex flex-col justify-between rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-xs">
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp
+                  className="h-5 w-5 text-[#0f352d]"
+                  aria-hidden="true"
+                />
+                <h3 className="font-display text-lg font-bold text-[#0f352d]">
+                  Commission & Margin Simulator
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setShowFormulaModal(false)}
-                className="rounded-full border border-[#e2d8c7] p-2 text-[#635b50] hover:bg-[#f0e8dc]"
+                onClick={() => {
+                  setDraftBenchmarks(benchmarks);
+                  setShowSettingsModal(true);
+                }}
+                className="rounded-lg border border-[#dfd4c2] bg-[#faf7f2] px-2.5 py-1 text-[11px] font-bold text-[#0f352d] hover:bg-[#f0e8dc]"
+              >
+                Edit Rates
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-[#635b50]">
+              Calculated on live orders in{" "}
+              <strong>{scopedMetrics.label}</strong> using your configured cost
+              structure
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="rounded-2xl border border-[#d6e8e2] bg-[#eef6f4]/70 p-4">
+                <div className="flex items-center justify-between text-xs font-bold text-[#0f352d]">
+                  <span>Direct Ordering Net Savings</span>
+                  <span className="rounded-md bg-[#0f352d] px-2 py-0.5 text-[10px] text-[#f4d6a9]">
+                    {Math.max(
+                      0,
+                      benchmarks.aggregatorCommissionPercent -
+                        benchmarks.directFulfillmentCostPercent,
+                    )}
+                    % saved
+                  </span>
+                </div>
+                <p className="font-mono-tabular mt-2 text-2xl font-black text-[#0f352d]">
+                  {formatRupees(dynamicDirectSavingsPaise)}
+                </p>
+                <p className="mt-1 text-[11px] leading-4 text-[#4e473d]">
+                  {benchmarks.aggregatorCommissionPercent}% aggregator fee minus{" "}
+                  {benchmarks.directFulfillmentCostPercent}% direct payment &
+                  delivery cost on{" "}
+                  {formatRupees(scopedMetrics.directRegularGMVPaise)} direct
+                  sales.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] p-4">
+                <div className="flex items-center justify-between text-xs font-bold text-[#4a1d5a]">
+                  <span>Bulk Catering Margin</span>
+                  <span className="rounded-md bg-[#3b1747] px-2 py-0.5 text-[10px] text-[#f4d6a9]">
+                    {benchmarks.cateringMarginPercent}% margin
+                  </span>
+                </div>
+                <p className="font-mono-tabular mt-2 text-2xl font-black text-[#4a1d5a]">
+                  {formatRupees(dynamicCateringMarginPaise)}
+                </p>
+                <p className="mt-1 text-[11px] leading-4 text-[#4e473d]">
+                  {benchmarks.cateringMarginPercent}% gross margin on{" "}
+                  {formatRupees(scopedMetrics.cateringGMVPaise)} across{" "}
+                  {scopedMetrics.cateringOrdersCount} catering events.
+                </p>
+              </div>
+
+              {benchmarks.enableSavingsGoal && (
+                <div className="rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#1f1c18]">
+                    <span>Custom Target Progress</span>
+                    <span className="font-mono-tabular text-[#0f352d]">
+                      {customGoalProgressPercent}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-[#e5d5b5]">
+                    <div
+                      className="h-full rounded-full bg-[#0f352d] transition-all duration-500"
+                      style={{
+                        width: `${Math.max(2, Math.min(100, customGoalProgressPercent))}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] text-[#544d42]">
+                    <strong>{formatRupees(dynamicTotalValuePaise)}</strong>{" "}
+                    captured toward your{" "}
+                    <strong>{formatRupees(customGoalPaise)}</strong> configured
+                    target.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-2">
+            <Link
+              href="/admin/menu"
+              className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-4 text-xs font-bold text-[#0f352d] transition hover:bg-[#f2ebe0]"
+            >
+              <span>Manage Central Menu & Pricing</span>
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/admin/outlets"
+              className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-4 text-xs font-bold text-[#0f352d] transition hover:bg-[#f2ebe0]"
+            >
+              <span>Manage Outlets & Prep Baselines</span>
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Admin Benchmark & Target Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#140d18]/60 p-4 backdrop-blur-xs">
+          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-2xl sm:p-8">
+            <div className="flex items-center justify-between border-b border-[#ece3d5] pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef6f4] text-[#0f352d]">
+                  <Sliders className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-[#0f352d]">
+                    Configure Analytics Benchmarks & Targets
+                  </h3>
+                  <p className="text-[11px] text-[#635b50]">
+                    Set your chain&apos;s commission rates, SLA targets, and
+                    savings goals
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="rounded-full border border-[#e2d8c7] px-2.5 py-1 text-xs font-bold text-[#635b50] hover:bg-[#f0e8dc]"
               >
                 ✕
               </button>
             </div>
 
-            <div className="mt-5 space-y-4 text-xs leading-relaxed text-[#544d42]">
-              <div className="rounded-2xl border border-[#dfd4c2] bg-[#faf7f2] p-4">
-                <h4 className="font-display text-sm font-bold text-[#0f352d]">
-                  1. Direct Orders Channel Shift (₹95.04 Lakh/yr)
-                </h4>
-                <ul className="mt-2 list-disc space-y-1 pl-4">
-                  <li>
-                    Total Annual Chain Revenue: <strong>₹96.00 Crore</strong>
-                  </li>
-                  <li>
-                    Food Delivery App Sales (55%): <strong>₹52.80 Crore</strong>
-                  </li>
-                  <li>
-                    Target Shift to Direct (12% of app volume):{" "}
-                    <strong>₹6.336 Crore</strong>
-                  </li>
-                  <li>
-                    Average Aggregator Commission: <strong>27%</strong>
-                  </li>
-                  <li>
-                    Direct Payment & Delivery Costs: <strong>12%</strong>
-                  </li>
-                  <li>
-                    Net Points Saved on Direct:{" "}
-                    <strong>27% - 12% = 15 points (15%)</strong>
-                  </li>
-                  <li>
-                    Annual Savings:{" "}
-                    <strong>15% on ₹6.336 Crore = ₹95.04 Lakh</strong>
-                  </li>
-                </ul>
+            <form onSubmit={handleSaveBenchmarks} className="mt-5 space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Aggregator Commission (%)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Avg fee charged by delivery apps
+                  </p>
+                  <input
+                    type="number"
+                    min={0}
+                    max={60}
+                    step={0.5}
+                    value={draftBenchmarks.aggregatorCommissionPercent}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        aggregatorCommissionPercent: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Direct Fulfillment Cost (%)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Payment gateway + 3PL rider cost
+                  </p>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    step={0.5}
+                    value={draftBenchmarks.directFulfillmentCostPercent}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        directFulfillmentCostPercent: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Bulk Catering Margin (%)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Gross margin on party orders
+                  </p>
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    step={1}
+                    value={draftBenchmarks.cateringMarginPercent}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        cateringMarginPercent: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Target Prep Time SLA (mins)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Benchmark kitchen prep duration
+                  </p>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    step={1}
+                    value={draftBenchmarks.targetPrepMinutes}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        targetPrepMinutes: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Target Repeat Customer Rate (%)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Retention benchmark for direct orders
+                  </p>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={draftBenchmarks.targetRepeatRatePercent}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        targetRepeatRatePercent: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f352d]">
+                    Custom Savings Goal (₹)
+                  </label>
+                  <p className="mb-1.5 text-[11px] text-[#635b50]">
+                    Your target savings milestone
+                  </p>
+                  <input
+                    type="number"
+                    min={1000}
+                    step={5000}
+                    disabled={!draftBenchmarks.enableSavingsGoal}
+                    value={draftBenchmarks.customSavingsGoalRupees}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        customSavingsGoalRupees: Number(e.target.value),
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-sm font-bold text-[#0f352d] disabled:opacity-50"
+                  />
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-[#dec9ec] bg-[#f7f2fa] p-4">
-                <h4 className="font-display text-sm font-bold text-[#4a1d5a]">
-                  2. Party & Bulk Orders Leakage Capture (₹19.44 Lakh/yr)
-                </h4>
-                <ul className="mt-2 list-disc space-y-1 pl-4">
-                  <li>
-                    Phone Line Lost Orders: <strong>30 orders/month</strong>
-                  </li>
-                  <li>
-                    Average Ticket Size:{" "}
-                    <strong>₹18,000 per party order</strong>
-                  </li>
-                  <li>
-                    Gross Margin:{" "}
-                    <strong>30% (₹5,400 margin per order)</strong>
-                  </li>
-                  <li>
-                    Annual Value Saved:{" "}
-                    <strong>30 × ₹5,400 × 12 months = ₹19.44 Lakh</strong>
-                  </li>
-                </ul>
-              </div>
+              <label className="flex items-center gap-2.5 rounded-xl border border-[#ece3d5] bg-[#faf7f2] p-3 text-xs font-bold text-[#0f352d]">
+                <input
+                  type="checkbox"
+                  checked={draftBenchmarks.enableSavingsGoal}
+                  onChange={(e) =>
+                    setDraftBenchmarks((prev) => ({
+                      ...prev,
+                      enableSavingsGoal: e.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded accent-[#0f352d]"
+                />
+                <span>Display savings goal progress bar on dashboard</span>
+              </label>
 
-              <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4">
-                <h4 className="font-bold text-emerald-900">
-                  Total Net Bottom-Line Addition:
-                </h4>
-                <p className="font-mono-tabular mt-1 text-base font-black text-emerald-950">
-                  ₹95.04 Lakh + ₹19.44 Lakh = ₹1.1448 Crore / year
-                </p>
-                <p className="mt-1 text-[11px] text-emerald-800">
-                  Calculated automatically on every paid order placed through
-                  this direct-ordering platform.
-                </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#ece3d5] pt-4">
+                <button
+                  type="button"
+                  onClick={handleResetDefaults}
+                  className="rounded-xl border border-[#dfd4c2] px-3.5 py-2 text-xs font-bold text-[#635b50] hover:bg-[#faf7f2]"
+                >
+                  Reset to Defaults
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSettingsModal(false)}
+                    className="rounded-xl border border-[#dfd4c2] px-4 py-2 text-xs font-bold text-[#544d42] hover:bg-[#faf7f2]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-[#0f352d] px-5 py-2 text-xs font-bold text-white hover:bg-[#08231d]"
+                  >
+                    Save Benchmarks
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowFormulaModal(false)}
-                className="rounded-xl bg-[#0f352d] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#08231d]"
-              >
-                Close Model
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

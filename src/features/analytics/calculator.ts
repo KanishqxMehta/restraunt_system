@@ -52,3 +52,32 @@ export function calculateOnTimeSlaPercent(onTime: number, totalCompleted: number
   if (totalCompleted <= 0) return 100;
   return Math.round((onTime / totalCompleted) * 100);
 }
+
+/**
+ * Computes order cancellation rate percentage (cancelled orders vs total orders).
+ */
+export function calculateCancellationRatePercent(cancelled: number, totalOrders: number): number {
+  if (totalOrders <= 0 || cancelled <= 0) return 0;
+  return Math.round((cancelled / totalOrders) * 1000) / 10;
+}
+
+/**
+ * Computes repeat customer retention rate percentage (customers with 2+ orders vs total ordering customers).
+ */
+export function calculateRepeatCustomerRatePercent(repeatCustomers: number, totalOrderingCustomers: number): number {
+  if (totalOrderingCustomers <= 0 || repeatCustomers <= 0) return 0;
+  return Math.round((repeatCustomers / totalOrderingCustomers) * 100);
+}
+
+/**
+ * Calculates net commission savings using admin-configured aggregator and direct cost percentages.
+ */
+export function calculateCustomDirectSavings(
+  directGmvPaise: number,
+  aggregatorRatePercent: number,
+  directCostRatePercent: number,
+): number {
+  if (directGmvPaise <= 0) return 0;
+  const netRate = Math.max(0, (aggregatorRatePercent - directCostRatePercent) / 100);
+  return Math.round(directGmvPaise * netRate);
+}
