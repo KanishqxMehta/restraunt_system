@@ -4,6 +4,7 @@ import { UtensilsCrossed, ShieldCheck, Sparkles } from "lucide-react";
 import type { Viewer } from "@/features/auth/policy";
 import { roleLabels } from "@/features/auth/roles";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { DemoRoleSwitcher } from "@/features/auth/components/demo-role-switcher";
 import { WorkspaceNav } from "./workspace-nav";
 
 export function WorkspaceShell({
@@ -82,7 +83,7 @@ export function WorkspaceShell({
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-8 sm:py-10"
       >
         {process.env.ENABLE_DEMO_DATA === "true" && (
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#e2d4be] bg-gradient-to-r from-[#fcf8f0] via-[#fffdfa] to-[#f7f2fa] px-4 py-2.5 text-xs text-[#544d42] shadow-2xs">
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e2d4be] bg-gradient-to-r from-[#fcf8f0] via-[#fffdfa] to-[#f7f2fa] px-4 py-2.5 text-xs text-[#544d42] shadow-2xs">
             <p className="flex items-center gap-2 leading-5">
               <Sparkles
                 className="h-3.5 w-3.5 shrink-0 text-[#c99b53]"
@@ -96,9 +97,7 @@ export function WorkspaceShell({
                 synthetic.
               </span>
             </p>
-            <span className="hidden rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#4a1d5a] sm:inline-block">
-              Zero Aggregator Markup
-            </span>
+            <DemoRoleSwitcher currentEmail={viewer.email} />
           </div>
         )}
         {children}

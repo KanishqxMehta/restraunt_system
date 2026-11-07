@@ -83,13 +83,16 @@ export function DemoAccountPicker() {
                 key={account.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e5dbc9] bg-[#fffdfa] p-3 text-xs shadow-2xs hover:border-[#0f352d]/40 transition"
               >
-                <div>
+                <div className="min-w-0 flex-1">
                   <span className="block font-bold text-[#1f1c18]">
                     {account.name}
                   </span>
                   <code className="font-mono text-[11px] break-all text-[#4a1d5a]">
                     {account.email}
                   </code>
+                  <p className="mt-0.5 text-[11px] leading-4 text-[#635b50]">
+                    {account.summary}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
