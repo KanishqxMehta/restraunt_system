@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { DishImage } from "./dish-image";
 import { parseTimeToMinute } from "../time-windows";
 import { requestJson, errorMessage } from "@/lib/http-client";
@@ -44,6 +45,7 @@ interface CreateDishModalProps {
 }
 
 export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
+  const alert = useAlert();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -124,10 +126,16 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
         body: JSON.stringify(payload),
       });
 
+      alert.success(
+        "Menu Dish Created",
+        `"${res.item.name}" has been added to the Central Menu CMS.`,
+      );
       onCreated(res.item);
       onClose();
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Failed to Create Dish", msg);
     } finally {
       setSubmitting(false);
     }
@@ -137,12 +145,12 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
     <Modal title="Add menu item" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-          >
-            {error}
-          </div>
+          <AlertBanner
+            variant="failure"
+            title="Could Not Create Dish"
+            message={error}
+            onDismiss={() => setError("")}
+          />
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">

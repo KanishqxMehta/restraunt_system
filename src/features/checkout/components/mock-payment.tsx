@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Lock, CheckCircle2, XCircle, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { useCart } from "@/features/cart/context";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { formatMoney } from "@/lib/format";
@@ -20,6 +21,7 @@ export function MockPayment({
 }) {
   const router = useRouter();
   const cart = useCart();
+  const alert = useAlert();
   const [method, setMethod] = useState(order.paymentMethod);
   const [outcome, setOutcome] = useState<Outcome>("SUCCESS");
   const [pending, setPending] = useState(false);
@@ -57,17 +59,28 @@ export function MockPayment({
       attempt.current = null;
       if (response.paid) {
         cart.clear();
+        alert.success(
+          "Payment Successful · Order Dispatched",
+          `Order ${order.orderNumber} has been sent directly to ${order.outlet.name}.`,
+        );
         router.replace(`/orders/${response.id}`);
         router.refresh();
         return;
       }
-      setMessage(
+      const nextMsg =
         response.outcome === "FAILED"
           ? "Test payment was declined. Nothing was charged. Choose success and try again when ready."
-          : "Test payment was cancelled. Your unpaid order has not been sent to the kitchen. You can retry.",
-      );
+          : "Test payment was cancelled. Your unpaid order has not been sent to the kitchen. You can retry.";
+      setMessage(nextMsg);
+      if (response.outcome === "FAILED") {
+        alert.failure("Payment Declined", nextMsg);
+      } else {
+        alert.general("Payment Cancelled", nextMsg);
+      }
     } catch (error) {
-      setMessage(errorMessage(error));
+      const msg = errorMessage(error);
+      setMessage(msg);
+      alert.failure("Payment Gateway Error", msg);
       if (error instanceof ClientError) {
         attempt.current = null;
         if ([400, 404, 409, 410].includes(error.status)) setRestart(true);
@@ -192,12 +205,18 @@ export function MockPayment({
         </fieldset>
 
         {message && (
-          <p
-            role="alert"
-            className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-950"
-          >
-            {message}
-          </p>
+          <div className="mb-5">
+            <AlertBanner
+              variant={outcome === "FAILED" ? "failure" : "general"}
+              title={
+                outcome === "FAILED"
+                  ? "Test Payment Declined"
+                  : "Test Payment Notice"
+              }
+              message={message}
+              onDismiss={() => setMessage("")}
+            />
+          </div>
         )}
 
         {restart ? (

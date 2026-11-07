@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { useAlert } from "@/components/ui/alert-toast";
 import { formatMoney } from "@/lib/format";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import {
@@ -44,6 +45,7 @@ export function PartyCateringExperience({
   outlets,
 }: PartyCateringExperienceProps) {
   const router = useRouter();
+  const alert = useAlert();
 
   // Headcount & Menu Preferences
   const [guestCount, setGuestCount] = useState<number>(30);
@@ -107,16 +109,17 @@ export function PartyCateringExperience({
     setError("");
 
     if (!deliveryAddress.trim() || deliveryAddress.trim().length < 10) {
-      setError(
-        "Please provide a detailed delivery address (at least 10 characters).",
-      );
+      const msg =
+        "Please provide a detailed delivery address (at least 10 characters).";
+      setError(msg);
+      alert.failure("Delivery Address Required", msg);
       return;
     }
 
     if (!quote.isValidLeadTime) {
-      setError(
-        `Catering orders require at least ${quote.minLeadTimeHours} hours advance notice. Selected slot is in ${quote.leadTimeHours} hours.`,
-      );
+      const msg = `Catering orders require at least ${quote.minLeadTimeHours} hours advance notice. Selected slot is in ${quote.leadTimeHours} hours.`;
+      setError(msg);
+      alert.failure("Advance Notice Required", msg);
       return;
     }
 
@@ -138,10 +141,16 @@ export function PartyCateringExperience({
         }),
       });
 
+      alert.success(
+        "Party Catering Request Placed",
+        `Order ${res.order.orderNumber} submitted for ${quote.guestCount} guests. Awaiting Catering Manager confirmation.`,
+      );
       router.push(`/orders/${res.order.id}`);
       router.refresh();
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Catering Booking Failed", msg);
     } finally {
       setSubmitting(false);
     }

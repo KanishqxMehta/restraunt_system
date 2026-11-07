@@ -10,6 +10,7 @@ import {
   Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "./dietary-mark";
 import { DishImage } from "./dish-image";
 import { CreateDishModal } from "./create-dish-modal";
@@ -27,6 +28,7 @@ interface AdminMenuBoardProps {
 }
 
 export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
+  const alert = useAlert();
   const [items, setItems] = useState<AdminMenuItem[]>(initialItems);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -119,10 +121,16 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         }),
       });
 
+      const msg = `Stock updated for ${!currentAvailable ? "In stock" : "Paused"}.`;
       setFeedback({
-        message: `Stock updated for ${!currentAvailable ? "In stock" : "Paused"}.`,
+        message: msg,
         type: "success",
       });
+      if (!currentAvailable) {
+        alert.success("Outlet Stock Restored", msg);
+      } else {
+        alert.general("Outlet Stock Paused", msg);
+      }
     } catch (err) {
       // Revert optimistic update
       setItems((prev) =>
@@ -136,10 +144,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           return { ...item, availability: revertedAvail };
         }),
       );
+      const msg = `Failed to update stock: ${errorMessage(err)}`;
       setFeedback({
-        message: `Failed to update stock: ${errorMessage(err)}`,
+        message: msg,
         type: "error",
       });
+      alert.failure("Stock Update Failed", errorMessage(err));
     } finally {
       setTogglingMap((prev) => ({ ...prev, [toggleKey]: false }));
     }
@@ -160,15 +170,23 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           i.id === itemId ? { ...i, isActive: res.item.isActive } : i,
         ),
       );
+      const msg = `Dish "${res.item.name}" ${res.item.isActive ? "activated" : "deactivated"} successfully.`;
       setFeedback({
-        message: `Dish ${res.item.isActive ? "activated" : "deactivated"} successfully.`,
+        message: msg,
         type: "success",
       });
+      if (res.item.isActive) {
+        alert.success("Dish Activated", msg);
+      } else {
+        alert.general("Dish Deactivated", msg);
+      }
     } catch (err) {
+      const msg = `Failed to change status: ${errorMessage(err)}`;
       setFeedback({
-        message: `Failed to change status: ${errorMessage(err)}`,
+        message: msg,
         type: "error",
       });
+      alert.failure("Status Change Failed", errorMessage(err));
     }
   }
 
@@ -231,24 +249,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       </div>
 
       {feedback && (
-        <div
-          role="status"
-          className={cn(
-            "flex items-center justify-between rounded-2xl p-4 text-sm font-bold shadow-2xs",
-            feedback.type === "success"
-              ? "border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]"
-              : "border border-red-200 bg-red-50 text-red-800",
-          )}
-        >
-          <span>{feedback.message}</span>
-          <button
-            type="button"
-            onClick={() => setFeedback(null)}
-            className="ml-4 text-xs underline hover:opacity-75"
-          >
-            Dismiss
-          </button>
-        </div>
+        <AlertBanner
+          variant={feedback.type === "success" ? "success" : "failure"}
+          title={feedback.type === "success" ? "Menu CMS Updated" : "Menu CMS Error"}
+          message={feedback.message}
+          onDismiss={() => setFeedback(null)}
+        />
       )}
 
       {/* Action Controls & Filters */}

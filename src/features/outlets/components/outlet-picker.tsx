@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { Modal } from "@/components/ui/modal";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import { useCart } from "@/features/cart/context";
 import { locationSchema, type Location } from "../serviceability";
@@ -41,6 +42,7 @@ const demoLocations = [
 
 export function OutletPicker({ onSelected }: { onSelected: () => void }) {
   const cart = useCart();
+  const alert = useAlert();
   const [result, setResult] = useState<{
     location: Location;
     outlets: (CustomerOutlet & { distanceKm: number })[];
@@ -116,13 +118,22 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
       return;
     }
     cart.selectOutlet(result.location, outlet.id);
+    alert.success(
+      "Kitchen Outlet Selected",
+      `Connected to ${outlet.name} · Provisional prep ${outlet.minimumPrepMinutes + outlet.packingMinutes} min.`,
+    );
     onSelected();
   }
 
   function confirmSwitch() {
     if (!result || !confirmOutletSwitch) return;
+    const targetName = confirmOutletSwitch.name;
     cart.selectOutlet(result.location, confirmOutletSwitch.id);
     setConfirmOutletSwitch(null);
+    alert.general(
+      "Switched Kitchen Outlet",
+      `Basket cleared and switched to ${targetName}.`,
+    );
     onSelected();
   }
 
@@ -257,12 +268,14 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
       )}
 
       {error && (
-        <p
-          role="alert"
-          className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800"
-        >
-          {error}
-        </p>
+        <div className="mt-6">
+          <AlertBanner
+            variant="failure"
+            title="Location Check Failed"
+            message={error}
+            onDismiss={() => setError("")}
+          />
+        </div>
       )}
 
       {result &&

@@ -5,6 +5,7 @@ import type { CustomerMenuItem } from "../types";
 import { useCart } from "@/features/cart/context";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { useAlert } from "@/components/ui/alert-toast";
 import { formatMoney } from "@/lib/format";
 import { DietaryMark } from "./dietary-mark";
 import { cn } from "@/lib/classes";
@@ -17,6 +18,7 @@ export function ItemConfiguration({
   onClose: () => void;
 }) {
   const cart = useCart();
+  const alert = useAlert();
   const [portionId, setPortion] = useState(item.portions[0]?.id ?? "");
   const [addonIds, setAddons] = useState<string[]>([]);
   const portion = item.portions.find((portion) => portion.id === portionId);
@@ -30,6 +32,10 @@ export function ItemConfiguration({
     event.preventDefault();
     if (!portion) return;
     cart.addLine({ portionId, addonIds, quantity: 1 });
+    alert.success(
+      "Added to Basket",
+      `${item.name} (${portion.name}) added to your direct order.`,
+    );
     onClose();
   }
 

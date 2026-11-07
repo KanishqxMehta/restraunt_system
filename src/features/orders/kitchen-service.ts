@@ -17,9 +17,15 @@ export async function advanceKitchenStage(
     const where = { id, ...orderScope(viewer), paymentStatus: "PAID" as const };
     const order = await transaction.order.findFirst({
       where,
-      select: { status: true },
+      select: { status: true, isCatering: true, cateringStatus: true },
     });
     if (!order) throw new HttpError(404, "Kitchen ticket not found.");
+    if (order.isCatering && order.cateringStatus !== "CONFIRMED") {
+      throw new HttpError(
+        409,
+        "Bulk or party orders cannot change state until confirmed by the Catering Manager.",
+      );
+    }
     if (order.status !== expectedStage) {
       throw new HttpError(
         409,
@@ -67,9 +73,21 @@ export async function overrideOrderPromise(
     const where = { id, ...orderScope(viewer), paymentStatus: "PAID" as const };
     const order = await transaction.order.findFirst({
       where,
-      select: { id: true, status: true, promisedReadyAt: true },
+      select: {
+        id: true,
+        status: true,
+        promisedReadyAt: true,
+        isCatering: true,
+        cateringStatus: true,
+      },
     });
     if (!order) throw new HttpError(404, "Kitchen ticket not found.");
+    if (order.isCatering && order.cateringStatus !== "CONFIRMED") {
+      throw new HttpError(
+        409,
+        "Bulk or party orders cannot be modified until confirmed by the Catering Manager.",
+      );
+    }
     if (order.status === "HANDED_OFF" || order.status === "CANCELLED") {
       throw new HttpError(409, "Cannot adjust promise for completed orders.");
     }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { requestJson, errorMessage } from "@/lib/http-client";
 
@@ -24,6 +25,7 @@ export function KitchenStockControl({
   outletName,
   initialItems,
 }: KitchenStockControlProps) {
+  const alert = useAlert();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(initialItems);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export function KitchenStockControl({
   async function handleToggle(itemId: string, current: boolean) {
     setToggling(itemId);
     setError("");
+    const targetItem = items.find((i) => i.id === itemId);
 
     // Optimistic toggle
     setItems((prev) =>
@@ -51,6 +54,17 @@ export function KitchenStockControl({
           isAvailable: !current,
         }),
       });
+      if (!current) {
+        alert.success(
+          "Dish Back in Stock",
+          `${targetItem?.name ?? "Dish"} is now available at ${outletName}.`,
+        );
+      } else {
+        alert.general(
+          "Dish Paused (Out of Stock)",
+          `${targetItem?.name ?? "Dish"} is paused at ${outletName} to protect kitchen promise times.`,
+        );
+      }
     } catch (err) {
       // Revert on error
       setItems((prev) =>
@@ -58,7 +72,9 @@ export function KitchenStockControl({
           item.id === itemId ? { ...item, isAvailable: current } : item,
         ),
       );
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Stock Update Failed", msg);
     } finally {
       setToggling(null);
     }
@@ -95,12 +111,13 @@ export function KitchenStockControl({
         >
           <div className="space-y-2.5">
             {error && (
-              <div
-                role="alert"
-                className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-              >
-                {error}
-              </div>
+              <AlertBanner
+                variant="failure"
+                title="Stock Update Error"
+                message={error}
+                onDismiss={() => setError("")}
+                className="mb-3"
+              />
             )}
 
             {items.map((item) => {

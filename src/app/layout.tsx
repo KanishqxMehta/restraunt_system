@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AlertProvider } from "@/components/ui/alert-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col selection:bg-[#ead9f5] selection:text-[#2b0e35]">
-        {children}
+        <AlertProvider>{children}</AlertProvider>
       </body>
     </html>
   );

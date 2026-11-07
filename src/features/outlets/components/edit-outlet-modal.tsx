@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import type { UpdateOutletInput } from "../validation";
 
 export interface OutletDetail {
@@ -57,6 +58,7 @@ function EditOutletForm({
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const alert = useAlert();
   const [name, setName] = useState(outlet.name);
   const [city, setCity] = useState(outlet.city);
   const [address, setAddress] = useState(outlet.address);
@@ -104,10 +106,16 @@ function EditOutletForm({
         throw new Error(data.error || "Failed to update outlet");
       }
 
+      alert.success(
+        "Outlet Updated",
+        `Configuration saved for "${name.trim()}".`,
+      );
       onUpdated();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(msg);
+      alert.failure("Failed to Update Outlet", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,9 +125,12 @@ function EditOutletForm({
     <Modal onClose={onClose} title={`Edit: ${outlet.name}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800">
-            {error}
-          </div>
+          <AlertBanner
+            variant="failure"
+            title="Could Not Save Outlet"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

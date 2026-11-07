@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import type { CreateOutletInput } from "../validation";
 
 interface CreateOutletModalProps {
@@ -17,6 +18,7 @@ export function CreateOutletModal({
   onClose,
   onCreated,
 }: CreateOutletModalProps) {
+  const alert = useAlert();
   const [name, setName] = useState("");
   const [city, setCity] = useState("Hyderabad");
   const [address, setAddress] = useState("");
@@ -81,11 +83,17 @@ export function CreateOutletModal({
         throw new Error(data.error || "Failed to create outlet");
       }
 
+      alert.success(
+        "Outlet Added to Fleet",
+        `"${name.trim()}" (${isCloudKitchen ? "Cloud Kitchen" : "Dine-in"}) is now live.`,
+      );
       resetForm();
       onCreated();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(msg);
+      alert.failure("Failed to Add Outlet", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -97,9 +105,12 @@ export function CreateOutletModal({
     <Modal onClose={onClose} title="Add New Outlet / Cloud Kitchen">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800">
-            {error}
-          </div>
+          <AlertBanner
+            variant="failure"
+            title="Could Not Create Outlet"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

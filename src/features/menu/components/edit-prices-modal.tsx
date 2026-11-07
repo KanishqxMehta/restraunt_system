@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import type { AdminMenuItem } from "../types";
 
@@ -18,6 +19,7 @@ export function EditPricesModal({
   onClose,
   onPricesUpdated,
 }: EditPricesModalProps) {
+  const alert = useAlert();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -82,9 +84,15 @@ export function EditPricesModal({
       });
 
       setSuccess("Price updated successfully.");
+      alert.success(
+        "City Pricing Updated",
+        `Updated city pricing for "${item.name}".`,
+      );
       onPricesUpdated();
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Pricing Update Failed", msg);
     } finally {
       setSubmitting(false);
     }
@@ -97,7 +105,9 @@ export function EditPricesModal({
 
     const price = parseFloat(newPortionRupees);
     if (isNaN(price) || price < 0) {
-      setError("Please enter a valid price in rupees.");
+      const msg = "Please enter a valid price in rupees.";
+      setError(msg);
+      alert.failure("Invalid Price", msg);
       return;
     }
 
@@ -117,11 +127,17 @@ export function EditPricesModal({
       });
 
       setSuccess(`Portion "${newPortionName}" added.`);
+      alert.success(
+        "New Portion Added",
+        `Added "${newPortionName.trim()}" portion to "${item.name}".`,
+      );
       setNewPortionName("");
       setNewPortionRupees("");
       onPricesUpdated();
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Could Not Add Portion", msg);
     } finally {
       setSubmitting(false);
     }
@@ -136,20 +152,20 @@ export function EditPricesModal({
         </p>
 
         {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-          >
-            {error}
-          </div>
+          <AlertBanner
+            variant="failure"
+            title="Pricing Error"
+            message={error}
+            onDismiss={() => setError("")}
+          />
         )}
         {success && (
-          <div
-            role="status"
-            className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
-          >
-            {success}
-          </div>
+          <AlertBanner
+            variant="success"
+            title="Pricing Saved"
+            message={success}
+            onDismiss={() => setSuccess("")}
+          />
         )}
 
         {/* Existing Portions */}

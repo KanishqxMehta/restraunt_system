@@ -14,11 +14,13 @@ import {
   Store,
   ChevronLeft,
   ChevronRight,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { formatTime } from "@/lib/format";
@@ -535,6 +537,7 @@ function KitchenTicket({
   canAdvance: boolean;
 }) {
   const router = useRouter();
+  const alert = useAlert();
   const [refreshing, startTransition] = useTransition();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -547,7 +550,11 @@ function KitchenTicket({
   const [cateringSaving, setCateringSaving] = useState(false);
   const [cateringError, setCateringError] = useState("");
 
-  async function handleConfirmCatering(action: "CONFIRM" | "DECLINE") {
+  const isUnconfirmedCatering = Boolean(
+    ticket.isCatering && ticket.cateringStatus !== "CONFIRMED",
+  );
+
+  async function handleConfirmCatering(actionKey: "CONFIRM" | "DECLINE") {
     setCateringSaving(true);
     setCateringError("");
     try {
@@ -555,13 +562,30 @@ function KitchenTicket({
         "/api/kitchen/catering/" + encodeURIComponent(ticket.id) + "/confirm",
         {
           method: "POST",
-          body: JSON.stringify({ action, notes: cateringNotes.trim() }),
+          body: JSON.stringify({
+            action: actionKey,
+            notes: cateringNotes.trim(),
+          }),
         },
       );
       setConfirmingCatering(false);
+      setError("");
+      if (actionKey === "CONFIRM") {
+        alert.success(
+          "Party Catering Confirmed",
+          `Order ${ticket.orderNumber} (${ticket.guestCount ?? 20} guests) confirmed. Kitchen preparation stages are now unlocked.`,
+        );
+      } else {
+        alert.general(
+          "Party Catering Declined",
+          `Order ${ticket.orderNumber} was declined and removed from the active kitchen queue.`,
+        );
+      }
       startTransition(() => router.refresh());
     } catch (err) {
-      setCateringError(errorMessage(err));
+      const msg = errorMessage(err);
+      setCateringError(msg);
+      alert.failure("Catering Review Failed", msg);
     } finally {
       setCateringSaving(false);
     }
@@ -595,6 +619,13 @@ function KitchenTicket({
 
   async function advance() {
     if (saving || refreshing) return;
+    if (isUnconfirmedCatering) {
+      const msg =
+        "Bulk or party orders cannot change state until confirmed by the Catering Manager. Click 'Review & Confirm' first.";
+      setError(msg);
+      alert.failure("Catering Confirmation Required", msg);
+      return;
+    }
     setConfirming(false);
     setSaving(true);
     setError("");
@@ -606,9 +637,21 @@ function KitchenTicket({
           body: JSON.stringify({ expectedStage: stage }),
         },
       );
+      const nextStageLabel =
+        action.next === "PREPARING"
+          ? "Preparing"
+          : action.next === "READY"
+            ? "Ready for pickup"
+            : "Handed off to rider";
+      alert.success(
+        "Order Stage Updated",
+        `Ticket ${ticket.orderNumber} moved to "${nextStageLabel}".`,
+      );
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(msg);
+      alert.failure("Stage Change Failed", msg);
       if (err instanceof ClientError && [404, 409].includes(err.status)) {
         startTransition(() => router.refresh());
       }
@@ -619,8 +662,16 @@ function KitchenTicket({
 
   async function handleOverride(e: React.FormEvent) {
     e.preventDefault();
+    if (isUnconfirmedCatering) {
+      const msg =
+        "Confirm the bulk catering order before adjusting preparation promises.";
+      setOverrideError(msg);
+      alert.failure("Catering Confirmation Required", msg);
+      return;
+    }
     if (!overrideReason.trim()) {
       setOverrideError("Please provide an override reason.");
+      alert.failure("Reason Required", "Please provide an override reason.");
       return;
     }
     setOverrideSaving(true);
@@ -640,9 +691,15 @@ function KitchenTicket({
         },
       );
       setOverriding(false);
+      alert.general(
+        "Promise Time Adjusted",
+        `Extended ${ticket.orderNumber} by +${extraMinutes} min (${overrideReason.trim()}). Customer notified.`,
+      );
       startTransition(() => router.refresh());
     } catch (err) {
-      setOverrideError(errorMessage(err));
+      const msg = errorMessage(err);
+      setOverrideError(msg);
+      alert.failure("Promise Override Failed", msg);
     } finally {
       setOverrideSaving(false);
     }
@@ -813,30 +870,68 @@ function KitchenTicket({
       </ul>
 
       {error && (
-        <p role="alert" className="mb-3 text-xs font-medium text-red-800">
-          {error}
-        </p>
+        <div className="mb-3">
+          <AlertBanner
+            variant="failure"
+            title="State Change Blocked"
+            message={error}
+            onDismiss={() => setError("")}
+          />
+        </div>
       )}
 
       {/* Action Buttons */}
       <div className="flex gap-2">
         {canAdvance && (
           <Button
-            variant="primary"
-            className="min-h-11 flex-1 font-bold"
+            variant={isUnconfirmedCatering ? "secondary" : "primary"}
+            className={cn(
+              "min-h-11 flex-1 font-bold",
+              isUnconfirmedCatering &&
+                "border-amber-300 bg-amber-50/80 text-amber-950 hover:border-amber-400 hover:bg-amber-100/80",
+            )}
             disabled={saving || refreshing}
-            onClick={() =>
-              stage === "READY" ? setConfirming(true) : void advance()
-            }
+            onClick={() => {
+              if (isUnconfirmedCatering) {
+                const msg =
+                  "Bulk or party orders cannot change state until confirmed by the Catering Manager. Click 'Review & Confirm' above first.";
+                setError(msg);
+                alert.failure("Catering Confirmation Required", msg);
+                return;
+              }
+              if (stage === "READY") {
+                setConfirming(true);
+              } else {
+                void advance();
+              }
+            }}
           >
-            {saving || refreshing ? "Updating…" : action.label}
+            {saving || refreshing ? (
+              "Updating…"
+            ) : isUnconfirmedCatering ? (
+              <>
+                <Lock className="h-3.5 w-3.5 text-amber-800" aria-hidden="true" />
+                <span>Confirm Catering First</span>
+              </>
+            ) : (
+              action.label
+            )}
           </Button>
         )}
 
         {stage !== "READY" && canAdvance && (
           <button
             type="button"
-            onClick={() => setOverriding(true)}
+            onClick={() => {
+              if (isUnconfirmedCatering) {
+                const msg =
+                  "Confirm the bulk catering order before adjusting preparation promises.";
+                setError(msg);
+                alert.failure("Catering Confirmation Required", msg);
+                return;
+              }
+              setOverriding(true);
+            }}
             className="flex items-center justify-center gap-1.5 rounded-xl border border-[#d8bfe8] bg-[#f7f2fa] px-3.5 py-2 text-xs font-bold text-[#3b1747] shadow-2xs transition hover:bg-[#ede0f5]"
             title="Adjust promised preparation time"
           >

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { CreateOutletModal } from "./create-outlet-modal";
 import { EditOutletModal, type OutletDetail } from "./edit-outlet-modal";
 import { cn } from "@/lib/classes";
@@ -36,6 +37,7 @@ interface AdminOutletsBoardProps {
 }
 
 export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
+  const alert = useAlert();
   const [outlets, setOutlets] = useState<OutletWithStats[]>(initialOutlets);
   const [filter, setFilter] = useState<"ALL" | "DINE_IN" | "CLOUD" | "ACTIVE" | "PAUSED">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,17 +72,37 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Failed to toggle outlet status");
       }
+      const nextActive = !outlet.isActive;
       setOutlets((prev) =>
-        prev.map((o) => (o.id === outlet.id ? { ...o, isActive: !o.isActive } : o)),
+        prev.map((o) => (o.id === outlet.id ? { ...o, isActive: nextActive } : o)),
       );
+      if (nextActive) {
+        alert.success(
+          "Outlet Resumed",
+          `${outlet.name} is now accepting direct customer orders.`,
+        );
+      } else {
+        alert.general(
+          "Outlet Paused",
+          `Incoming direct orders for ${outlet.name} are temporarily held.`,
+        );
+      }
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Error updating outlet");
+      const msg = err instanceof Error ? err.message : "Error updating outlet";
+      setActionError(msg);
+      alert.failure("Outlet Status Error", msg);
     } finally {
       setIsUpdating(null);
     }
   }
 
   function handleDeleteOutlet(outlet: OutletWithStats) {
+    if (outlet.activeTicketCount > 0) {
+      alert.failure(
+        "Decommission Blocked",
+        `${outlet.name} has ${outlet.activeTicketCount} active tickets in preparation. Pause the outlet instead.`,
+      );
+    }
     setDeletingOutlet(outlet);
   }
 
@@ -100,8 +122,14 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
         throw new Error(err.error || "Failed to delete outlet");
       }
       setOutlets((prev) => prev.filter((o) => o.id !== outlet.id));
+      alert.general(
+        "Outlet Decommissioned",
+        `${outlet.name} has been removed from the active fleet.`,
+      );
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Error deleting outlet");
+      const msg = err instanceof Error ? err.message : "Error deleting outlet";
+      setActionError(msg);
+      alert.failure("Decommission Failed", msg);
     } finally {
       setIsUpdating(null);
     }
@@ -134,15 +162,12 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
     <div className="space-y-6">
       {/* Action Error Banner */}
       {actionError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-800 shadow-sm flex items-center justify-between">
-          <span>{actionError}</span>
-          <button
-            onClick={() => setActionError(null)}
-            className="text-red-900 hover:underline"
-          >
-            Dismiss
-          </button>
-        </div>
+        <AlertBanner
+          variant="failure"
+          title="Outlet Action Error"
+          message={actionError}
+          onDismiss={() => setActionError(null)}
+        />
       )}
 
       {/* KPI Stats Ribbon */}

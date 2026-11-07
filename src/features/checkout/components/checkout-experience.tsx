@@ -16,6 +16,7 @@ import { CartPanel } from "@/features/cart/components/cart-panel";
 import { useCustomerMenu } from "@/features/menu/use-customer-menu";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { quoteInputSchema, deliveryAddressSchema } from "../validation";
 import type { CheckoutQuote } from "../types";
@@ -25,6 +26,7 @@ import { PaymentMethodPicker } from "./payment-method";
 export function CheckoutExperience() {
   const cart = useCart();
   const router = useRouter();
+  const alert = useAlert();
   const { menu, error: menuError, retry } = useCustomerMenu(cart.outletId);
   const [address, setAddress] = useState("");
   const [couponCode, setCouponCode] = useState("");
@@ -80,11 +82,11 @@ export function CheckoutExperience() {
     const validAddress = deliveryAddressSchema.safeParse(address);
     const validInput = quoteInputSchema.safeParse(input);
     if (!validAddress.success || !validInput.success) {
-      setError(
-        !validAddress.success
-          ? validAddress.error.issues[0].message
-          : "Review your cart and delivery location.",
-      );
+      const msg = !validAddress.success
+        ? validAddress.error.issues[0].message
+        : "Review your cart and delivery location.";
+      setError(msg);
+      alert.failure("Checkout Details Required", msg);
       return;
     }
     setPending(true);
@@ -95,6 +97,17 @@ export function CheckoutExperience() {
           { method: "POST", body: JSON.stringify(validInput.data) },
         );
         setQuote({ key: inputKey, quote: response });
+        if (response.discountPaise > 0) {
+          alert.success(
+            "Authoritative Quote & Discount Applied",
+            `Your bill total is locked for 5 minutes with discount applied.`,
+          );
+        } else {
+          alert.general(
+            "Bill Quote Locked",
+            "Authoritative pricing and live kitchen stock verified for 5 minutes.",
+          );
+        }
         return;
       }
       if (
@@ -121,7 +134,9 @@ export function CheckoutExperience() {
       router.replace(`/checkout?order=${order.id}`);
       router.refresh();
     } catch (error) {
-      setError(errorMessage(error));
+      const msg = errorMessage(error);
+      setError(msg);
+      alert.failure("Checkout Error", msg);
       if (error instanceof ClientError && error.status === 409) {
         setQuote(null);
         createKey.current = null;
@@ -310,12 +325,12 @@ export function CheckoutExperience() {
           )}
 
           {error && (
-            <p
-              role="alert"
-              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-800"
-            >
-              {error}
-            </p>
+            <AlertBanner
+              variant="failure"
+              title="Checkout Error"
+              message={error}
+              onDismiss={() => setError("")}
+            />
           )}
 
           <Button

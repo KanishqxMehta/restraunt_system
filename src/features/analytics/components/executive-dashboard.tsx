@@ -20,6 +20,7 @@ import {
 import type { ExecutiveAnalyticsSummary } from "../types";
 import { SelectMenu, type SelectMenuOption } from "@/components/ui/select-menu";
 import { Modal } from "@/components/ui/modal";
+import { useAlert } from "@/components/ui/alert-toast";
 import { cn } from "@/lib/classes";
 
 const STORAGE_KEY = "company_a_analytics_benchmarks_v1";
@@ -60,6 +61,7 @@ export function ExecutiveDashboard({
 }: {
   summary: ExecutiveAnalyticsSummary;
 }) {
+  const alert = useAlert();
   const [selectedOutletId, setSelectedOutletId] = useState<string>("ALL");
   const [filterType, setFilterType] = useState<
     "ALL" | "DINE_IN" | "CLOUD_KITCHEN"
@@ -122,6 +124,10 @@ export function ExecutiveDashboard({
       // Ignore storage errors
     }
     setShowSettingsModal(false);
+    alert.success(
+      "Benchmarks & Targets Saved",
+      "Dashboard SLA targets and financial rates have been updated.",
+    );
   }
 
   function handleResetDefaults() {
@@ -132,6 +138,10 @@ export function ExecutiveDashboard({
     } catch {
       // Ignore storage errors
     }
+    alert.general(
+      "Default Benchmarks Restored",
+      "Restored standard SLA targets (25m prep, 35% repeat rate, 27% vs 12% margin).",
+    );
   }
 
   // Scope metrics either to "ALL" or a single selected outlet
