@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { Modal } from "@/components/ui/modal";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import { useCart } from "@/features/cart/context";
 import { locationSchema, type Location } from "../serviceability";
@@ -46,6 +47,8 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
   } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [confirmOutletSwitch, setConfirmOutletSwitch] =
+    useState<CustomerOutlet | null>(null);
 
   async function search(location: Location) {
     setPending(true);
@@ -108,13 +111,18 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
 
   function select(outlet: CustomerOutlet) {
     if (!result) return;
-    if (
-      cart.lines.length > 0 &&
-      cart.outletId !== outlet.id &&
-      !window.confirm("Changing outlets clears your current basket. Continue?")
-    )
+    if (cart.lines.length > 0 && cart.outletId !== outlet.id) {
+      setConfirmOutletSwitch(outlet);
       return;
+    }
     cart.selectOutlet(result.location, outlet.id);
+    onSelected();
+  }
+
+  function confirmSwitch() {
+    if (!result || !confirmOutletSwitch) return;
+    cart.selectOutlet(result.location, confirmOutletSwitch.id);
+    setConfirmOutletSwitch(null);
     onSelected();
   }
 
@@ -331,6 +339,42 @@ export function OutletPicker({ onSelected }: { onSelected: () => void }) {
             ))}
           </div>
         ))}
+
+      {confirmOutletSwitch && (
+        <Modal
+          title="Switch Kitchen Outlet?"
+          subtitle="Changing outlets resets your active basket"
+          onClose={() => setConfirmOutletSwitch(null)}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm leading-relaxed text-[#4f473d]">
+              Your basket currently has items from another outlet. Switching to{" "}
+              <strong className="text-[#0f352d]">
+                {confirmOutletSwitch.name}
+              </strong>{" "}
+              will clear your current basket so we can show live stock and
+              promise times for this kitchen.
+            </p>
+            <div className="flex justify-end gap-2 border-t border-[#ece3d5] pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setConfirmOutletSwitch(null)}
+              >
+                Keep Current Outlet
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={confirmSwitch}
+              >
+                Switch & Clear Basket
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

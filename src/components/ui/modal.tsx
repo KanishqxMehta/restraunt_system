@@ -1,13 +1,18 @@
 "use client";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X, Sparkles } from "lucide-react";
+import { cn } from "@/lib/classes";
 
 export function Modal({
   title,
+  subtitle,
+  maxWidth = "max-w-lg",
   children,
   onClose,
 }: {
   title: string;
+  subtitle?: string;
+  maxWidth?: string;
   children: ReactNode;
   onClose: () => void;
 }) {
@@ -28,7 +33,10 @@ export function Modal({
         event.preventDefault();
         onClose();
       }}
-      className="m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-0 shadow-[0_24px_64px_rgba(20,15,25,0.32)] backdrop:bg-[#140d18]/60 backdrop:backdrop-blur-xs"
+      className={cn(
+        "m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-0 shadow-[0_24px_64px_rgba(20,15,25,0.32)] backdrop:bg-[#140d18]/60 backdrop:backdrop-blur-xs",
+        maxWidth,
+      )}
     >
       <div className="h-1.5 w-full bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
       <div className="flex items-start justify-between gap-4 border-b border-[#ece3d5] bg-[#faf7f2]/80 px-6 py-4 sm:px-7 sm:py-5">
@@ -39,12 +47,19 @@ export function Modal({
           >
             <Sparkles className="h-4 w-4" />
           </span>
-          <h2
-            id={titleId}
-            className="font-display text-xl font-bold tracking-tight text-[#0f352d]"
-          >
-            {title}
-          </h2>
+          <div>
+            <h2
+              id={titleId}
+              className="font-display text-xl font-bold tracking-tight text-[#0f352d]"
+            >
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="mt-0.5 text-[11px] font-medium text-[#635b50]">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
         <button
           type="button"

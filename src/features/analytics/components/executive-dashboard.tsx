@@ -18,6 +18,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { ExecutiveAnalyticsSummary } from "../types";
+import { SelectMenu, type SelectMenuOption } from "@/components/ui/select-menu";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/classes";
 
 const STORAGE_KEY = "company_a_analytics_benchmarks_v1";
@@ -237,6 +239,38 @@ export function ExecutiveDashboard({
       ? summary.recentOrders
       : summary.recentOrders.filter((o) => o.outletId === selectedOutletId);
 
+  const outletSelectOptions: SelectMenuOption[] = [
+    {
+      value: "ALL",
+      label: `All Outlets (${summary.outlets.length} locations)`,
+      badge: `${summary.totalOrdersCount} orders`,
+    },
+    ...summary.outlets
+      .filter((o) => !o.isCloudKitchen)
+      .map((o) => ({
+        value: o.id,
+        label: `🍽️ ${o.name}`,
+        badge: `${o.totalOrders} orders`,
+        group: "🍽️ Dine-in Outlets",
+      })),
+    ...summary.outlets
+      .filter((o) => o.isCloudKitchen)
+      .map((o) => ({
+        value: o.id,
+        label: `☁️ ${o.name}`,
+        badge: `${o.totalOrders} orders`,
+        group: "☁️ Cloud Kitchens",
+      })),
+  ];
+
+  const sortSelectOptions: SelectMenuOption[] = [
+    { value: "ORDERS", label: "Sort: Most Orders" },
+    { value: "REVENUE", label: "Sort: Highest Revenue" },
+    { value: "PREP", label: "Sort: Fastest Prep Time" },
+    { value: "REPEAT", label: "Sort: Repeat Customer %" },
+    { value: "CANCELLATIONS", label: "Sort: Cancellations" },
+  ];
+
   return (
     <div className="space-y-7">
       {/* Top Filter & Admin Benchmark Control Bar */}
@@ -244,40 +278,16 @@ export function ExecutiveDashboard({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-[#0f352d]" aria-hidden="true" />
-            <label
-              htmlFor="analytics-outlet-select"
-              className="text-xs font-bold uppercase tracking-wider text-[#635b50]"
-            >
+            <span className="text-xs font-bold uppercase tracking-wider text-[#635b50]">
               Scope:
-            </label>
-            <select
-              id="analytics-outlet-select"
+            </span>
+            <SelectMenu
+              ariaLabel="Filter analytics by outlet"
               value={selectedOutletId}
-              onChange={(e) => setSelectedOutletId(e.target.value)}
-              className="h-9 rounded-xl border border-[#ded2bf] bg-[#faf7f2] px-3 text-xs font-bold text-[#0f352d] outline-none focus:border-[#0f352d]"
-            >
-              <option value="ALL">
-                All Outlets ({summary.outlets.length} locations)
-              </option>
-              <optgroup label="🍽️ Dine-in Outlets">
-                {summary.outlets
-                  .filter((o) => !o.isCloudKitchen)
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      🍽️ {o.name} ({o.totalOrders} orders)
-                    </option>
-                  ))}
-              </optgroup>
-              <optgroup label="☁️ Cloud Kitchens">
-                {summary.outlets
-                  .filter((o) => o.isCloudKitchen)
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      ☁️ {o.name} ({o.totalOrders} orders)
-                    </option>
-                  ))}
-              </optgroup>
-            </select>
+              onChange={setSelectedOutletId}
+              options={outletSelectOptions}
+              searchPlaceholder="Search outlet name..."
+            />
           </div>
 
           {selectedOutletId !== "ALL" && (
@@ -528,18 +538,14 @@ export function ExecutiveDashboard({
             </div>
 
             {/* Sort selector */}
-            <select
-              aria-label="Sort outlets by"
+            <SelectMenu
+              ariaLabel="Sort outlets by"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="h-9 rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-2.5 text-xs font-bold text-[#0f352d] outline-none"
-            >
-              <option value="ORDERS">Sort: Most Orders</option>
-              <option value="REVENUE">Sort: Highest Revenue</option>
-              <option value="PREP">Sort: Fastest Prep Time</option>
-              <option value="REPEAT">Sort: Repeat Customer %</option>
-              <option value="CANCELLATIONS">Sort: Cancellations</option>
-            </select>
+              onChange={(val) => setSortBy(val as SortKey)}
+              options={sortSelectOptions}
+              align="right"
+              searchable={false}
+            />
           </div>
         </div>
 
@@ -938,33 +944,12 @@ export function ExecutiveDashboard({
 
       {/* Admin Benchmark & Target Settings Modal */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#140d18]/60 p-4 backdrop-blur-xs">
-          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-[#dfd4c2] bg-[#fffdfa] p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-[#ece3d5] pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef6f4] text-[#0f352d]">
-                  <Sliders className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg font-bold text-[#0f352d]">
-                    Configure Analytics Benchmarks & Targets
-                  </h3>
-                  <p className="text-[11px] text-[#635b50]">
-                    Set your chain&apos;s commission rates, SLA targets, and
-                    savings goals
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSettingsModal(false)}
-                className="rounded-full border border-[#e2d8c7] px-2.5 py-1 text-xs font-bold text-[#635b50] hover:bg-[#f0e8dc]"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveBenchmarks} className="mt-5 space-y-4">
+        <Modal
+          title="Configure Analytics Benchmarks & Targets"
+          subtitle="Set your chain's commission rates, SLA targets, and savings goals"
+          onClose={() => setShowSettingsModal(false)}
+        >
+          <form onSubmit={handleSaveBenchmarks} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold text-[#0f352d]">
@@ -1145,8 +1130,7 @@ export function ExecutiveDashboard({
                 </div>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

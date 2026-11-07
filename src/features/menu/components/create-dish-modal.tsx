@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { parseTimeToMinute } from "../time-windows";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import type { AdminMenuItem } from "../types";
@@ -155,17 +156,17 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
               Category
             </label>
-            <select
+            <SelectMenu
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setCategory(val)}
+              size="md"
+              fullWidth
+              searchable={false}
+              options={CATEGORIES.map((c) => ({
+                value: c,
+                label: c,
+              }))}
+            />
           </div>
         </div>
 

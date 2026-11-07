@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { formatMoney } from "@/lib/format";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import {
@@ -530,25 +531,35 @@ export function PartyCateringExperience({
               </div>
 
               <div>
-                <label
-                  htmlFor="catering-outlet"
-                  className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]"
-                >
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
                   Assigned Kitchen Outlet
-                </label>
-                <select
-                  id="catering-outlet"
+                </span>
+                <SelectMenu
+                  ariaLabel="Assigned Kitchen Outlet"
+                  size="md"
+                  fullWidth
+                  searchPlaceholder="Search catering outlet..."
                   value={selectedOutletId}
-                  onChange={(e) => setSelectedOutletId(e.target.value)}
-                  className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none transition focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
-                >
-                  {outlets.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name} ({o.city}){" "}
-                      {o.isCloudKitchen ? "· Cloud Kitchen" : ""}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedOutletId}
+                  options={[
+                    ...outlets
+                      .filter((o) => !o.isCloudKitchen)
+                      .map((o) => ({
+                        value: o.id,
+                        label: `🍽️ ${o.name} (${o.city})`,
+                        badge: "Dine-in",
+                        group: "🍽️ Flagship Dine-in Outlets",
+                      })),
+                    ...outlets
+                      .filter((o) => o.isCloudKitchen)
+                      .map((o) => ({
+                        value: o.id,
+                        label: `☁️ ${o.name} (${o.city})`,
+                        badge: "Cloud Kitchen",
+                        group: "☁️ Cloud Kitchens",
+                      })),
+                  ]}
+                />
                 <p className="mt-1.5 text-xs text-[#635b50]">
                   Routes directly to this outlet&apos;s live Kitchen Display
                   System.

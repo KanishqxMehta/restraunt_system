@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { InputField } from "@/components/ui/input-field";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { formatTime } from "@/lib/format";
@@ -188,46 +189,51 @@ export function KitchenBoard({
               </div>
             </div>
 
-            {/* Quick Dropdown: Instant jump to any of 15+ outlets without horizontal scrolling */}
+            {/* Quick Custom Pop Menu: Instant jump to any of 15+ outlets */}
             <div className="flex items-center gap-2">
-              <label htmlFor="outlet-jump-select" className="sr-only">
-                Select Kitchen Outlet
-              </label>
-              <select
-                id="outlet-jump-select"
+              <SelectMenu
+                ariaLabel="Select Kitchen Outlet"
                 value={selectedOutletId}
-                onChange={(e) => {
-                  setSelectedOutletId(e.target.value);
+                onChange={(val) => {
+                  setSelectedOutletId(val);
                   setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
                 }}
-                className="h-8 rounded-xl border border-[#ded2bf] bg-white px-2.5 text-xs font-bold text-[#0f352d] shadow-2xs focus:border-[#0f352d] focus:outline-none"
-              >
-                <option value="ALL">All Kitchens ({tickets.length} total tickets)</option>
-                <optgroup label="🍽️ Flagship Dine-in Outlets">
-                  {outlets
+                align="right"
+                searchPlaceholder="Search kitchen outlet..."
+                options={[
+                  {
+                    value: "ALL",
+                    label: "All Kitchens",
+                    badge: `${tickets.length} tickets`,
+                  },
+                  ...outlets
                     .filter((o) => !o.isCloudKitchen)
                     .map((o) => {
-                      const count = tickets.filter((t) => t.outlet.id === o.id).length;
-                      return (
-                        <option key={o.id} value={o.id}>
-                          🍽️ {o.name} ({count} tickets)
-                        </option>
-                      );
-                    })}
-                </optgroup>
-                <optgroup label="☁️ Cloud Kitchens">
-                  {outlets
+                      const count = tickets.filter(
+                        (t) => t.outlet.id === o.id,
+                      ).length;
+                      return {
+                        value: o.id,
+                        label: `🍽️ ${o.name}`,
+                        badge: `${count} tickets`,
+                        group: "🍽️ Flagship Dine-in Outlets",
+                      };
+                    }),
+                  ...outlets
                     .filter((o) => o.isCloudKitchen)
                     .map((o) => {
-                      const count = tickets.filter((t) => t.outlet.id === o.id).length;
-                      return (
-                        <option key={o.id} value={o.id}>
-                          ☁️ {o.name} ({count} tickets)
-                        </option>
-                      );
-                    })}
-                </optgroup>
-              </select>
+                      const count = tickets.filter(
+                        (t) => t.outlet.id === o.id,
+                      ).length;
+                      return {
+                        value: o.id,
+                        label: `☁️ ${o.name}`,
+                        badge: `${count} tickets`,
+                        group: "☁️ Cloud Kitchens",
+                      };
+                    }),
+                ]}
+              />
             </div>
           </div>
 
@@ -922,27 +928,37 @@ function KitchenTicket({
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#433d35]">
                 Reason for delay:
               </label>
-              <select
+              <SelectMenu
+                ariaLabel="Select reason for delay"
+                size="md"
+                fullWidth
+                searchable={false}
+                className="mb-3"
                 value={overrideReason}
-                onChange={(e) => setOverrideReason(e.target.value)}
-                className="mb-3 min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3 text-sm font-medium outline-none focus:border-[#0f352d]"
-              >
-                <option value="Station backlog / Dum batch release">
-                  Station backlog / Dum batch release
-                </option>
-                <option value="Hand-crafted dum pot slow to seal">
-                  Hand-crafted dum pot slow to seal
-                </option>
-                <option value="Ingredient restocking from storage">
-                  Ingredient restocking from storage
-                </option>
-                <option value="Peak rush container packaging backlog">
-                  Peak rush container packaging backlog
-                </option>
-                <option value="Delivery partner rider delayed">
-                  Delivery partner rider delayed
-                </option>
-              </select>
+                onChange={setOverrideReason}
+                options={[
+                  {
+                    value: "Station backlog / Dum batch release",
+                    label: "Station backlog / Dum batch release",
+                  },
+                  {
+                    value: "Hand-crafted dum pot slow to seal",
+                    label: "Hand-crafted dum pot slow to seal",
+                  },
+                  {
+                    value: "Ingredient restocking from storage",
+                    label: "Ingredient restocking from storage",
+                  },
+                  {
+                    value: "Peak rush container packaging backlog",
+                    label: "Peak rush container packaging backlog",
+                  },
+                  {
+                    value: "Delivery partner rider delayed",
+                    label: "Delivery partner rider delayed",
+                  },
+                ]}
+              />
               <InputField
                 label="Or custom explanation"
                 value={overrideReason}

@@ -18,6 +18,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { CreateOutletModal } from "./create-outlet-modal";
 import { EditOutletModal, type OutletDetail } from "./edit-outlet-modal";
 import { cn } from "@/lib/classes";
@@ -40,6 +41,7 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingOutlet, setEditingOutlet] = useState<OutletWithStats | null>(null);
+  const [deletingOutlet, setDeletingOutlet] = useState<OutletWithStats | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
@@ -78,18 +80,14 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
     }
   }
 
-  async function handleDeleteOutlet(outlet: OutletWithStats) {
-    if (outlet.activeTicketCount > 0) {
-      alert(
-        `Cannot delete "${outlet.name}" because it currently has ${outlet.activeTicketCount} active tickets in preparation. Pause the outlet instead.`,
-      );
-      return;
-    }
+  function handleDeleteOutlet(outlet: OutletWithStats) {
+    setDeletingOutlet(outlet);
+  }
 
-    const confirmed = confirm(
-      `Are you sure you want to permanently decommission "${outlet.name}"? This action cannot be undone.`,
-    );
-    if (!confirmed) return;
+  async function confirmDeleteOutlet() {
+    if (!deletingOutlet) return;
+    const outlet = deletingOutlet;
+    setDeletingOutlet(null);
 
     setIsUpdating(outlet.id);
     setActionError(null);
@@ -412,6 +410,81 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
         onClose={() => setEditingOutlet(null)}
         onUpdated={refreshOutlets}
       />
+
+      {deletingOutlet && (
+        <Modal
+          title={
+            deletingOutlet.activeTicketCount > 0
+              ? `Cannot Decommission ${deletingOutlet.name}`
+              : `Decommission ${deletingOutlet.name}?`
+          }
+          subtitle={
+            deletingOutlet.activeTicketCount > 0
+              ? "Active kitchen tickets are currently in preparation"
+              : "Permanent fleet removal · This action cannot be undone"
+          }
+          onClose={() => setDeletingOutlet(null)}
+          maxWidth="max-w-md"
+        >
+          {deletingOutlet.activeTicketCount > 0 ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                <strong>{deletingOutlet.name}</strong> currently has{" "}
+                <strong>{deletingOutlet.activeTicketCount} active tickets</strong>{" "}
+                in preparation. Please wait for kitchen handoff or use{" "}
+                <strong>Pause Outlet</strong> to temporarily hold incoming orders.
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setDeletingOutlet(null)}
+                >
+                  Close
+                </Button>
+                {deletingOutlet.isActive && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => {
+                      const target = deletingOutlet;
+                      setDeletingOutlet(null);
+                      void handleToggleStatus(target);
+                    }}
+                  >
+                    Pause Outlet Instead
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-[#4f473d]">
+                Are you sure you want to permanently decommission{" "}
+                <strong className="text-[#1f1c18]">{deletingOutlet.name}</strong>?
+                All outlet routing rules and local stock settings for this location
+                will be removed.
+              </p>
+              <div className="flex justify-end gap-2 border-t border-[#ece3d5] pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setDeletingOutlet(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={() => void confirmDeleteOutlet()}
+                >
+                  Decommission Outlet
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
