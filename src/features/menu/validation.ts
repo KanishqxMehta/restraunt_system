@@ -39,6 +39,7 @@ export const createMenuItemSchema = z.object({
   basePrepMinutes: z.number().int().min(1, "Base prep time must be at least 1 minute").max(180),
   prepStation: z.string().trim().min(1).max(40).default("MAIN"),
   batchCapacity: z.number().int().min(1).max(50).default(1),
+  isActive: z.boolean().default(false),
   availableFromMinute: z.number().int().min(0).max(1440).nullable().optional(),
   availableToMinute: z.number().int().min(0).max(1440).nullable().optional(),
   portions: z.array(portionInputSchema).min(1, "At least one portion must be provided"),

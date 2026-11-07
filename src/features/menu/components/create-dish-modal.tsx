@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Trash2, Info, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
@@ -39,6 +40,13 @@ const CATEGORIES = [
   "Curries",
 ];
 
+interface PortionRow {
+  id: string;
+  name: string;
+  city: string;
+  priceRupees: string;
+}
+
 interface CreateDishModalProps {
   onClose: () => void;
   onCreated: (item: AdminMenuItem) => void;
@@ -64,9 +72,13 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
   const [fromTime, setFromTime] = useState("17:00");
   const [toTime, setToTime] = useState("23:30");
 
-  const [portionName, setPortionName] = useState("Regular");
-  const [city, setCity] = useState("Hyderabad");
-  const [priceRupees, setPriceRupees] = useState("350");
+  // Newly created dishes default strictly to inactive/draft as requested
+  // Admin must explicitly verify and activate them from the board
+
+  // Multi-portion state with "Regular" portion as initial item
+  const [portions, setPortions] = useState<PortionRow[]>([
+    { id: "portion-init-1", name: "Regular", city: "Hyderabad", priceRupees: "350" },
+  ]);
 
   function toggleAllergen(item: string) {
     setAllergens((prev) =>
@@ -74,16 +86,91 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
     );
   }
 
+  function addPortion(portionName = "", defaultPrice = "") {
+    setPortions((prev) => [
+      ...prev,
+      {
+        id: `portion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: portionName,
+        city: "Hyderabad",
+        priceRupees: defaultPrice,
+      },
+    ]);
+  }
+
+  function removePortion(id: string) {
+    if (portions.length <= 1) return;
+    setPortions((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  function updatePortion(
+    id: string,
+    field: "name" | "city" | "priceRupees",
+    val: string,
+  ) {
+    setPortions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [field]: val } : p)),
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    const price = parseFloat(priceRupees);
-    if (isNaN(price) || price < 0) {
-      setError("Please enter a valid price in rupees.");
+    if (!name.trim()) {
+      setError("Please enter a dish name.");
       return;
     }
-    const pricePaise = Math.round(price * 100);
+
+    if (portions.length === 0) {
+      setError("Please add at least one portion for this dish.");
+      return;
+    }
+
+    // Validate portions
+    const seenNames = new Set<string>();
+    const parsedPortions: { name: string; prices: { city: string; pricePaise: number }[] }[] = [];
+
+    for (let i = 0; i < portions.length; i++) {
+      const p = portions[i];
+      const trimmedName = p.name.trim();
+      if (!trimmedName) {
+        setError(`Portion #${i + 1} is missing a name (e.g. Regular, Family Pack, Jumbo).`);
+        return;
+      }
+      const lower = trimmedName.toLowerCase();
+      if (seenNames.has(lower)) {
+        setError(`Duplicate portion "${trimmedName}". Each portion must have a unique name.`);
+        return;
+      }
+      seenNames.add(lower);
+
+      const trimmedCity = p.city.trim() || "Hyderabad";
+      if (trimmedCity.length < 2) {
+        setError(`City name for portion "${trimmedName}" must be at least 2 characters.`);
+        return;
+      }
+
+      const price = parseFloat(p.priceRupees);
+      if (isNaN(price) || price < 0) {
+        setError(`Invalid price in rupees for portion "${trimmedName}".`);
+        return;
+      }
+      if (price > 50000) {
+        setError(`Price for portion "${trimmedName}" cannot exceed ₹50,000.`);
+        return;
+      }
+
+      parsedPortions.push({
+        name: trimmedName,
+        prices: [
+          {
+            city: trimmedCity,
+            pricePaise: Math.round(price * 100),
+          },
+        ],
+      });
+    }
 
     let fromMinute: number | null = null;
     let toMinute: number | null = null;
@@ -112,12 +199,8 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
         batchCapacity: Number(batchCapacity),
         availableFromMinute: fromMinute,
         availableToMinute: toMinute,
-        portions: [
-          {
-            name: portionName.trim() || "Regular",
-            prices: [{ city: city.trim(), pricePaise }],
-          },
-        ],
+        isActive: false, // Strict default: newly created dishes are deactivated drafts
+        portions: parsedPortions,
         addons: [],
       };
 
@@ -127,8 +210,8 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
       });
 
       alert.success(
-        "Menu Dish Created",
-        `"${res.item.name}" has been added to the Central Menu CMS.`,
+        "Draft Dish Created",
+        `"${res.item.name}" saved as Draft (Inactive). Review portions and activate when ready to publish.`,
       );
       onCreated(res.item);
       onClose();
@@ -141,9 +224,13 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
     }
   }
 
+  const existingPortionNames = new Set(
+    portions.map((p) => p.name.trim().toLowerCase()),
+  );
+
   return (
     <Modal title="Add menu item" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <AlertBanner
             variant="failure"
@@ -152,6 +239,17 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
             onDismiss={() => setError("")}
           />
         )}
+
+        {/* Draft notice banner */}
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-[#544d42]">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="font-bold text-amber-900">Draft Verification Safety</p>
+            <p className="mt-0.5 leading-relaxed text-[#635b50]">
+              New dishes default to <strong>Draft (Inactive)</strong> so customers never see an incomplete menu item. Once you verify all portion pricing and configurations, activate the dish directly on the admin menu board.
+            </p>
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <InputField
@@ -189,8 +287,108 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Fragrant basmati layered with spices and slow dum cooking."
-            className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] p-3 text-sm font-medium text-[#1f1c18] outline-none focus:border-[#0f352d]"
+            className="w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] p-3 text-sm font-medium text-[#1f1c18] outline-none transition focus:border-[#0f352d] focus:bg-white"
           />
+        </div>
+
+        {/* Portions & City Pricing Section */}
+        <div className="space-y-3.5 rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-4.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#4e3f28]">
+                Portions & City Pricing (5% GST Included)
+              </p>
+              <p className="mt-0.5 text-xs text-[#73634b]">
+                Add all portions directly (e.g. Regular, Family Pack, Jumbo) with their city prices.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-[#8a765a]">Quick add:</span>
+              <button
+                type="button"
+                onClick={() => addPortion("Half", "")}
+                disabled={existingPortionNames.has("half")}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#d8be93] bg-white px-2 py-1 text-[11px] font-bold text-[#4e3f28] shadow-2xs hover:bg-[#f6eedf] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <Plus className="h-3 w-3" /> Half
+              </button>
+              <button
+                type="button"
+                onClick={() => addPortion("Family Pack", "")}
+                disabled={existingPortionNames.has("family pack")}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#d8be93] bg-white px-2 py-1 text-[11px] font-bold text-[#4e3f28] shadow-2xs hover:bg-[#f6eedf] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <Plus className="h-3 w-3" /> Family Pack
+              </button>
+              <button
+                type="button"
+                onClick={() => addPortion("Jumbo", "")}
+                disabled={existingPortionNames.has("jumbo")}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#d8be93] bg-white px-2 py-1 text-[11px] font-bold text-[#4e3f28] shadow-2xs hover:bg-[#f6eedf] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <Plus className="h-3 w-3" /> Jumbo
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {portions.map((portion, idx) => (
+              <div
+                key={portion.id}
+                className="flex flex-col gap-2 rounded-xl border border-[#e8dac1] bg-white p-3 shadow-2xs sm:flex-row sm:items-end sm:gap-3"
+              >
+                <div className="flex-1">
+                  <InputField
+                    label={idx === 0 ? "Portion name" : `Portion #${idx + 1}`}
+                    value={portion.name}
+                    onChange={(e) => updatePortion(portion.id, "name", e.target.value)}
+                    placeholder="e.g. Regular, Half, Jumbo"
+                    required
+                  />
+                </div>
+                <div className="w-full sm:w-36">
+                  <InputField
+                    label="City"
+                    value={portion.city}
+                    onChange={(e) => updatePortion(portion.id, "city", e.target.value)}
+                    placeholder="Hyderabad"
+                    required
+                  />
+                </div>
+                <div className="w-full sm:w-32">
+                  <InputField
+                    label="Price (₹)"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={portion.priceRupees}
+                    onChange={(e) => updatePortion(portion.id, "priceRupees", e.target.value)}
+                    placeholder="350"
+                    required
+                  />
+                </div>
+                {portions.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removePortion(portion.id)}
+                    aria-label={`Remove ${portion.name || `portion ${idx + 1}`}`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => addPortion("", "")}
+            className="flex items-center gap-1.5 rounded-xl border border-dashed border-[#bda67f] bg-white/70 px-3.5 py-2 text-xs font-bold text-[#4e3f28] hover:bg-white transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add another portion</span>
+          </button>
         </div>
 
         {/* Dietary & Spice */}
@@ -238,38 +436,6 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
           </div>
         </div>
 
-        {/* Portion and City Price */}
-        <div className="space-y-3 rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#4e3f28]">
-            Initial portion & city pricing (GST included)
-          </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <InputField
-              label="Portion name"
-              value={portionName}
-              onChange={(e) => setPortionName(e.target.value)}
-              placeholder="Regular"
-              required
-            />
-            <InputField
-              label="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Hyderabad"
-              required
-            />
-            <InputField
-              label="Price (₹)"
-              type="number"
-              step="1"
-              value={priceRupees}
-              onChange={(e) => setPriceRupees(e.target.value)}
-              placeholder="350"
-              required
-            />
-          </div>
-        </div>
-
         {/* Kitchen Parameters */}
         <div className="grid gap-3 sm:grid-cols-3">
           <InputField
@@ -307,8 +473,7 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
                 Time-based service window
               </p>
               <p className="text-xs text-[#655c50]">
-                Restricts orderability to specific hours (e.g. Haleem dinner
-                only)
+                Restricts orderability to specific hours (e.g. Haleem dinner only)
               </p>
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -415,8 +580,9 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving dish…" : "Create menu dish"}
+          <Button type="submit" disabled={submitting} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            {submitting ? "Saving dish…" : "Create draft dish"}
           </Button>
         </div>
       </form>

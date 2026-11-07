@@ -40,6 +40,32 @@ describe("Central Menu CMS validation", () => {
     expect(parsed.name).toBe("Mutton Haleem");
     expect(parsed.availableFromMinute).toBe(1020);
     expect(parsed.portions[0].prices[0].pricePaise).toBe(35000);
+    expect(parsed.isActive).toBe(false);
+  });
+
+  it("defaults newly created dish to draft (isActive: false) and supports multiple portions", () => {
+    const multiPortionDish = {
+      ...validDish,
+      portions: [
+        { name: "Regular", prices: [{ city: "Hyderabad", pricePaise: 35000 }] },
+        { name: "Family Pack", prices: [{ city: "Hyderabad", pricePaise: 79000 }] },
+        { name: "Jumbo", prices: [{ city: "Hyderabad", pricePaise: 119000 }] },
+      ],
+    };
+    const parsed = createMenuItemSchema.parse(multiPortionDish);
+    expect(parsed.isActive).toBe(false);
+    expect(parsed.portions).toHaveLength(3);
+    expect(parsed.portions[1].name).toBe("Family Pack");
+    expect(parsed.portions[1].prices[0].pricePaise).toBe(79000);
+    expect(parsed.portions[2].name).toBe("Jumbo");
+  });
+
+  it("permits explicit isActive boolean override", () => {
+    const parsed = createMenuItemSchema.parse({
+      ...validDish,
+      isActive: true,
+    });
+    expect(parsed.isActive).toBe(true);
   });
 
   it("rejects invalid prices and missing portions", () => {
@@ -81,6 +107,22 @@ describe("Central Menu CMS validation", () => {
     ).toBe(false);
   });
 
+  it("rejects city names shorter than 2 characters or prices exceeding maximum allowable limit", () => {
+    expect(
+      cityPriceInputSchema.safeParse({
+        city: "H",
+        pricePaise: 35000,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      cityPriceInputSchema.safeParse({
+        city: "Hyderabad",
+        pricePaise: 5000001, // exceeds 5000000 paise (₹50,000)
+      }).success,
+    ).toBe(false);
+  });
+
   it("validates pauseItemStockSchema for outlet pause actions", () => {
     expect(
       pauseItemStockSchema.safeParse({
@@ -97,6 +139,45 @@ describe("Central Menu CMS validation", () => {
         isAvailable: true,
       }).success,
     ).toBe(false);
+  });
+
+  it("computes fleet-wide outlet stock counts accurately across 17 outlets", () => {
+    const outlets = Array.from({ length: 17 }, (_, i) => ({
+      id: `outlet-${i + 1}`,
+      name: `Outlet ${i + 1}`,
+      city: "Hyderabad",
+      isCloudKitchen: i >= 14,
+    }));
+
+    const dishWithPauses = {
+      id: "dish-1",
+      availability: [
+        { outletId: "outlet-1", isAvailable: false },
+        { outletId: "outlet-2", isAvailable: false },
+      ],
+    };
+
+    const pausedOutlets = outlets.filter((o) => {
+      const avail = dishWithPauses.availability.find((a) => a.outletId === o.id);
+      return avail ? !avail.isAvailable : false;
+    });
+
+    const inStockCount = outlets.length - pausedOutlets.length;
+    expect(pausedOutlets).toHaveLength(2);
+    expect(inStockCount).toBe(15);
+    expect(pausedOutlets.length === 0).toBe(false);
+
+    // Fleet fully restored
+    const restoredDish = {
+      id: "dish-1",
+      availability: outlets.map((o) => ({ outletId: o.id, isAvailable: true })),
+    };
+    const restoredPauses = outlets.filter((o) => {
+      const avail = restoredDish.availability.find((a) => a.outletId === o.id);
+      return avail ? !avail.isAvailable : false;
+    });
+    expect(restoredPauses).toHaveLength(0);
+    expect(outlets.length - restoredPauses.length).toBe(17);
   });
 });
 

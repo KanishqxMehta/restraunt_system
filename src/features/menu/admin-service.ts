@@ -95,6 +95,7 @@ export async function createMenuItem(
     const item = await transaction.menuItem.create({
       data: {
         ...details,
+        isActive: details.isActive ?? false,
         slug,
         allergens: details.allergens ?? [],
       },
@@ -148,7 +149,21 @@ export async function createMenuItem(
       });
     }
 
-    return item;
+    const fullItem = await transaction.menuItem.findUnique({
+      where: { id: item.id },
+      include: {
+        portions: {
+          include: { prices: { orderBy: { city: "asc" } } },
+          orderBy: { name: "asc" },
+        },
+        addons: { orderBy: { name: "asc" } },
+        availability: {
+          include: { outlet: { select: { id: true, name: true, city: true } } },
+        },
+      },
+    });
+
+    return fullItem ?? item;
   });
 }
 
