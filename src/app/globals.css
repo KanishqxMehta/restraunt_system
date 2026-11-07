@@ -61,19 +61,23 @@ summary {
 
 /* Custom subtle scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f3ece0;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #d5c7b2;
   border-radius: 9999px;
+  border: 1.5px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #b8a68e;
+  border: 1.5px solid transparent;
+  background-clip: content-box;
 }
