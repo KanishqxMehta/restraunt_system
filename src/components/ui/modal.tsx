@@ -34,12 +34,12 @@ export function Modal({
         onClose();
       }}
       className={cn(
-        "m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-0 shadow-[0_24px_64px_rgba(20,15,25,0.32)] backdrop:bg-[#140d18]/60 backdrop:backdrop-blur-xs",
+        "m-auto flex max-h-[90dvh] w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-0 shadow-[0_24px_64px_rgba(20,15,25,0.32)] backdrop:bg-[#140d18]/60 backdrop:backdrop-blur-xs",
         maxWidth,
       )}
     >
-      <div className="h-1.5 w-full bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
-      <div className="flex items-start justify-between gap-4 border-b border-[#ece3d5] bg-[#faf7f2]/80 px-6 py-4 sm:px-7 sm:py-5">
+      <div className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
+      <div className="shrink-0 flex items-start justify-between gap-4 border-b border-[#ece3d5] bg-[#faf7f2]/80 px-6 py-4 sm:px-7 sm:py-5">
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden="true"
@@ -70,7 +70,7 @@ export function Modal({
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="max-h-[calc(90dvh-5.5rem)] overflow-y-auto overscroll-contain p-6 sm:p-7">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-7">
         {children}
       </div>
     </dialog>

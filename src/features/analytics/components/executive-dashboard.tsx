@@ -992,6 +992,7 @@ export function ExecutiveDashboard({
           title="Configure Analytics Benchmarks & Loyalty Policy"
           subtitle="Review your chain's commission rates, SLA targets, and customer loyalty rewards"
           onClose={() => setShowSettingsModal(false)}
+          maxWidth="max-w-2xl"
         >
           <div className="space-y-5">
             {/* Royal Rewards Loyalty Program Settings & Rules Card */}
