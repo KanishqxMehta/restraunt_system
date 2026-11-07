@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -88,7 +89,12 @@ export function KitchenBoard({
   const [outletCategory, setOutletCategory] = useState<"ALL" | "DINE_IN" | "CLOUD">("ALL");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState<"ALL" | "CRITICAL_LATE" | "CATERING">("ALL");
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"URGENCY" | "RECENT" | "OLDEST">("URGENCY");
+  const [timeWindow, setTimeWindow] = useState<"ALL" | "15M" | "30M" | "1H">("ALL");
+  const [channelFilter, setChannelFilter] = useState<"ALL" | "REGULAR" | "CATERING">("ALL");
+  const [dietaryFilter, setDietaryFilter] = useState<"ALL" | "VEG_ONLY" | "NON_VEG">("ALL");
+  const [slaFilter, setSlaFilter] = useState<"ALL" | "ON_TRACK" | "LATE" | "CRITICAL_LATE" | "OVERRIDDEN">("ALL");
   const [pageByStage, setPageByStage] = useState<Record<KitchenStage, number>>({
     NEW: 1,
     PREPARING: 1,
@@ -112,17 +118,39 @@ export function KitchenBoard({
       ? tickets
       : tickets.filter((t) => t.outlet.id === selectedOutletId);
 
-  // Filter by Search Query & Tag
+  // Filter by Search Query & Tag & Advanced Filters
   const filteredTickets = outletFiltered.filter((t) => {
-    if (filterMode === "CRITICAL_LATE" && !t.isCriticalLate) return false;
-    if (filterMode === "CATERING" && !t.isCatering) return false;
+    // SLA filter
+    if (slaFilter === "CRITICAL_LATE" && !t.isCriticalLate) return false;
+    if (slaFilter === "LATE" && !t.isLate) return false;
+    if (slaFilter === "ON_TRACK" && (t.isLate || t.isCriticalLate)) return false;
+    if (slaFilter === "OVERRIDDEN" && t.estimateSource !== "MANAGER_OVERRIDE") return false;
+
+    // Channel filter
+    if (channelFilter === "CATERING" && !t.isCatering) return false;
+    if (channelFilter === "REGULAR" && t.isCatering) return false;
+
+    // Time window filter (Recent orders filter)
+    if (timeWindow !== "ALL" && now !== null) {
+      const ageMs = now - t.createdAt.getTime();
+      if (timeWindow === "15M" && ageMs > 15 * 60 * 1000) return false;
+      if (timeWindow === "30M" && ageMs > 30 * 60 * 1000) return false;
+      if (timeWindow === "1H" && ageMs > 60 * 60 * 1000) return false;
+    }
+
+    // Dietary filter
+    if (dietaryFilter === "VEG_ONLY" && !t.items.every((i) => i.isVeg)) return false;
+    if (dietaryFilter === "NON_VEG" && !t.items.some((i) => !i.isVeg)) return false;
+
+    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         t.orderNumber.toLowerCase().includes(q) ||
         t.outlet.name.toLowerCase().includes(q) ||
         (t.specialInstructions &&
-          t.specialInstructions.toLowerCase().includes(q))
+          t.specialInstructions.toLowerCase().includes(q)) ||
+        t.items.some((i) => i.name.toLowerCase().includes(q))
       );
     }
     return true;
@@ -130,6 +158,17 @@ export function KitchenBoard({
 
   const criticalLateCount = outletFiltered.filter((t) => t.isCriticalLate).length;
   const cateringCount = outletFiltered.filter((t) => t.isCatering).length;
+
+  const activeFiltersCount =
+    (sortOrder !== "URGENCY" ? 1 : 0) +
+    (timeWindow !== "ALL" ? 1 : 0) +
+    (channelFilter !== "ALL" ? 1 : 0) +
+    (dietaryFilter !== "ALL" ? 1 : 0) +
+    (slaFilter !== "ALL" ? 1 : 0);
+
+  const isAllSelected = slaFilter === "ALL" && channelFilter === "ALL";
+  const isCriticalLateSelected = slaFilter === "CRITICAL_LATE";
+  const isCateringSelected = channelFilter === "CATERING";
 
   const visibleOutlets = outlets.filter((o) => {
     if (outletCategory === "DINE_IN") return !o.isCloudKitchen;
@@ -331,57 +370,129 @@ export function KitchenBoard({
         </div>
       )}
 
-      {/* Control Strip: Search & Urgency / Category Quick Filter */}
+      {/* Control Strip: Search, Urgency / Category Quick Filters, and Advanced Filter Button */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#ded2bf] bg-[#fffdfa] p-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
-          {(
-            [
-              { key: "ALL", label: `All Orders (${outletFiltered.length})` },
-              { key: "CRITICAL_LATE", label: `🚨 10+ Min Late (${criticalLateCount})` },
-              { key: "CATERING", label: `🎉 Bulk Catering (${cateringCount})` },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => {
-                setFilterMode(t.key);
-                setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
-              }}
-              className={cn(
-                "rounded-xl px-3 py-1 text-xs font-bold transition",
-                filterMode === t.key
-                  ? "bg-[#3b1747] text-[#f4d6a9] shadow-xs"
-                  : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#7a6f60]" />
-          <input
-            type="text"
-            placeholder="Search ticket # or notes..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+          <button
+            type="button"
+            onClick={() => {
+              setSlaFilter("ALL");
+              setChannelFilter("ALL");
               setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
             }}
-            className="w-full rounded-xl border border-[#ded2bf] bg-[#faf7f2] py-1.5 pl-8 pr-3 text-xs font-semibold text-[#1f1c18] placeholder-[#7a6f60] focus:border-[#0f352d] focus:outline-hidden"
-          />
+            className={cn(
+              "rounded-xl px-3 py-1 text-xs font-bold transition",
+              isAllSelected
+                ? "bg-[#3b1747] text-[#f4d6a9] shadow-xs"
+                : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+            )}
+          >
+            All Orders ({outletFiltered.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSlaFilter((prev) => (prev === "CRITICAL_LATE" ? "ALL" : "CRITICAL_LATE"));
+              setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+            }}
+            className={cn(
+              "rounded-xl px-3 py-1 text-xs font-bold transition",
+              isCriticalLateSelected
+                ? "bg-[#3b1747] text-[#f4d6a9] shadow-xs"
+                : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+            )}
+          >
+            🚨 10+ Min Late ({criticalLateCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setChannelFilter((prev) => (prev === "CATERING" ? "ALL" : "CATERING"));
+              setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+            }}
+            className={cn(
+              "rounded-xl px-3 py-1 text-xs font-bold transition",
+              isCateringSelected
+                ? "bg-[#3b1747] text-[#f4d6a9] shadow-xs"
+                : "bg-[#f5efe4] text-[#544d42] hover:bg-[#ede5d6]",
+            )}
+          >
+            🎉 Bulk Catering ({cateringCount})
+          </button>
+
+          {sortOrder !== "URGENCY" && (
+            <span className="rounded-xl border border-[#ded2bf] bg-[#faf7f2] px-2.5 py-1 text-[11px] font-bold text-[#0f352d]">
+              {sortOrder === "RECENT" ? "🕒 Most Recent First" : "⏳ Oldest First"}
+            </span>
+          )}
+
+          {timeWindow !== "ALL" && (
+            <span className="rounded-xl border border-[#ded2bf] bg-[#faf7f2] px-2.5 py-1 text-[11px] font-bold text-[#0f352d]">
+              ⏱️ {timeWindow === "15M" ? "Last 15m" : timeWindow === "30M" ? "Last 30m" : "Last 1 hour"}
+            </span>
+          )}
+
+          {dietaryFilter !== "ALL" && (
+            <span className="rounded-xl border border-[#ded2bf] bg-[#faf7f2] px-2.5 py-1 text-[11px] font-bold text-[#0f352d]">
+              {dietaryFilter === "VEG_ONLY" ? "🥦 Pure Veg" : "🍗 Non-Veg"}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Filter button placed directly to the left of search */}
+          <button
+            type="button"
+            onClick={() => setFilterModalOpen(true)}
+            className={cn(
+              "flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition shadow-2xs shrink-0",
+              activeFiltersCount > 0
+                ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d]"
+                : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:border-[#0f352d] hover:bg-white hover:text-[#0f352d]",
+            )}
+            title="Filter orders by recency, time window, channel, dietary, or urgency"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Filters</span>
+            {activeFiltersCount > 0 && (
+              <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[#0f352d] px-1 text-[10px] text-white">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#7a6f60]" />
+            <input
+              type="text"
+              placeholder="Search ticket # or notes..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+              }}
+              className="w-full rounded-xl border border-[#ded2bf] bg-[#faf7f2] py-1.5 pl-8 pr-3 text-xs font-semibold text-[#1f1c18] placeholder-[#7a6f60] focus:border-[#0f352d] focus:outline-hidden"
+            />
+          </div>
         </div>
       </div>
 
       {/* 3-Column Kanban Board with Fixed Viewport Height & Independent Internal Scrolling */}
       <div className="grid items-start gap-6 lg:grid-cols-3">
         {kitchenStages.map((stage) => {
-          // Sort stage orders by urgency: Critical Late -> Late -> Earliest promised
+          // Sort stage orders based on user's sortOrder choice
           const stageOrders = filteredTickets
             .filter((ticket) => ticket.status === stage)
             .sort((a, b) => {
+              if (sortOrder === "RECENT") {
+                return b.createdAt.getTime() - a.createdAt.getTime();
+              }
+              if (sortOrder === "OLDEST") {
+                return a.createdAt.getTime() - b.createdAt.getTime();
+              }
+              // Default URGENCY: Critical Late -> Late -> Earliest promised
               if (a.isCriticalLate && !b.isCriticalLate) return -1;
               if (!a.isCriticalLate && b.isCriticalLate) return 1;
               if (a.isLate && !b.isLate) return -1;
@@ -433,7 +544,7 @@ export function KitchenBoard({
               <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin">
                 {totalOrders === 0 && (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2]/80 px-4 py-12 text-center text-xs">
-                    {filterMode === "CRITICAL_LATE" ? (
+                    {slaFilter === "CRITICAL_LATE" ? (
                       <>
                         <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
                           <CheckCircle2 className="h-5 w-5" />
@@ -441,7 +552,7 @@ export function KitchenBoard({
                         <p className="font-bold text-[#0f352d]">Zero 10+ Min Delays</p>
                         <p className="mt-1 text-[11px] text-[#7a6f60]">Kitchen SLA is 100% compliant in this lane.</p>
                       </>
-                    ) : filterMode === "CATERING" ? (
+                    ) : channelFilter === "CATERING" ? (
                       <>
                         <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7f2fa] text-[#4a1d5a]">
                           <Store className="h-5 w-5" />
@@ -521,6 +632,202 @@ export function KitchenBoard({
           );
         })}
       </div>
+
+      {/* Advanced Kitchen Filter Modal */}
+      {filterModalOpen && (
+        <Modal
+          title="Kitchen KDS Filters & Sort"
+          subtitle="Filter by recency, time window, channel, and urgency"
+          onClose={() => setFilterModalOpen(false)}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-5">
+            {/* 1. Recency & Sort Order */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                Order Sorting & Recency
+              </label>
+              <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                {[
+                  { key: "URGENCY", label: "⚠️ Due Soonest", sub: "KDS SLA Urgency" },
+                  { key: "RECENT", label: "🕒 Most Recent", sub: "Newest Placed" },
+                  { key: "OLDEST", label: "⏳ Oldest First", sub: "Queued Longest" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => {
+                      setSortOrder(s.key as "URGENCY" | "RECENT" | "OLDEST");
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
+                    className={cn(
+                      "flex flex-col items-start rounded-xl border p-2.5 text-left transition",
+                      sortOrder === s.key
+                        ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] font-bold shadow-2xs"
+                        : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:bg-[#f0ece1]",
+                    )}
+                  >
+                    <span className="text-xs font-bold">{s.label}</span>
+                    <span className="text-[10px] text-[#7a6f60]">{s.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Order Placement Time Window (Recent Orders Filter) */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                Time Window (Placed When)
+              </label>
+              <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {[
+                  { key: "ALL", label: "All Active" },
+                  { key: "15M", label: "Last 15m" },
+                  { key: "30M", label: "Last 30m" },
+                  { key: "1H", label: "Last 1 hour" },
+                ].map((w) => (
+                  <button
+                    key={w.key}
+                    type="button"
+                    onClick={() => {
+                      setTimeWindow(w.key as "ALL" | "15M" | "30M" | "1H");
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
+                    className={cn(
+                      "rounded-xl border py-2 text-center text-xs font-bold transition",
+                      timeWindow === w.key
+                        ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] shadow-2xs"
+                        : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:bg-[#f0ece1]",
+                    )}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Order Channel / Type */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                Channel & Order Type
+              </label>
+              <div className="mt-2 grid grid-cols-3 gap-1.5">
+                {[
+                  { key: "ALL", label: "All Channels" },
+                  { key: "REGULAR", label: "🍽️ Direct Orders" },
+                  { key: "CATERING", label: "🎉 Bulk Catering" },
+                ].map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => {
+                      setChannelFilter(c.key as "ALL" | "REGULAR" | "CATERING");
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
+                    className={cn(
+                      "rounded-xl border py-2 text-center text-xs font-bold transition",
+                      channelFilter === c.key
+                        ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] shadow-2xs"
+                        : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:bg-[#f0ece1]",
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Dietary Filter */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                Dietary Preference
+              </label>
+              <div className="mt-2 grid grid-cols-3 gap-1.5">
+                {[
+                  { key: "ALL", label: "All Food" },
+                  { key: "VEG_ONLY", label: "🥦 Pure Veg" },
+                  { key: "NON_VEG", label: "🍗 Non-Veg" },
+                ].map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => {
+                      setDietaryFilter(d.key as "ALL" | "VEG_ONLY" | "NON_VEG");
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
+                    className={cn(
+                      "rounded-xl border py-2 text-center text-xs font-bold transition",
+                      dietaryFilter === d.key
+                        ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] shadow-2xs"
+                        : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:bg-[#f0ece1]",
+                    )}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. SLA / Urgency */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#4a1d5a]">
+                SLA & Kitchen Urgency
+              </label>
+              <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {[
+                  { key: "ALL", label: "All Statuses" },
+                  { key: "CRITICAL_LATE", label: "🚨 10+ Min Late" },
+                  { key: "LATE", label: "⏰ Any Late" },
+                  { key: "ON_TRACK", label: "✅ On Track" },
+                  { key: "OVERRIDDEN", label: "⏱️ Overridden" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => {
+                      setSlaFilter(s.key as "ALL" | "ON_TRACK" | "LATE" | "CRITICAL_LATE" | "OVERRIDDEN");
+                      setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                    }}
+                    className={cn(
+                      "rounded-xl border py-2 text-center text-xs font-bold transition",
+                      slaFilter === s.key
+                        ? "border-[#0f352d] bg-[#eef6f4] text-[#0f352d] shadow-2xs"
+                        : "border-[#ded2bf] bg-[#faf7f2] text-[#544d42] hover:bg-[#f0ece1]",
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between border-t border-[#ece3d5] pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortOrder("URGENCY");
+                  setTimeWindow("ALL");
+                  setChannelFilter("ALL");
+                  setDietaryFilter("ALL");
+                  setSlaFilter("ALL");
+                  setPageByStage({ NEW: 1, PREPARING: 1, READY: 1 });
+                }}
+                className="text-xs font-bold text-[#7a6f60] hover:text-[#0f352d]"
+              >
+                Reset All Filters
+              </button>
+              <Button
+                variant="primary"
+                onClick={() => setFilterModalOpen(false)}
+                className="px-5 py-2 text-xs font-bold"
+              >
+                Apply Filters
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

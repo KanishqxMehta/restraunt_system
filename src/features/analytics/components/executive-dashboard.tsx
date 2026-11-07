@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import type { ExecutiveAnalyticsSummary } from "../types";
 import { SelectMenu, type SelectMenuOption } from "@/components/ui/select-menu";
@@ -342,7 +343,7 @@ export function ExecutiveDashboard({
             className="inline-flex items-center gap-1.5 rounded-xl border border-[#0f352d]/25 bg-[#eef6f4] px-3.5 py-2 text-xs font-bold text-[#0f352d] transition hover:bg-[#dcedea]"
           >
             <Sliders className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Configure Rates & Targets</span>
+            <span>Configure Rates & Loyalty</span>
           </button>
         </div>
       </section>
@@ -988,11 +989,53 @@ export function ExecutiveDashboard({
       {/* Admin Benchmark & Target Settings Modal */}
       {showSettingsModal && (
         <Modal
-          title="Configure Analytics Benchmarks & Targets"
-          subtitle="Set your chain's commission rates, SLA targets, and savings goals"
+          title="Configure Analytics Benchmarks & Loyalty Policy"
+          subtitle="Review your chain's commission rates, SLA targets, and customer loyalty rewards"
           onClose={() => setShowSettingsModal(false)}
         >
-          <form onSubmit={handleSaveBenchmarks} className="space-y-4">
+          <div className="space-y-5">
+            {/* Royal Rewards Loyalty Program Settings & Rules Card */}
+            <div className="rounded-2xl border border-[#dec9ec] bg-gradient-to-br from-[#faf6fd] to-[#f4ebfa] p-4 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-bold text-[#4a1d5a]">
+                  <Sparkles className="h-4 w-4 text-[#7e3aa3]" aria-hidden="true" />
+                  <span>Royal Rewards Loyalty Program Policy</span>
+                </span>
+                <span className="rounded-full border border-[#dec9ec] bg-white/80 px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
+                  Active · System Enforced
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-[#635b50]">
+                Direct-ordering loyalty incentives configured to reclaim customer ownership and incentivize repeat visits without aggregators.
+              </p>
+
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
+                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Earning Rule</span>
+                  <span className="text-sm font-black text-[#0f352d]">1 pt / ₹10</span>
+                  <span className="block text-[10px] text-[#635b50]">10 points earned per ₹100 spent</span>
+                </div>
+
+                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
+                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Redemption Value</span>
+                  <span className="text-sm font-black text-[#4a1d5a]">₹0.50 / pt</span>
+                  <span className="block text-[10px] text-[#635b50]">100 points = ₹50 checkout discount</span>
+                </div>
+
+                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
+                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Max Order Rebate</span>
+                  <span className="text-sm font-black text-[#0f352d]">Up to 50%</span>
+                  <span className="block text-[10px] text-[#635b50]">Protects margins on high-value orders</span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-[#dec9ec]/60 bg-white/70 px-3 py-2 text-[11px] text-[#4a1d5a]">
+                <span>Customer Wallet: Active on <code className="rounded bg-[#f0e4f7] px-1 py-0.5 font-bold">/account</code> & checkout</span>
+                <span className="font-bold">Append-Only Audit Ledger</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveBenchmarks} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold text-[#0f352d]">
@@ -1173,6 +1216,7 @@ export function ExecutiveDashboard({
                 </div>
               </div>
             </form>
+          </div>
         </Modal>
       )}
     </div>
