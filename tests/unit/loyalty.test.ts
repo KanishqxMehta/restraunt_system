@@ -81,4 +81,32 @@ describe("Customer Loyalty Points System (Brief Requirement)", () => {
       expect(summary.pointsEarnedEstimate).toBe(80);
     });
   });
+
+  describe("Admin Configurable Loyalty Settings", () => {
+    it("supports custom earn rate (e.g. ₹20 spent per point = 5 points per ₹100)", () => {
+      const earned = calculatePointsEarned(100_000, { earnRupeesPerPoint: 20 });
+      expect(earned).toBe(50);
+    });
+
+    it("supports custom point redemption value (e.g. 100 paise = ₹1.00 per point)", () => {
+      // 50 points = ₹50 discount on a ₹500 order
+      const result = calculateLoyaltyRedemption(50, 50_000, true, {
+        redeemPaisePerPoint: 100,
+        maxRebatePercent: 50,
+      });
+      expect(result.pointsToRedeem).toBe(50);
+      expect(result.discountPaise).toBe(5_000); // ₹50
+    });
+
+    it("supports custom max rebate cap (e.g. 25% max discount cap)", () => {
+      // Customer has 500 points (worth ₹250 at 50p/pt), order is ₹400
+      // 25% cap on ₹400 = ₹100 (10,000 paise = 200 points)
+      const result = calculateLoyaltyRedemption(500, 40_000, true, {
+        redeemPaisePerPoint: 50,
+        maxRebatePercent: 25,
+      });
+      expect(result.pointsToRedeem).toBe(200);
+      expect(result.discountPaise).toBe(10_000); // ₹100
+    });
+  });
 });

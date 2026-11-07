@@ -1,6 +1,7 @@
 import "server-only";
 import { getDatabase } from "@/server/db/client";
 import type { Prisma } from "@/generated/prisma/client";
+import { getLoyaltySettingsSync } from "./settings";
 
 export async function getOrCreateLoyaltyAccount(userId: string) {
   const db = getDatabase();
@@ -50,7 +51,9 @@ export async function getOrCreateLoyaltyAccount(userId: string) {
     pointsBalance: account.pointsBalance,
     lifetimeEarned: account.lifetimeEarned,
     lifetimeRedeemed: account.lifetimeRedeemed,
-    rupeeValue: Math.floor(account.pointsBalance * 0.5), // 1 pt = ₹0.50
+    rupeeValue: Math.floor(
+      (account.pointsBalance * getLoyaltySettingsSync().redeemPaisePerPoint) / 100,
+    ),
     transactions: account.transactions.map((t) => ({
       id: t.id,
       type: t.type,

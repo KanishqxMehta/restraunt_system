@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -35,6 +35,9 @@ interface AnalyticsBenchmarks {
   targetRepeatRatePercent: number;
   enableSavingsGoal: boolean;
   customSavingsGoalRupees: number;
+  loyaltyEarnRupeesPerPoint: number;
+  loyaltyRedeemPaisePerPoint: number;
+  loyaltyMaxRebatePercent: number;
 }
 
 const DEFAULT_BENCHMARKS: AnalyticsBenchmarks = {
@@ -45,6 +48,9 @@ const DEFAULT_BENCHMARKS: AnalyticsBenchmarks = {
   targetRepeatRatePercent: 35,
   enableSavingsGoal: true,
   customSavingsGoalRupees: 100000, // ₹1,00,000 default monthly/quarterly goal, 100% editable by admin
+  loyaltyEarnRupeesPerPoint: 10,
+  loyaltyRedeemPaisePerPoint: 50,
+  loyaltyMaxRebatePercent: 50,
 };
 
 function formatRupees(paise: number): string {
@@ -90,6 +96,41 @@ export function ExecutiveDashboard({
   const [draftBenchmarks, setDraftBenchmarks] =
     useState<AnalyticsBenchmarks>(benchmarks);
 
+  useEffect(() => {
+    let ignore = false;
+    fetch("/api/admin/loyalty/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!ignore && data?.settings) {
+          const s = data.settings;
+          setBenchmarks((prev) => ({
+            ...prev,
+            loyaltyEarnRupeesPerPoint:
+              s.earnRupeesPerPoint ?? prev.loyaltyEarnRupeesPerPoint,
+            loyaltyRedeemPaisePerPoint:
+              s.redeemPaisePerPoint ?? prev.loyaltyRedeemPaisePerPoint,
+            loyaltyMaxRebatePercent:
+              s.maxRebatePercent ?? prev.loyaltyMaxRebatePercent,
+          }));
+          setDraftBenchmarks((prev) => ({
+            ...prev,
+            loyaltyEarnRupeesPerPoint:
+              s.earnRupeesPerPoint ?? prev.loyaltyEarnRupeesPerPoint,
+            loyaltyRedeemPaisePerPoint:
+              s.redeemPaisePerPoint ?? prev.loyaltyRedeemPaisePerPoint,
+            loyaltyMaxRebatePercent:
+              s.maxRebatePercent ?? prev.loyaltyMaxRebatePercent,
+          }));
+        }
+      })
+      .catch(() => {
+        // Fallback to local defaults
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   function handleSaveBenchmarks(e: React.FormEvent) {
     e.preventDefault();
     const sanitized: AnalyticsBenchmarks = {
@@ -118,6 +159,18 @@ export function ExecutiveDashboard({
         1000,
         Number(draftBenchmarks.customSavingsGoalRupees) || 100000,
       ),
+      loyaltyEarnRupeesPerPoint: Math.min(
+        1000,
+        Math.max(1, Number(draftBenchmarks.loyaltyEarnRupeesPerPoint) || 10),
+      ),
+      loyaltyRedeemPaisePerPoint: Math.min(
+        1000,
+        Math.max(1, Number(draftBenchmarks.loyaltyRedeemPaisePerPoint) || 50),
+      ),
+      loyaltyMaxRebatePercent: Math.min(
+        100,
+        Math.max(5, Number(draftBenchmarks.loyaltyMaxRebatePercent) || 50),
+      ),
     };
     setBenchmarks(sanitized);
     setDraftBenchmarks(sanitized);
@@ -126,10 +179,21 @@ export function ExecutiveDashboard({
     } catch {
       // Ignore storage errors
     }
+
+    void fetch("/api/admin/loyalty/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        earnRupeesPerPoint: sanitized.loyaltyEarnRupeesPerPoint,
+        redeemPaisePerPoint: sanitized.loyaltyRedeemPaisePerPoint,
+        maxRebatePercent: sanitized.loyaltyMaxRebatePercent,
+      }),
+    });
+
     setShowSettingsModal(false);
     alert.success(
-      "Benchmarks & Targets Saved",
-      "Dashboard SLA targets and financial rates have been updated.",
+      "Benchmarks & Loyalty Policy Saved",
+      "Dashboard targets and customer loyalty rewards rules have been updated.",
     );
   }
 
@@ -141,9 +205,18 @@ export function ExecutiveDashboard({
     } catch {
       // Ignore storage errors
     }
+    void fetch("/api/admin/loyalty/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        earnRupeesPerPoint: DEFAULT_BENCHMARKS.loyaltyEarnRupeesPerPoint,
+        redeemPaisePerPoint: DEFAULT_BENCHMARKS.loyaltyRedeemPaisePerPoint,
+        maxRebatePercent: DEFAULT_BENCHMARKS.loyaltyMaxRebatePercent,
+      }),
+    });
     alert.general(
-      "Default Benchmarks Restored",
-      "Restored standard SLA targets (25m prep, 35% repeat rate, 27% vs 12% margin).",
+      "Default Benchmarks & Loyalty Rules Restored",
+      "Restored standard SLA targets and default 1 pt/₹10, ₹0.50/pt loyalty policy.",
     );
   }
 
@@ -995,44 +1068,104 @@ export function ExecutiveDashboard({
           maxWidth="max-w-2xl"
         >
           <div className="space-y-5">
-            {/* Royal Rewards Loyalty Program Settings & Rules Card */}
+            {/* Royal Rewards Loyalty Program Settings & Rules Card (Editable) */}
             <div className="rounded-2xl border border-[#dec9ec] bg-gradient-to-br from-[#faf6fd] to-[#f4ebfa] p-4 text-xs">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-bold text-[#4a1d5a]">
                   <Sparkles className="h-4 w-4 text-[#7e3aa3]" aria-hidden="true" />
-                  <span>Royal Rewards Loyalty Program Policy</span>
+                  <span>Royal Rewards Loyalty Program Settings (Editable)</span>
                 </span>
                 <span className="rounded-full border border-[#dec9ec] bg-white/80 px-2.5 py-0.5 text-[10px] font-bold text-[#4a1d5a]">
-                  Active · System Enforced
+                  Active · Configurable
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-[#635b50]">
-                Direct-ordering loyalty incentives configured to reclaim customer ownership and incentivize repeat visits without aggregators.
+                Configure customer rewards on direct orders to encourage repeat visits. Changes apply immediately to checkout and customer wallets.
               </p>
 
-              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
-                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Earning Rule</span>
-                  <span className="text-sm font-black text-[#0f352d]">1 pt / ₹10</span>
-                  <span className="block text-[10px] text-[#635b50]">10 points earned per ₹100 spent</span>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-[#dec9ec]/60 bg-white/90 p-3 shadow-2xs">
+                  <label className="block text-[11px] font-bold uppercase text-[#4a1d5a]">
+                    Spend Per Point (₹)
+                  </label>
+                  <p className="mb-1 text-[10px] text-[#7a6f60]">
+                    ₹ spent to earn 1 pt (e.g. ₹10)
+                  </p>
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    step={1}
+                    value={draftBenchmarks.loyaltyEarnRupeesPerPoint}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        loyaltyEarnRupeesPerPoint: Number(e.target.value),
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#dfd4c2] bg-[#faf7f2] px-2.5 text-xs font-bold text-[#0f352d]"
+                  />
+                  <span className="mt-1 block text-[10px] font-semibold text-emerald-800">
+                    = {Math.round(100 / Math.max(1, draftBenchmarks.loyaltyEarnRupeesPerPoint))} pts per ₹100 spent
+                  </span>
                 </div>
 
-                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
-                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Redemption Value</span>
-                  <span className="text-sm font-black text-[#4a1d5a]">₹0.50 / pt</span>
-                  <span className="block text-[10px] text-[#635b50]">100 points = ₹50 checkout discount</span>
+                <div className="rounded-xl border border-[#dec9ec]/60 bg-white/90 p-3 shadow-2xs">
+                  <label className="block text-[11px] font-bold uppercase text-[#4a1d5a]">
+                    Point Value (Paise)
+                  </label>
+                  <p className="mb-1 text-[10px] text-[#7a6f60]">
+                    Discount per point (50p = ₹0.50)
+                  </p>
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    step={5}
+                    value={draftBenchmarks.loyaltyRedeemPaisePerPoint}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        loyaltyRedeemPaisePerPoint: Number(e.target.value),
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#dfd4c2] bg-[#faf7f2] px-2.5 text-xs font-bold text-[#4a1d5a]"
+                  />
+                  <span className="mt-1 block text-[10px] font-semibold text-[#4a1d5a]">
+                    = ₹{(draftBenchmarks.loyaltyRedeemPaisePerPoint / 100).toFixed(2)} / pt (100 pts = ₹{Math.round(draftBenchmarks.loyaltyRedeemPaisePerPoint)})
+                  </span>
                 </div>
 
-                <div className="rounded-xl border border-white/60 bg-white/85 p-2.5">
-                  <span className="block text-[10px] font-bold uppercase text-[#7a6f60]">Max Order Rebate</span>
-                  <span className="text-sm font-black text-[#0f352d]">Up to 50%</span>
-                  <span className="block text-[10px] text-[#635b50]">Protects margins on high-value orders</span>
+                <div className="rounded-xl border border-[#dec9ec]/60 bg-white/90 p-3 shadow-2xs">
+                  <label className="block text-[11px] font-bold uppercase text-[#4a1d5a]">
+                    Max Order Rebate (%)
+                  </label>
+                  <p className="mb-1 text-[10px] text-[#7a6f60]">
+                    Max cart total discount cap
+                  </p>
+                  <input
+                    type="number"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={draftBenchmarks.loyaltyMaxRebatePercent}
+                    onChange={(e) =>
+                      setDraftBenchmarks((prev) => ({
+                        ...prev,
+                        loyaltyMaxRebatePercent: Number(e.target.value),
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#dfd4c2] bg-[#faf7f2] px-2.5 text-xs font-bold text-[#0f352d]"
+                  />
+                  <span className="mt-1 block text-[10px] font-semibold text-[#0f352d]">
+                    Up to {draftBenchmarks.loyaltyMaxRebatePercent}% of payable total
+                  </span>
                 </div>
               </div>
 
               <div className="mt-3 flex items-center justify-between rounded-xl border border-[#dec9ec]/60 bg-white/70 px-3 py-2 text-[11px] text-[#4a1d5a]">
                 <span>Customer Wallet: Active on <code className="rounded bg-[#f0e4f7] px-1 py-0.5 font-bold">/account</code> & checkout</span>
-                <span className="font-bold">Append-Only Audit Ledger</span>
+                <span className="font-bold">Live Append-Only Ledger</span>
               </div>
             </div>
 
@@ -1212,7 +1345,7 @@ export function ExecutiveDashboard({
                     type="submit"
                     className="rounded-xl bg-[#0f352d] px-5 py-2 text-xs font-bold text-white hover:bg-[#08231d]"
                   >
-                    Save Benchmarks
+                    Save Benchmarks & Loyalty Settings
                   </button>
                 </div>
               </div>
