@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useId, useCallback } from "react";
 import { ChevronDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/classes";
 
@@ -43,12 +43,61 @@ export function SelectMenu({
 }: SelectMenuProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [menuStyle, setMenuStyle] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    minWidth: number;
+    maxHeight: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
   const isSearchEnabled = searchable ?? options.length > 6;
   const selectedOption = options.find((opt) => opt.value === value);
+
+  const updateMenuPosition = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+
+    const minWidth = Math.min(
+      Math.max(rect.width, 260),
+      viewportW - 24,
+    );
+
+    let left = align === "right" ? rect.right - minWidth : rect.left;
+    if (left + minWidth > viewportW - 12) {
+      left = viewportW - minWidth - 12;
+    }
+    if (left < 12) {
+      left = 12;
+    }
+
+    const spaceBelow = viewportH - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+    const openUpward = spaceBelow < 220 && spaceAbove > spaceBelow;
+
+    if (openUpward) {
+      setMenuStyle({
+        bottom: viewportH - rect.top + 8,
+        left,
+        minWidth,
+        maxHeight: Math.min(288, Math.max(140, spaceAbove - (isSearchEnabled ? 54 : 12))),
+      });
+    } else {
+      setMenuStyle({
+        top: rect.bottom + 8,
+        left,
+        minWidth,
+        maxHeight: Math.min(288, Math.max(140, spaceBelow - (isSearchEnabled ? 54 : 12))),
+      });
+    }
+  }, [align, isSearchEnabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,13 +119,17 @@ export function SelectMenu({
       }
     }
 
+    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener("resize", updateMenuPosition);
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      window.removeEventListener("resize", updateMenuPosition);
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [open, updateMenuPosition]);
 
   useEffect(() => {
     if (open && isSearchEnabled) {
@@ -128,14 +181,20 @@ export function SelectMenu({
       )}
     >
       <button
+        ref={buttonRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
         aria-label={ariaLabel}
         onClick={() => {
-          setOpen((prev) => !prev);
-          if (open) setQuery("");
+          if (!open) {
+            updateMenuPosition();
+            setOpen(true);
+          } else {
+            setOpen(false);
+            setQuery("");
+          }
         }}
         className={cn(
           "inline-flex items-center justify-between gap-3 rounded-xl border transition select-none focus:border-[#0f352d] focus:outline-none focus:ring-3 focus:ring-[#0f352d]/12",
@@ -166,14 +225,19 @@ export function SelectMenu({
         />
       </button>
 
-      {open && (
+      {open && menuStyle && (
         <div
           id={listboxId}
           role="listbox"
+          style={{
+            position: "fixed",
+            top: menuStyle.top,
+            bottom: menuStyle.bottom,
+            left: menuStyle.left,
+            minWidth: menuStyle.minWidth,
+          }}
           className={cn(
-            "absolute z-50 mt-2 min-w-[260px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] shadow-[0_20px_50px_rgba(20,15,25,0.22)] ring-1 ring-[#0f352d]/5",
-            align === "right" ? "right-0" : "left-0",
-            fullWidth && "w-full",
+            "z-[9999] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] shadow-[0_24px_60px_rgba(20,15,25,0.28)] ring-1 ring-[#0f352d]/10",
             menuClassName,
           )}
         >
@@ -199,7 +263,10 @@ export function SelectMenu({
             </div>
           )}
 
-          <div className="max-h-72 overflow-y-auto p-1.5 scrollbar-thin">
+          <div
+            style={{ maxHeight: menuStyle.maxHeight }}
+            className="overflow-y-auto p-1.5 scrollbar-thin"
+          >
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-6 text-center text-xs text-[#7a6f60]">
                 No matching options found.
