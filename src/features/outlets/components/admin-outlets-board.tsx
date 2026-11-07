@@ -242,14 +242,26 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
 
       {/* Outlets Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-[#ded2bf] bg-[#fffdfa] p-12 text-center">
+        <div className="rounded-3xl border border-dashed border-[#ded2bf] bg-[#fffdfa] p-12 text-center shadow-xs">
           <Store className="mx-auto h-12 w-12 text-[#b8ab96]" />
           <h3 className="mt-3 font-display text-lg font-bold text-[#0f352d]">
             No outlets found
           </h3>
-          <p className="mt-1 text-xs text-[#7a6f60]">
-            Try adjusting your search query or filter tags.
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[#7a6f60]">
+            No outlets match your active search query or filter tags.
           </p>
+          {(searchQuery || filter !== "ALL") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilter("ALL");
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0f352d] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#15463b] transition"
+            >
+              <span>Reset All Filters</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

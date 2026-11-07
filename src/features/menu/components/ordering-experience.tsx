@@ -11,6 +11,7 @@ import {
   Clock,
   ShieldCheck,
   Flame,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useCart } from "@/features/cart/context";
 import { CartPanel } from "@/features/cart/components/cart-panel";
@@ -228,7 +229,12 @@ export function OrderingExperience() {
                 />
               )}
 
-              <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_350px]">
+              <div
+                className={cn(
+                  "grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_350px]",
+                  cart.lines.length > 0 && "pb-28 lg:pb-0",
+                )}
+              >
                 <section aria-label="Menu">
                   <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                     <div>
@@ -294,8 +300,28 @@ export function OrderingExperience() {
                   </div>
 
                   {items.length === 0 ? (
-                    <div className="rounded-3xl border border-dashed border-[#d6c9b6] bg-[#fffdfa] p-10 text-center text-sm text-[#655c50]">
-                      No dishes match your search. Try another dish or category.
+                    <div className="rounded-3xl border border-dashed border-[#d6c9b6] bg-[#fffdfa] p-12 text-center shadow-xs">
+                      <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded2bf] bg-[#faf7f2] text-[#c99b53]">
+                        <UtensilsCrossed className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                      <h3 className="font-display text-lg font-bold text-[#0f352d]">
+                        No dishes match &ldquo;{search || category}&rdquo;
+                      </h3>
+                      <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-[#5f574c]">
+                        We couldn&apos;t find any authentic Hyderabadi specialties matching your current selection. Try resetting filters to view all fresh preparations.
+                      </p>
+                      {(search || category !== "All") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearch("");
+                            setCategory("All");
+                          }}
+                          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0f352d] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#15463b] transition"
+                        >
+                          <span>Reset Filters</span>
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="grid gap-5 sm:grid-cols-2">
@@ -329,13 +355,16 @@ export function OrderingExperience() {
                 {cart.lines.length > 0 && (
                   <Link
                     href="/checkout"
-                    className="fixed inset-x-4 bottom-4 z-20 flex min-h-15 items-center gap-3 rounded-2xl border border-[#f4d6a9]/30 bg-gradient-to-r from-[#0f352d] to-[#1a4e42] px-5 text-sm font-bold text-white shadow-[0_12px_32px_rgba(15,53,45,0.4)] transition hover:from-[#144339] hover:to-[#0f352d] active:scale-[0.99] lg:hidden"
+                    className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-30 flex min-h-15 items-center gap-3 rounded-2xl border border-[#f4d6a9]/30 bg-gradient-to-r from-[#0f352d] to-[#1a4e42] px-5 text-sm font-bold text-white shadow-[0_12px_32px_rgba(15,53,45,0.4)] transition hover:from-[#144339] hover:to-[#0f352d] active:scale-[0.99] lg:hidden"
                   >
                     <ShoppingBag
                       className="h-5 w-5 text-[#f4d6a9]"
                       aria-hidden="true"
                     />
-                    <span>View basket · {formatMoney(subtotal)}</span>
+                    <span>
+                      View basket ({cart.lines.reduce((s, l) => s + l.quantity, 0)}{" "}
+                      {cart.lines.reduce((s, l) => s + l.quantity, 0) === 1 ? "item" : "items"}) · {formatMoney(subtotal)}
+                    </span>
                     <ArrowRight className="ml-auto h-5 w-5" aria-hidden="true" />
                   </Link>
                 )}

@@ -424,8 +424,40 @@ export function KitchenBoard({
               {/* Scrollable Card Container */}
               <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin">
                 {totalOrders === 0 && (
-                  <div className="rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2] px-5 py-12 text-center text-xs font-medium text-[#655c50]">
-                    No tickets in this stage.
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#d6c9b6] bg-[#faf7f2]/80 px-4 py-12 text-center text-xs">
+                    {filterMode === "CRITICAL_LATE" ? (
+                      <>
+                        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <p className="font-bold text-[#0f352d]">Zero 10+ Min Delays</p>
+                        <p className="mt-1 text-[11px] text-[#7a6f60]">Kitchen SLA is 100% compliant in this lane.</p>
+                      </>
+                    ) : filterMode === "CATERING" ? (
+                      <>
+                        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7f2fa] text-[#4a1d5a]">
+                          <Store className="h-5 w-5" />
+                        </div>
+                        <p className="font-bold text-[#0f352d]">No Catering Tickets</p>
+                        <p className="mt-1 text-[11px] text-[#7a6f60]">No bulk orders currently queued here.</p>
+                      </>
+                    ) : searchQuery.trim() ? (
+                      <>
+                        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5efe4] text-[#7a6f60]">
+                          <Search className="h-4 w-4" />
+                        </div>
+                        <p className="font-bold text-[#0f352d]">No Match</p>
+                        <p className="mt-1 text-[11px] text-[#7a6f60]">No ticket matches &ldquo;{searchQuery}&rdquo;.</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <p className="font-bold text-[#0f352d]">Lane All Clear</p>
+                        <p className="mt-1 text-[11px] text-[#7a6f60]">Standing by for incoming order tickets.</p>
+                      </>
+                    )}
                   </div>
                 )}
                 {paginatedOrders.map((ticket) => (

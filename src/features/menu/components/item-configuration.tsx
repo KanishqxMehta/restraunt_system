@@ -147,15 +147,17 @@ export function ItemConfiguration({
           </fieldset>
         )}
 
-        <Button
-          type="submit"
-          variant="primary"
-          className="min-h-13 w-full text-base font-bold"
-          disabled={!portion}
-        >
-          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-          Add to basket · {formatMoney(total)}
-        </Button>
+        <div className="sticky -bottom-6 -mx-6 -mb-6 mt-6 border-t border-[#ece3d5] bg-[#fffdfa]/95 px-6 py-4 shadow-[0_-8px_20px_rgba(20,18,14,0.04)] backdrop-blur-xs sm:-bottom-7 sm:-mx-7 sm:-mb-7 sm:px-7">
+          <Button
+            type="submit"
+            variant="primary"
+            className="min-h-13 w-full text-base font-bold shadow-md"
+            disabled={!portion}
+          >
+            <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+            Add to basket · {formatMoney(total)}
+          </Button>
+        </div>
       </form>
     </Modal>
   );

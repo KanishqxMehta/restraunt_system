@@ -346,8 +346,30 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
       {/* Dishes Grid */}
       {filteredItems.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-[#d6c9b6] bg-[#fffdfa] p-12 text-center text-sm text-[#655c50]">
-          No dishes match your active search or filters.
+        <div className="rounded-3xl border border-dashed border-[#d6c9b6] bg-[#fffdfa] p-12 text-center shadow-xs">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded2bf] bg-[#faf7f2] text-[#c99b53]">
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <h3 className="font-display text-lg font-bold text-[#0f352d]">
+            No dishes found
+          </h3>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[#7a6f60]">
+            No menu items match your active search query or filter constraints.
+          </p>
+          {(search || categoryFilter !== "All" || dietaryFilter !== "ALL" || statusFilter !== "ALL") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setCategoryFilter("All");
+                setDietaryFilter("ALL");
+                setStatusFilter("ALL");
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0f352d] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#15463b] transition"
+            >
+              <span>Reset All Filters</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
