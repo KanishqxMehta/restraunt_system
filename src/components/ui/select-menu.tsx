@@ -46,12 +46,16 @@ export function SelectMenu({
   const [menuStyle, setMenuStyle] = useState<{
     top?: number;
     bottom?: number;
-    left: number;
+    left?: number;
+    right?: number;
+    width?: number;
     minWidth: number;
+    maxWidth: number;
     maxHeight: number;
   } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
@@ -65,39 +69,98 @@ export function SelectMenu({
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    const minWidth = Math.min(
-      Math.max(rect.width, 260),
-      viewportW - 24,
-    );
+    // Detect if inside a modal <dialog> so we respect modal boundaries as well as viewport boundaries
+    const dialogEl = btn.closest("dialog");
+    const dialogRect = dialogEl ? dialogEl.getBoundingClientRect() : null;
 
-    let left = align === "right" ? rect.right - minWidth : rect.left;
-    if (left + minWidth > viewportW - 12) {
-      left = viewportW - minWidth - 12;
-    }
-    if (left < 12) {
-      left = 12;
+    const boundLeft = dialogRect
+      ? Math.max(12, dialogRect.left + 14)
+      : 12;
+    const boundRight = dialogRect
+      ? Math.min(viewportW - 12, dialogRect.right - 14)
+      : viewportW - 12;
+    const boundTop = dialogRect
+      ? Math.max(12, dialogRect.top + 14)
+      : 12;
+    const boundBottom = dialogRect
+      ? Math.min(viewportH - 12, dialogRect.bottom - 14)
+      : viewportH - 12;
+
+    const availableWidth = Math.max(180, boundRight - boundLeft);
+
+    // If fullWidth is true, match the trigger width (clamped to boundary)
+    const targetMinWidth = fullWidth
+      ? Math.min(rect.width, availableWidth)
+      : Math.min(Math.max(rect.width, 240), availableWidth);
+
+    const targetMaxWidth = fullWidth
+      ? Math.min(rect.width, availableWidth)
+      : Math.min(350, availableWidth);
+
+    // Measure actual rendered menu width if available, otherwise estimate
+    const renderedWidth = menuRef.current
+      ? Math.min(menuRef.current.offsetWidth, targetMaxWidth)
+      : targetMaxWidth;
+
+    // Determine whether to anchor from right or left to stay inside [boundLeft, boundRight]
+    const overflowsRightIfLeftAligned = rect.left + renderedWidth > boundRight;
+    const shouldAlignRight =
+      !fullWidth && (align === "right" || overflowsRightIfLeftAligned);
+
+    let left: number | undefined;
+    let right: number | undefined;
+
+    if (shouldAlignRight) {
+      const anchorRight = Math.min(rect.right, boundRight);
+      right = Math.max(12, viewportW - anchorRight);
+      // Ensure left edge doesn't cross boundLeft
+      const maxAllowedFromRight = Math.max(180, anchorRight - boundLeft);
+      if (renderedWidth > maxAllowedFromRight) {
+        right = undefined;
+        left = boundLeft;
+      }
+    } else {
+      left = Math.max(boundLeft, rect.left);
+      if (left + renderedWidth > boundRight) {
+        left = Math.max(boundLeft, boundRight - renderedWidth);
+      }
     }
 
-    const spaceBelow = viewportH - rect.bottom - 16;
-    const spaceAbove = rect.top - 16;
-    const openUpward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    // Vertical boundary awareness (flip upward if insufficient space below)
+    const spaceBelow = boundBottom - rect.bottom - 8;
+    const spaceAbove = rect.top - boundTop - 8;
+    const openUpward = spaceBelow < 190 && spaceAbove > spaceBelow;
+
+    const searchHeaderOffset = isSearchEnabled ? 54 : 12;
 
     if (openUpward) {
       setMenuStyle({
-        bottom: viewportH - rect.top + 8,
+        bottom: viewportH - rect.top + 6,
         left,
-        minWidth,
-        maxHeight: Math.min(288, Math.max(140, spaceAbove - (isSearchEnabled ? 54 : 12))),
+        right,
+        width: fullWidth ? targetMinWidth : undefined,
+        minWidth: targetMinWidth,
+        maxWidth: targetMaxWidth,
+        maxHeight: Math.min(
+          280,
+          Math.max(120, spaceAbove - searchHeaderOffset),
+        ),
       });
     } else {
       setMenuStyle({
-        top: rect.bottom + 8,
+        top: rect.bottom + 6,
         left,
-        minWidth,
-        maxHeight: Math.min(288, Math.max(140, spaceBelow - (isSearchEnabled ? 54 : 12))),
+        right,
+        width: fullWidth ? targetMinWidth : undefined,
+        minWidth: targetMinWidth,
+        maxWidth: targetMaxWidth,
+        maxHeight: Math.min(
+          280,
+          Math.max(120, spaceBelow - searchHeaderOffset),
+        ),
       });
     }
-  }, [align, isSearchEnabled]);
+  }, [align, fullWidth, isSearchEnabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -227,6 +290,7 @@ export function SelectMenu({
 
       {open && menuStyle && (
         <div
+          ref={menuRef}
           id={listboxId}
           role="listbox"
           style={{
@@ -234,10 +298,13 @@ export function SelectMenu({
             top: menuStyle.top,
             bottom: menuStyle.bottom,
             left: menuStyle.left,
+            right: menuStyle.right,
+            width: menuStyle.width,
             minWidth: menuStyle.minWidth,
+            maxWidth: menuStyle.maxWidth,
           }}
           className={cn(
-            "z-[9999] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] shadow-[0_24px_60px_rgba(20,15,25,0.28)] ring-1 ring-[#0f352d]/10",
+            "z-[9999] overflow-hidden rounded-2xl border border-[#dfd4c2] bg-[#fffdfa] shadow-[0_24px_60px_rgba(20,15,25,0.28)] ring-1 ring-[#0f352d]/10",
             menuClassName,
           )}
         >
