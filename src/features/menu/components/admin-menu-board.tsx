@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SelectMenu } from "@/components/ui/select-menu";
-import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
+import { useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "./dietary-mark";
 import { DishImage } from "./dish-image";
 import { CreateDishModal } from "./create-dish-modal";
@@ -48,10 +48,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
   const [togglingMap, setTogglingMap] = useState<Record<string, boolean>>({});
   const [activatingMap, setActivatingMap] = useState<Record<string, boolean>>({});
-  const [feedback, setFeedback] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   // Active stock item reactive reference
   const activeStockItem = items.find((i) => i.id === stockModalItemId) ?? null;
@@ -124,7 +120,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
   ) {
     const toggleKey = `${itemId}-${outletId}`;
     setTogglingMap((prev) => ({ ...prev, [toggleKey]: true }));
-    setFeedback(null);
 
     // Optimistic update
     setItems((prev) =>
@@ -157,10 +152,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
       });
 
       const msg = `Stock updated to ${!currentAvailable ? "In stock" : "Paused"}.`;
-      setFeedback({
-        message: msg,
-        type: "success",
-      });
       if (!currentAvailable) {
         alert.success("Outlet Stock Restored", msg);
       } else {
@@ -179,11 +170,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           return { ...item, availability: revertedAvail };
         }),
       );
-      const msg = `Failed to update stock: ${errorMessage(err)}`;
-      setFeedback({
-        message: msg,
-        type: "error",
-      });
       alert.failure("Stock Update Failed", errorMessage(err));
     } finally {
       setTogglingMap((prev) => ({ ...prev, [toggleKey]: false }));
@@ -237,12 +223,9 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
 
       const actionText = targetAvailable ? "restored to In Stock" : "paused";
       const msg = `All ${outlets.length} outlets ${actionText} for "${targetItem.name}".`;
-      setFeedback({ message: msg, type: "success" });
       alert.success("Fleet Stock Updated", msg);
     } catch (err) {
       void refreshMenu();
-      const msg = `Failed to batch update stock: ${errorMessage(err)}`;
-      setFeedback({ message: msg, type: "error" });
       alert.failure("Batch Stock Update Failed", errorMessage(err));
     }
   }
@@ -264,21 +247,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         ),
       );
       const msg = `Dish "${res.item.name}" ${res.item.isActive ? "activated (now live)" : "deactivated (draft)"}.`;
-      setFeedback({
-        message: msg,
-        type: "success",
-      });
       if (res.item.isActive) {
         alert.success("Dish Activated", msg);
       } else {
         alert.general("Dish Deactivated", msg);
       }
     } catch (err) {
-      const msg = `Failed to change status: ${errorMessage(err)}`;
-      setFeedback({
-        message: msg,
-        type: "error",
-      });
       alert.failure("Status Change Failed", errorMessage(err));
     } finally {
       setActivatingMap((prev) => ({ ...prev, [itemId]: false }));
@@ -364,15 +338,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           </p>
         </div>
       </div>
-
-      {feedback && (
-        <AlertBanner
-          variant={feedback.type === "success" ? "success" : "failure"}
-          title={feedback.type === "success" ? "Menu CMS Updated" : "Menu CMS Error"}
-          message={feedback.message}
-          onDismiss={() => setFeedback(null)}
-        />
-      )}
 
       {/* Action Controls & Filters */}
       <div className="flex flex-col gap-4 rounded-[1.75rem] border border-[#dfd4c2] bg-[#fffdfa] p-5 shadow-2xs sm:p-6">
@@ -871,10 +836,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           onClose={() => setCreateModalOpen(false)}
           onCreated={(newItem) => {
             setItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
-            setFeedback({
-              message: `Draft dish "${newItem.name}" created! Review portions and activate when ready.`,
-              type: "success",
-            });
             void refreshMenu();
           }}
         />
@@ -884,11 +845,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
         <EditDishModal
           item={editingItem}
           onClose={() => setEditingItem(null)}
-          onUpdated={(updated) => {
-            setFeedback({
-              message: `Dish "${updated.name}" updated!`,
-              type: "success",
-            });
+          onUpdated={() => {
             void refreshMenu();
           }}
         />
@@ -899,7 +856,6 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
           item={pricingItem}
           onClose={() => setPricingItem(null)}
           onPricesUpdated={() => {
-            setFeedback({ message: "Pricing updated!", type: "success" });
             void refreshMenu();
           }}
         />
