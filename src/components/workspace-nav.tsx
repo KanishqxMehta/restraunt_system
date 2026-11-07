@@ -10,6 +10,7 @@ import {
   BookOpen,
   ChefHat,
   Store,
+  Ticket,
 } from "lucide-react";
 import type { Role } from "@/features/auth/roles";
 import { cn } from "@/lib/classes";
@@ -92,6 +93,12 @@ export function WorkspaceNav({ role }: { role: Role }) {
         label: "Outlets",
         icon: Store,
         active: pathname.startsWith("/admin/outlets"),
+      },
+      {
+        href: "/admin/coupons",
+        label: "Coupons",
+        icon: Ticket,
+        active: pathname.startsWith("/admin/coupons"),
       },
       {
         href: "/kitchen",

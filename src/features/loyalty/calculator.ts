@@ -10,8 +10,9 @@ export interface LoyaltyCalculationResult {
 
 export function calculatePointsEarned(
   paidTotalPaise: number,
-  settings: LoyaltySettings = getLoyaltySettingsSync(),
+  customSettings?: Partial<LoyaltySettings>,
 ): number {
+  const settings = { ...getLoyaltySettingsSync(), ...customSettings };
   if (paidTotalPaise <= 0) return 0;
   const paisePerPoint = settings.earnRupeesPerPoint * 100;
   return Math.floor(paidTotalPaise / paisePerPoint);
@@ -21,8 +22,9 @@ export function calculateLoyaltyRedemption(
   availablePoints: number,
   payablePaise: number,
   redeemRequested: boolean,
-  settings: LoyaltySettings = getLoyaltySettingsSync(),
+  customSettings?: Partial<LoyaltySettings>,
 ): LoyaltyCalculationResult {
+  const settings = { ...getLoyaltySettingsSync(), ...customSettings };
   if (!redeemRequested || availablePoints <= 0 || payablePaise <= 0) {
     return { pointsToRedeem: 0, discountPaise: 0 };
   }
