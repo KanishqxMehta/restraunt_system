@@ -44,7 +44,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
     return (
       <nav
         aria-label="Customer navigation"
-        className="flex flex-wrap items-center gap-1 rounded-2xl border border-[#e3d8c6] bg-[#f5efe4]/80 p-1 shadow-[inset_0_1px_2px_rgba(37,34,30,0.05)]"
+        className="flex items-center gap-0.5 rounded-2xl border border-[#e3d8c6] bg-[#f5efe4]/80 p-1 shadow-[inset_0_1px_2px_rgba(37,34,30,0.05)]"
       >
         {items.map((item) => {
           const Icon = item.icon;
@@ -53,7 +53,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold tracking-tight transition-all sm:text-sm",
+                "inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold tracking-tight transition-all sm:px-3",
                 item.active
                   ? "bg-[#0f352d] text-white shadow-xs"
                   : "text-[#4e473d] hover:bg-[#fffdfa] hover:text-[#0f352d]",
@@ -66,7 +66,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
                   item.active ? "text-[#f4d6a9]" : "text-[#7a6f60]",
                 )}
               />
-              {item.label}
+              <span className="whitespace-nowrap">{item.label}</span>
             </Link>
           );
         })}
@@ -111,7 +111,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
     return (
       <nav
         aria-label="Admin navigation"
-        className="flex flex-wrap items-center gap-1 rounded-2xl border border-[#e3d8c6] bg-[#f5efe4]/80 p-1 shadow-[inset_0_1px_2px_rgba(37,34,30,0.05)]"
+        className="flex items-center gap-0.5 rounded-2xl border border-[#e3d8c6] bg-[#f5efe4]/80 p-1 shadow-[inset_0_1px_2px_rgba(37,34,30,0.05)]"
       >
         {items.map((item) => {
           const Icon = item.icon;
@@ -120,7 +120,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold tracking-tight transition-all sm:text-sm",
+                "inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold tracking-tight transition-all sm:px-3",
                 item.active
                   ? "bg-[#0f352d] text-white shadow-xs"
                   : "text-[#4e473d] hover:bg-[#fffdfa] hover:text-[#0f352d]",
@@ -133,7 +133,7 @@ export function WorkspaceNav({ role }: { role: Role }) {
                   item.active ? "text-[#f4d6a9]" : "text-[#7a6f60]",
                 )}
               />
-              {item.label}
+              <span className="whitespace-nowrap">{item.label}</span>
             </Link>
           );
         })}

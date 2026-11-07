@@ -34,40 +34,42 @@ export function WorkspaceShell({
       <div className="h-1 w-full bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
 
       <header className="sticky top-0 z-30 border-b border-[#e3d8c6]/90 bg-[#fffdfa]/92 backdrop-blur-md shadow-[0_2px_16px_rgba(20,18,14,0.04)]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="group flex items-center gap-3 tracking-tight text-[#0f352d]"
+            className="group flex shrink-0 items-center gap-2.5 tracking-tight text-[#0f352d]"
           >
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#14453a] to-[#0a241e] text-[#f4d6a9] shadow-[0_2px_8px_rgba(15,53,45,0.2)] transition-transform duration-200 group-hover:scale-105"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#14453a] to-[#0a241e] text-[#f4d6a9] shadow-[0_2px_8px_rgba(15,53,45,0.2)] transition-transform duration-200 group-hover:scale-105"
             >
-              <UtensilsCrossed className="h-5 w-5" />
+              <UtensilsCrossed className="h-4.5 w-4.5" />
             </span>
-            <div>
-              <span className="font-display block text-lg font-bold leading-none text-[#0f352d]">
+            <div className="leading-tight">
+              <span className="font-display block text-base font-bold text-[#0f352d] sm:text-lg">
                 Restaurant System
               </span>
-              <span className="mt-1 block text-[11px] font-bold tracking-[0.18em] uppercase text-[#4a1d5a]">
+              <span className="block text-[10px] font-bold tracking-[0.16em] uppercase text-[#4a1d5a]">
                 Company A · Hyderabad
               </span>
             </div>
           </Link>
 
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-            <WorkspaceNav role={viewer.role} />
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="overflow-x-auto py-0.5">
+              <WorkspaceNav role={viewer.role} />
+            </div>
 
-            <div className="hidden items-center gap-2.5 rounded-2xl border border-[#e7ddd0] bg-[#faf7f2] py-1.5 pr-3 pl-2 lg:flex">
+            <div className="hidden items-center gap-2 rounded-2xl border border-[#e7ddd0] bg-[#faf7f2] py-1 pr-2.5 pl-1.5 xl:flex">
               <span
                 aria-hidden="true"
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3b1747] text-xs font-extrabold text-[#f4d6a9]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#3b1747] text-[11px] font-extrabold text-[#f4d6a9]"
               >
                 {initials || "CA"}
               </span>
               <div className="text-left leading-tight">
                 <p className="text-xs font-bold text-[#1f1c18]">{viewer.name}</p>
-                <span className="inline-block text-[10px] font-bold tracking-wide uppercase text-[#4a1d5a]">
+                <span className="inline-block text-[9px] font-bold tracking-wide uppercase text-[#4a1d5a]">
                   {roleLabels[viewer.role]}
                 </span>
               </div>
