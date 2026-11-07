@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Check,
 } from "lucide-react";
+import { useBoundaryPopover } from "./use-boundary-popover";
 import { cn } from "@/lib/classes";
 
 interface CustomDateTimePickerProps {
@@ -44,8 +45,21 @@ export function CustomDateTimePicker({
   className,
 }: CustomDateTimePickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   const [isOpen, setIsOpen] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+
+  const { style: popoverStyle } = useBoundaryPopover({
+    triggerRef: buttonRef,
+    popoverRef,
+    isOpen,
+    preferredWidth: 310,
+    preferredHeight: 390,
+    align: "auto",
+    offset: 6,
+  });
 
   // Parse current value
   const parsedDate = new Date(value);
@@ -67,23 +81,35 @@ export function CustomDateTimePicker({
   const selectedMinute = activeDate.getMinutes();
   const selectedPeriod: "AM" | "PM" = rawHours >= 12 ? "PM" : "AM";
 
-  // Click outside to close
+  // Click outside and escape key handling
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target as Node;
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
     }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
 
@@ -182,6 +208,7 @@ export function CustomDateTimePicker({
 
       {/* Trigger Button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -198,12 +225,14 @@ export function CustomDateTimePicker({
         <Clock className="h-3.5 w-3.5 text-[#a0907d]" aria-hidden="true" />
       </button>
 
-      {/* Custom Luxury Popover */}
+      {/* Custom Luxury Popover with Boundary-Aware Positioning */}
       {isOpen && (
         <div
+          ref={popoverRef}
           role="dialog"
           aria-label="Date and time picker"
-          className="absolute left-0 top-full z-50 mt-1.5 w-[310px] rounded-2xl border border-[#dec9ec] bg-[#fffdfa] p-3.5 text-[#25221e] shadow-[0_16px_40px_rgba(30,20,10,0.18)]"
+          style={popoverStyle}
+          className="overflow-y-auto rounded-2xl border border-[#dec9ec] bg-[#fffdfa] p-3.5 text-[#25221e] shadow-[0_24px_60px_rgba(20,15,25,0.28)] ring-1 ring-[#0f352d]/10"
         >
           {/* Month / Year Bar */}
           <div className="flex items-center justify-between border-b border-[#f0e8dc] pb-2.5">
