@@ -75,7 +75,12 @@ export async function predictKitchenPrepTime(
   load: KitchenLoadSnapshot,
 ): Promise<PrepEstimateResult> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const preferredModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+  const candidateModels = [
+    preferredModel,
+    ...(preferredModel !== "gemini-3.1-flash-lite" ? ["gemini-3.1-flash-lite"] : []),
+    ...(preferredModel !== "gemini-3.5-flash" ? ["gemini-3.5-flash"] : []),
+  ];
 
   let aiMinutes: number;
   let explanation: string;
@@ -115,42 +120,50 @@ Respond strictly with valid JSON with these keys:
   "confidence": "HIGH" | "MEDIUM" | "LOW"
 }`;
 
-      // Enforce timeout using AbortController
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3500);
+      let rawText: string | null = null;
+      let lastError: unknown = null;
 
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            abortSignal: controller.signal,
-          },
-        });
+      for (const modelToTry of candidateModels) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3500);
 
-        clearTimeout(timeout);
-        const text = response.text?.trim() || "{}";
-        const parsed = geminiPredictionSchema.parse(JSON.parse(text));
+        try {
+          const response = await ai.models.generateContent({
+            model: modelToTry,
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              abortSignal: controller.signal,
+            },
+          });
+          clearTimeout(timeout);
+          const t = response.text?.trim();
+          if (t) {
+            rawText = t;
+            break;
+          }
+        } catch (err) {
+          clearTimeout(timeout);
+          lastError = err;
+          // Continue to next candidate model
+        }
+      }
 
+      if (rawText) {
+        const parsed = geminiPredictionSchema.parse(JSON.parse(rawText));
         aiMinutes = parsed.estimatedMinutes;
         explanation = parsed.explanation;
         estimateSource = "GEMINI_AI";
         confidence = parsed.confidence;
-      } catch {
-        clearTimeout(timeout);
-        const fallback = calculateHeuristicPrep(orderItems, outlet, load);
-        aiMinutes = fallback.minutes;
-        explanation = `Gemini fallback: ${fallback.explanation}`;
-        estimateSource = "GEMINI_FALLBACK";
-        confidence = "MEDIUM";
+      } else {
+        throw lastError || new Error("No response from candidate Gemini models");
       }
     } catch {
       const fallback = calculateHeuristicPrep(orderItems, outlet, load);
       aiMinutes = fallback.minutes;
-      explanation = fallback.explanation;
+      explanation = `Gemini fallback: ${fallback.explanation}`;
       estimateSource = "GEMINI_FALLBACK";
-      confidence = "LOW";
+      confidence = "MEDIUM";
     }
   } else {
     const fallback = calculateHeuristicPrep(orderItems, outlet, load);

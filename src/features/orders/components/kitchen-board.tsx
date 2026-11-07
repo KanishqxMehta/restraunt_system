@@ -777,7 +777,7 @@ function KitchenTicket({
           {ticket.estimateSource === "GEMINI_AI" && (
             <span className="inline-flex items-center gap-1 rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-2.5 py-0.5 text-[11px] font-bold text-[#065f46]">
               <Sparkles className="h-3 w-3 text-[#059669]" aria-hidden="true" />{" "}
-              Gemini AI
+              Gemini AI ({ticket.aiEstimatedMinutes ?? 25}m)
             </span>
           )}
           {ticket.estimateSource === "MANAGER_OVERRIDE" && (
@@ -788,6 +788,18 @@ function KitchenTicket({
           )}
         </div>
       </div>
+
+      {ticket.aiExplanation && ticket.estimateSource === "GEMINI_AI" && (
+        <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs text-emerald-950">
+          <p className="flex items-center gap-1.5 font-bold text-emerald-800">
+            <Sparkles className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+            <span>Gemini AI Expediter Note:</span>
+          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed italic text-emerald-900">
+            &ldquo;{ticket.aiExplanation}&rdquo;
+          </p>
+        </div>
+      )}
 
       {ticket.managerOverrideReason && (
         <p className="mt-2.5 rounded-xl border border-[#dec9ec] bg-[#faf6fd] p-2.5 text-xs text-[#3b1747]">

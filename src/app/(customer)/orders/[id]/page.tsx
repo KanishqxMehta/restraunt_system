@@ -153,20 +153,37 @@ export default async function CustomerOrderPage({
                   ? `Kitchen ready by ${formatTime(order.promisedReadyAt)}`
                   : "Complete your test payment"}
               </h2>
-              <p className="mt-1 text-xs leading-6 text-stone-200">
+              <div className="mt-1.5 text-xs leading-6 text-stone-200">
                 {paid ? (
                   order.estimateSource === "GEMINI_AI" ? (
-                    <span className="inline-flex items-center gap-1.5 text-[#f4d6a9]">
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                      Estimated by Gemini culinary AI based on live kitchen
-                      queue.
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-[#f4d6a9]">
+                        <Sparkles className="h-3.5 w-3.5 text-[#f4d6a9]" aria-hidden="true" />
+                        Estimated by Gemini Culinary AI ({order.aiEstimatedMinutes ?? 25}m prep)
+                      </span>
+                      {order.aiExplanation && (
+                        <p className="rounded-lg bg-black/25 px-2.5 py-1 text-xs leading-relaxed text-[#faeccf] italic">
+                          &ldquo;{order.aiExplanation}&rdquo;
+                        </p>
+                      )}
+                    </div>
                   ) : order.estimateSource === "MANAGER_OVERRIDE" ? (
                     <span className="inline-block rounded-lg border border-[#7e3aa3] bg-[#2d1136] px-2.5 py-0.5 font-semibold text-[#f5effa]">
                       ⏱️ Updated by kitchen supervisor:{" "}
                       {order.managerOverrideReason ||
                         "Extended for careful preparation"}
                     </span>
+                  ) : order.estimateSource === "GEMINI_FALLBACK" ? (
+                    <div className="flex flex-col gap-0.5 text-stone-300">
+                      <span className="font-medium text-amber-200">
+                        ⚡ Station queue buffer estimate ({order.aiEstimatedMinutes ?? 25}m prep)
+                      </span>
+                      {order.aiExplanation && (
+                        <p className="text-[11px] text-stone-300/80">
+                          {order.aiExplanation}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <span>
                       Preparation estimate calculated from outlet station
@@ -176,7 +193,7 @@ export default async function CustomerOrderPage({
                 ) : (
                   "Unpaid orders are not sent to the kitchen."
                 )}
-              </p>
+              </div>
             </div>
           </div>
         </div>

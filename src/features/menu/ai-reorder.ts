@@ -92,23 +92,43 @@ export async function getCustomerReorderSuggestions(
   if (apiKey && topItems.length > 0) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
-
       const pastDishNames = Array.from(frequencies.keys()).slice(0, 5);
       const prompt = `A loyal restaurant customer frequently orders: ${pastDishNames.join(", ")}.
 In 1 friendly, appetizing sentence (max 18 words), suggest a reorder for today. Do not output quotes.`;
 
-      const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          abortSignal: controller.signal,
-        },
-      });
+      const preferredModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+      const candidateModels = [
+        preferredModel,
+        ...(preferredModel !== "gemini-3.1-flash-lite" ? ["gemini-3.1-flash-lite"] : []),
+        ...(preferredModel !== "gemini-3.5-flash" ? ["gemini-3.5-flash"] : []),
+      ];
 
-      clearTimeout(timeout);
-      aiNote = response.text?.trim() || null;
+      for (const modelToTry of candidateModels) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
+
+        try {
+          const response = await ai.models.generateContent({
+            model: modelToTry,
+            contents: prompt,
+            config: {
+              abortSignal: controller.signal,
+            },
+          });
+          clearTimeout(timeout);
+          const t = response.text?.trim();
+          if (t) {
+            aiNote = t;
+            break;
+          }
+        } catch {
+          clearTimeout(timeout);
+        }
+      }
+
+      if (!aiNote) {
+        aiNote = `Based on your ${pastOrders.length} previous orders, here are your favourites ready to reorder.`;
+      }
     } catch {
       aiNote = `Based on your ${pastOrders.length} previous orders, here are your favourites ready to reorder.`;
     }
