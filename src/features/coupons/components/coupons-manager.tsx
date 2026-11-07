@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { CouponItem, CouponMetrics } from "../types";
 import { Modal } from "@/components/ui/modal";
+import { CustomDateTimePicker } from "@/components/ui/custom-datetime-picker";
 import { useAlert } from "@/components/ui/alert-toast";
 import { cn } from "@/lib/classes";
 
@@ -958,43 +959,31 @@ export function CouponsManager({
               />
             </div>
 
-            {/* Row 5: Validity Dates */}
+            {/* Row 5: Validity Dates (Custom Luxury DateTimePickers) */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-[#0f352d]">
-                  Start Date & Time
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={formData.startsAt}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      startsAt: e.target.value,
-                    }))
-                  }
-                  className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-xs font-bold text-[#0f352d]"
-                />
-              </div>
+              <CustomDateTimePicker
+                label="Start Date & Time"
+                helperText="When code becomes active"
+                value={formData.startsAt}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    startsAt: val,
+                  }))
+                }
+              />
 
-              <div>
-                <label className="block text-xs font-bold text-[#0f352d]">
-                  Expiration Date & Time
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={formData.expiresAt}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      expiresAt: e.target.value,
-                    }))
-                  }
-                  className="h-10 w-full rounded-xl border border-[#dfd4c2] bg-[#faf7f2] px-3 text-xs font-bold text-[#0f352d]"
-                />
-              </div>
+              <CustomDateTimePicker
+                label="Expiration Date & Time"
+                helperText="When code automatically expires"
+                value={formData.expiresAt}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    expiresAt: val,
+                  }))
+                }
+              />
             </div>
 
             {/* Active Toggle */}

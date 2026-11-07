@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { CustomDateTimePicker } from "@/components/ui/custom-datetime-picker";
 import { useAlert } from "@/components/ui/alert-toast";
 import { formatMoney } from "@/lib/format";
 import { requestJson, errorMessage } from "@/lib/http-client";
@@ -509,19 +510,10 @@ export function PartyCateringExperience({
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label
-                  htmlFor="event-datetime"
-                  className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#433d35]"
-                >
-                  Event Date & Serving Time
-                </label>
-                <input
-                  id="event-datetime"
-                  type="datetime-local"
-                  required
+                <CustomDateTimePicker
+                  label="Event Date & Serving Time"
                   value={eventDateTime}
-                  onChange={(e) => setEventDateTime(e.target.value)}
-                  className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-3.5 text-sm font-medium text-[#1f1c18] outline-none transition focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
+                  onChange={(val) => setEventDateTime(val)}
                 />
                 <p
                   className={cn(
