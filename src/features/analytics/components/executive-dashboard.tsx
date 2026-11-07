@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { ExecutiveAnalyticsSummary } from "../types";
 import { SelectMenu, type SelectMenuOption } from "@/components/ui/select-menu";
+import { Pagination } from "@/components/ui/pagination";
 import { Modal } from "@/components/ui/modal";
 import { useAlert } from "@/components/ui/alert-toast";
 import { cn } from "@/lib/classes";
@@ -68,6 +69,7 @@ export function ExecutiveDashboard({
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("ORDERS");
+  const [outletPage, setOutletPage] = useState(1);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Admin-configurable benchmarks (persisted in localStorage)
@@ -243,6 +245,18 @@ export function ExecutiveDashboard({
         return b.cancelledOrders - a.cancelledOrders;
       return 0;
     });
+
+  const OUTLETS_PER_PAGE = 10;
+  const totalOutletPages = Math.max(
+    1,
+    Math.ceil(filteredOutlets.length / OUTLETS_PER_PAGE),
+  );
+  const safeOutletPage = Math.min(Math.max(1, outletPage), totalOutletPages);
+  const outletStartIndex = (safeOutletPage - 1) * OUTLETS_PER_PAGE;
+  const paginatedOutlets = filteredOutlets.slice(
+    outletStartIndex,
+    outletStartIndex + OUTLETS_PER_PAGE,
+  );
 
   const filteredRecentOrders =
     selectedOutletId === "ALL"
@@ -510,7 +524,10 @@ export function ExecutiveDashboard({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setOutletPage(1);
+                }}
                 placeholder="Search outlet..."
                 className="w-32 bg-transparent font-medium text-[#1f1c18] outline-none placeholder:text-[#8f8474] sm:w-40"
               />
@@ -534,7 +551,10 @@ export function ExecutiveDashboard({
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setFilterType(val)}
+                  onClick={() => {
+                    setFilterType(val);
+                    setOutletPage(1);
+                  }}
                   className={cn(
                     "rounded-lg px-2.5 py-1 transition",
                     filterType === val
@@ -551,7 +571,10 @@ export function ExecutiveDashboard({
             <SelectMenu
               ariaLabel="Sort outlets by"
               value={sortBy}
-              onChange={(val) => setSortBy(val as SortKey)}
+              onChange={(val) => {
+                setSortBy(val as SortKey);
+                setOutletPage(1);
+              }}
               options={sortSelectOptions}
               align="right"
               searchable={false}
@@ -593,7 +616,7 @@ export function ExecutiveDashboard({
                   </td>
                 </tr>
               ) : (
-                filteredOutlets.map((outlet) => {
+                paginatedOutlets.map((outlet) => {
                   const isSelected = selectedOutletId === outlet.id;
                   const outletDirectSaved = Math.round(
                     outlet.directRegularRevenuePaise * netDirectSavingsRate,
@@ -729,6 +752,16 @@ export function ExecutiveDashboard({
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={safeOutletPage}
+          totalPages={totalOutletPages}
+          totalItems={filteredOutlets.length}
+          pageSize={OUTLETS_PER_PAGE}
+          itemName="outlets"
+          onPageChange={setOutletPage}
+          className="mt-4"
+        />
       </section>
 
       {/* Bottom Split: Recent Orders Feed + Admin-Configurable Commission & Savings Estimator */}

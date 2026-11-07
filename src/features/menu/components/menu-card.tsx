@@ -44,9 +44,7 @@ export function MenuCard({
 
           {/* Top Gradient Overlay & Badges */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/50 via-black/15 to-transparent p-3.5">
-            <div className="rounded-full bg-[#fffdfa]/95 shadow-xs backdrop-blur-xs">
-              <DietaryMark isVeg={item.isVeg} />
-            </div>
+            <DietaryMark isVeg={item.isVeg} />
             <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-[#f4d6a9] backdrop-blur-xs">
               <Flame className="h-3 w-3 text-[#f4d6a9]" aria-hidden="true" />
               {SPICE_LABELS[item.spiceLevel] ?? "Medium spice"}

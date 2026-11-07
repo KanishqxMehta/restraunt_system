@@ -613,9 +613,7 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                     />
                     <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/60 via-black/20 to-transparent p-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">
-                          <DietaryMark isVeg={item.isVeg} />
-                        </span>
+                        <DietaryMark isVeg={item.isVeg} />
                         <span className="rounded-lg bg-[#0f352d]/90 px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] backdrop-blur-xs">
                           {item.category}
                         </span>

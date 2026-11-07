@@ -109,9 +109,9 @@ export function ReorderSuggestions({
                     emptyLabel="Photo"
                     className="transition-transform duration-300 group-hover:scale-105"
                   />
-                  <span className="absolute top-2 left-2 rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">
+                  <div className="absolute top-2 left-2">
                     <DietaryMark isVeg={fullItem.isVeg} />
-                  </span>
+                  </div>
                 </div>
 
                 <h3 className="font-display text-base font-bold text-[#0f352d]">
