@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
+import { useAlert } from "@/components/ui/alert-toast";
 import { CreateOutletModal } from "./create-outlet-modal";
 import { EditOutletModal, type OutletDetail } from "./edit-outlet-modal";
 import { cn } from "@/lib/classes";
@@ -44,7 +44,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingOutlet, setEditingOutlet] = useState<OutletWithStats | null>(null);
   const [deletingOutlet, setDeletingOutlet] = useState<OutletWithStats | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   async function refreshOutlets() {
@@ -61,7 +60,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
 
   async function handleToggleStatus(outlet: OutletWithStats) {
     setIsUpdating(outlet.id);
-    setActionError(null);
     try {
       const res = await fetch(`/api/admin/outlets/${outlet.id}`, {
         method: "PATCH",
@@ -89,7 +87,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error updating outlet";
-      setActionError(msg);
       alert.failure("Outlet Status Error", msg);
     } finally {
       setIsUpdating(null);
@@ -112,7 +109,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
     setDeletingOutlet(null);
 
     setIsUpdating(outlet.id);
-    setActionError(null);
     try {
       const res = await fetch(`/api/admin/outlets/${outlet.id}`, {
         method: "DELETE",
@@ -128,7 +124,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error deleting outlet";
-      setActionError(msg);
       alert.failure("Decommission Failed", msg);
     } finally {
       setIsUpdating(null);
@@ -160,16 +155,6 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Action Error Banner */}
-      {actionError && (
-        <AlertBanner
-          variant="failure"
-          title="Outlet Action Error"
-          message={actionError}
-          onDismiss={() => setActionError(null)}
-        />
-      )}
-
       {/* KPI Stats Ribbon */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <div className="rounded-2xl border border-[#ded2bf] bg-[#fffdfa] p-4 shadow-xs">

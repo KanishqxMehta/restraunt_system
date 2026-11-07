@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
-import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
+import { useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { formatTime } from "@/lib/format";
@@ -540,7 +540,6 @@ function KitchenTicket({
   const alert = useAlert();
   const [refreshing, startTransition] = useTransition();
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [overriding, setOverriding] = useState(false);
   const [confirmingCatering, setConfirmingCatering] = useState(false);
@@ -569,7 +568,6 @@ function KitchenTicket({
         },
       );
       setConfirmingCatering(false);
-      setError("");
       if (actionKey === "CONFIRM") {
         alert.success(
           "Party Catering Confirmed",
@@ -621,14 +619,12 @@ function KitchenTicket({
     if (saving || refreshing) return;
     if (isUnconfirmedCatering) {
       const msg =
-        "Bulk or party orders cannot change state until confirmed by the Catering Manager. Click 'Review & Confirm' first.";
-      setError(msg);
-      alert.failure("Catering Confirmation Required", msg);
+        "Bulk or party orders cannot change state until confirmed by the Catering Manager. Click 'Review & Confirm' above first.";
+      alert.failure("State Change Blocked", msg);
       return;
     }
     setConfirming(false);
     setSaving(true);
-    setError("");
     try {
       await requestJson(
         "/api/kitchen/orders/" + encodeURIComponent(ticket.id) + "/stage",
@@ -650,7 +646,6 @@ function KitchenTicket({
       startTransition(() => router.refresh());
     } catch (err) {
       const msg = errorMessage(err);
-      setError(msg);
       alert.failure("Stage Change Failed", msg);
       if (err instanceof ClientError && [404, 409].includes(err.status)) {
         startTransition(() => router.refresh());
@@ -869,17 +864,6 @@ function KitchenTicket({
         })}
       </ul>
 
-      {error && (
-        <div className="mb-3">
-          <AlertBanner
-            variant="failure"
-            title="State Change Blocked"
-            message={error}
-            onDismiss={() => setError("")}
-          />
-        </div>
-      )}
-
       {/* Action Buttons */}
       <div className="flex gap-2">
         {canAdvance && (
@@ -895,8 +879,7 @@ function KitchenTicket({
               if (isUnconfirmedCatering) {
                 const msg =
                   "Bulk or party orders cannot change state until confirmed by the Catering Manager. Click 'Review & Confirm' above first.";
-                setError(msg);
-                alert.failure("Catering Confirmation Required", msg);
+                alert.failure("State Change Blocked", msg);
                 return;
               }
               if (stage === "READY") {
@@ -926,8 +909,7 @@ function KitchenTicket({
               if (isUnconfirmedCatering) {
                 const msg =
                   "Confirm the bulk catering order before adjusting preparation promises.";
-                setError(msg);
-                alert.failure("Catering Confirmation Required", msg);
+                alert.failure("State Change Blocked", msg);
                 return;
               }
               setOverriding(true);
