@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DietaryMark } from "./dietary-mark";
+import { DishImage } from "./dish-image";
 import type { CustomerMenuItem } from "../types";
 import { requestJson } from "@/lib/http-client";
 
@@ -102,19 +102,13 @@ export function ReorderSuggestions({
             >
               <div>
                 <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-[#f4efe6]">
-                  {fullItem.imageUrl ? (
-                    <Image
-                      src={fullItem.imageUrl}
-                      alt={fullItem.name}
-                      fill
-                      sizes="(min-width: 640px) 250px, 90vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-stone-400">
-                      Photo
-                    </div>
-                  )}
+                  <DishImage
+                    src={fullItem.imageUrl}
+                    alt={fullItem.name}
+                    sizes="(min-width: 640px) 250px, 90vw"
+                    emptyLabel="Photo"
+                    className="transition-transform duration-300 group-hover:scale-105"
+                  />
                   <span className="absolute top-2 left-2 rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">
                     <DietaryMark isVeg={fullItem.isVeg} />
                   </span>

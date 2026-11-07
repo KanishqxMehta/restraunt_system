@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import {
   Plus,
   Search,
   Filter,
   Clock,
   PauseCircle,
-  UtensilsCrossed,
   Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DietaryMark } from "./dietary-mark";
+import { DishImage } from "./dish-image";
 import { CreateDishModal } from "./create-dish-modal";
 import { EditDishModal } from "./edit-dish-modal";
 import { EditPricesModal } from "./edit-prices-modal";
@@ -395,23 +394,12 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                 <div>
                   {/* Card Image Banner */}
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#f2ebe0]">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        sizes="(min-width: 1024px) 500px, 90vw"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-[#8a7f70]">
-                        <UtensilsCrossed
-                          className="mr-1.5 h-4 w-4"
-                          aria-hidden="true"
-                        />
-                        No image uploaded
-                      </div>
-                    )}
+                    <DishImage
+                      src={item.imageUrl}
+                      alt={item.name}
+                      sizes="(min-width: 1024px) 500px, 90vw"
+                      emptyLabel="No image uploaded"
+                    />
                     <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/50 via-black/15 to-transparent p-3.5">
                       <div className="flex items-center gap-2">
                         <span className="rounded-full bg-white/95 shadow-2xs backdrop-blur-xs">

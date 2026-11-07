@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { DishImage } from "./dish-image";
 import { parseTimeToMinute } from "../time-windows";
 import { requestJson, errorMessage } from "@/lib/http-client";
 import type { AdminMenuItem } from "../types";
@@ -352,12 +353,22 @@ export function CreateDishModal({ onClose, onCreated }: CreateDishModalProps) {
               </button>
             ))}
           </div>
-          <InputField
-            label="Image URL or local path"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="/menu/chicken-biryani.jpg"
-          />
+          <div className="grid items-center gap-3 sm:grid-cols-[1fr_110px]">
+            <InputField
+              label="Image URL or local path"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://... or /menu/chicken-biryani.jpg"
+            />
+            <div className="relative h-16 w-full overflow-hidden rounded-xl border border-[#dfd4c2] bg-[#f2ebe0] sm:mt-5">
+              <DishImage
+                src={imageUrl}
+                alt={name || "Dish preview"}
+                sizes="110px"
+                emptyLabel="Preview"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Allergens */}

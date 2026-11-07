@@ -1,10 +1,10 @@
-import Image from "next/image";
 import { Flame, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/classes";
 import type { CustomerMenuItem } from "../types";
 import { DietaryMark } from "./dietary-mark";
+import { DishImage } from "./dish-image";
 
 const SPICE_LABELS = ["Mild", "Gentle spice", "Medium spice", "Hot"];
 
@@ -31,22 +31,16 @@ export function MenuCard({
       <div>
         {/* Dish Photography Header */}
         <div className="relative aspect-[16/10] overflow-hidden bg-[#f2ebe0]">
-          {item.imageUrl ? (
-            <Image
-              src={item.imageUrl}
-              alt={item.name}
-              fill
-              sizes="(min-width: 1024px) 360px, (min-width: 640px) 45vw, 92vw"
-              className={cn(
-                "object-cover transition-transform duration-500 group-hover:scale-105",
-                !item.isAvailable && "grayscale-[35%] opacity-60",
-              )}
-            />
-          ) : (
-            <span className="flex h-full items-center justify-center text-sm text-[#8a7f70]">
-              Photo coming soon
-            </span>
-          )}
+          <DishImage
+            src={item.imageUrl}
+            alt={item.name}
+            sizes="(min-width: 1024px) 360px, (min-width: 640px) 45vw, 92vw"
+            emptyLabel="Photo coming soon"
+            className={cn(
+              "transition-transform duration-500 group-hover:scale-105",
+              !item.isAvailable && "grayscale-[35%] opacity-60",
+            )}
+          />
 
           {/* Top Gradient Overlay & Badges */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/50 via-black/15 to-transparent p-3.5">
