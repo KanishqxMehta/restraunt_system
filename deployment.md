@@ -85,7 +85,7 @@ If running directly on macOS / Linux:
    ```bash
    npm run typecheck    # TypeScript compiler check (0 errors)
    npm run lint         # ESLint check (0 warnings/errors)
-   npm run test         # Vitest unit test suites (64 tests passing across 11 test suites)
+   npm run test         # Vitest unit test suites (79 tests passing across 14 test suites)
    ```
 
 ---
