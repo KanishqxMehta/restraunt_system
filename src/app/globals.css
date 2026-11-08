@@ -81,3 +81,21 @@ summary {
   border: 1.5px solid transparent;
   background-clip: content-box;
 }
+
+/* Liquid Water Blob Surface Sheen */
+@keyframes waterRipplePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03, 0.97);
+  }
+}
+
+.water-goo-layer {
+  filter: url(#demo-water-goo);
+  will-change: filter, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

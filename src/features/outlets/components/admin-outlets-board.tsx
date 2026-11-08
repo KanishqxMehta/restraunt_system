@@ -16,12 +16,14 @@ import {
   Trash2,
   PauseCircle,
   PlayCircle,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useAlert } from "@/components/ui/alert-toast";
 import { CreateOutletModal } from "./create-outlet-modal";
 import { EditOutletModal, type OutletDetail } from "./edit-outlet-modal";
+import { OutletCredentialsModal } from "./outlet-credentials-modal";
 import { cn } from "@/lib/classes";
 
 export interface OutletWithStats extends OutletDetail {
@@ -43,6 +45,7 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingOutlet, setEditingOutlet] = useState<OutletWithStats | null>(null);
+  const [credsOutlet, setCredsOutlet] = useState<OutletWithStats | null>(null);
   const [deletingOutlet, setDeletingOutlet] = useState<OutletWithStats | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
@@ -380,27 +383,40 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-5 flex items-center justify-end gap-2 border-t border-[#ece3d5] pt-3">
-                <Button
+              <div className="mt-5 space-y-2 border-t border-[#ece3d5] pt-3">
+                {/* Primary Operations Action */}
+                <button
                   type="button"
-                  variant="tertiary"
-                  onClick={() => setEditingOutlet(outlet)}
-                  className="px-2.5 py-1 text-xs font-bold text-[#0f352d] hover:bg-[#faf7f2] flex items-center gap-1"
+                  onClick={() => setCredsOutlet(outlet)}
+                  className="group/creds flex w-full items-center justify-center gap-2 rounded-xl border border-[#c99b53]/50 bg-gradient-to-r from-[#fdfbf7] via-[#faf5ec] to-[#f7f0e1] px-3 py-2 text-xs font-bold text-[#73511f] shadow-2xs transition-all hover:border-[#c99b53] hover:bg-[#f3ead7] hover:text-[#5c4016] active:scale-[0.99]"
+                  title="View dedicated kitchen staff credentials & open live KDS"
                 >
-                  <Edit2 className="h-3.5 w-3.5" />
-                  <span>Edit</span>
-                </Button>
+                  <KeyRound className="h-3.5 w-3.5 text-[#c99b53] transition-transform group-hover/creds:rotate-12" />
+                  <span>Staff Creds &amp; Live KDS</span>
+                </button>
 
-                <Button
-                  type="button"
-                  variant="tertiary"
-                  onClick={() => handleDeleteOutlet(outlet)}
-                  disabled={isUpdating === outlet.id}
-                  className="px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-50 flex items-center gap-1"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Decommission</span>
-                </Button>
+                {/* Secondary Administrative Actions */}
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOutlet(outlet)}
+                    disabled={isUpdating === outlet.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50"
+                    title="Decommission outlet"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Decommission</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingOutlet(outlet)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#ded2bf] bg-white px-3 py-1.5 text-xs font-bold text-[#0f352d] shadow-2xs transition hover:border-[#0f352d] hover:bg-[#faf7f2]"
+                  >
+                    <Edit2 className="h-3.5 w-3.5 text-[#0f352d]" />
+                    <span>Edit</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -494,6 +510,16 @@ export function AdminOutletsBoard({ initialOutlets }: AdminOutletsBoardProps) {
             </div>
           )}
         </Modal>
+      )}
+
+      {/* Outlet Dedicated Kitchen Credentials Modal */}
+      {credsOutlet && (
+        <OutletCredentialsModal
+          outletId={credsOutlet.id}
+          outletName={credsOutlet.name}
+          isOpen={Boolean(credsOutlet)}
+          onClose={() => setCredsOutlet(null)}
+        />
       )}
     </div>
   );

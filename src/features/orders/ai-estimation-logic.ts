@@ -76,11 +76,15 @@ export async function predictKitchenPrepTime(
 ): Promise<PrepEstimateResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   const preferredModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
-  const candidateModels = [
-    preferredModel,
-    ...(preferredModel !== "gemini-3.1-flash-lite" ? ["gemini-3.1-flash-lite"] : []),
-    ...(preferredModel !== "gemini-3.5-flash" ? ["gemini-3.5-flash"] : []),
-  ];
+  const candidateModels = Array.from(
+    new Set([
+      preferredModel,
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-2.5-flash",
+    ]),
+  );
 
   let aiMinutes: number;
   let explanation: string;

@@ -23,8 +23,8 @@ services:
     environment:
       DATABASE_URL: postgresql://isocode:isocode_local@db:5432/isocode
       BETTER_AUTH_URL: http://localhost:3000
-      ENABLE_DEMO_DATA: "${ENABLE_DEMO_DATA:-false}"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-AQ.Ab8RN6Jl-F3-C6yyBcG820X54XNKw1Mw3eI7nwhyarBikVU-0g}"
+      ENABLE_DEMO_DATA: "${ENABLE_DEMO_DATA:-true}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:

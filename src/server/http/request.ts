@@ -2,10 +2,32 @@ import { z } from "zod";
 import { HttpError } from "./errors";
 
 export function requireSameOrigin(request: Request): void {
+  const origin = request.headers.get("origin");
+  if (!origin) return;
   const expected = process.env.BETTER_AUTH_URL;
-  if (!expected || request.headers.get("origin") !== new URL(expected).origin) {
-    throw new HttpError(403, "This request must come from our ordering site.");
+  if (expected && origin === new URL(expected).origin) return;
+
+  try {
+    const originUrl = new URL(origin);
+    const expectedUrl = expected ? new URL(expected) : null;
+    const isLocalOrigin =
+      originUrl.hostname === "localhost" || originUrl.hostname === "127.0.0.1";
+    const isLocalExpected =
+      !expectedUrl ||
+      expectedUrl.hostname === "localhost" ||
+      expectedUrl.hostname === "127.0.0.1";
+    if (
+      isLocalOrigin &&
+      isLocalExpected &&
+      originUrl.port === (expectedUrl?.port ?? "3000")
+    ) {
+      return;
+    }
+  } catch {
+    /* Invalid URL format */
   }
+
+  throw new HttpError(403, "This request must come from our ordering site.");
 }
 
 export async function readJson<T extends z.ZodType>(

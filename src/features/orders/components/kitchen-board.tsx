@@ -71,13 +71,30 @@ export function KitchenBoard({
   tickets,
   outlets = [],
   canAdvance,
+  initialSelectedOutletId,
 }: {
   tickets: Ticket[];
   outlets?: { id: string; name: string; isCloudKitchen?: boolean }[];
   canAdvance: boolean;
+  initialSelectedOutletId?: string;
 }) {
   const [now, setNow] = useState<number | null>(null);
-  const [selectedOutletId, setSelectedOutletId] = useState<string>("ALL");
+  const [selectedOutletId, setSelectedOutletId] = useState<string>(
+    initialSelectedOutletId && outlets.some((o) => o.id === initialSelectedOutletId)
+      ? initialSelectedOutletId
+      : "ALL",
+  );
+
+  const [prevInitialOutletId, setPrevInitialOutletId] = useState(initialSelectedOutletId);
+  if (initialSelectedOutletId !== prevInitialOutletId) {
+    setPrevInitialOutletId(initialSelectedOutletId);
+    if (
+      initialSelectedOutletId &&
+      outlets.some((o) => o.id === initialSelectedOutletId)
+    ) {
+      setSelectedOutletId(initialSelectedOutletId);
+    }
+  }
   const [outletCategory, setOutletCategory] = useState<"ALL" | "DINE_IN" | "CLOUD">("ALL");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1082,6 +1099,13 @@ function KitchenTicket({
               Gemini AI ({ticket.aiEstimatedMinutes ?? 25}m)
             </span>
           )}
+          {(ticket.estimateSource === "GEMINI_FALLBACK" ||
+            ticket.estimateSource === "HEURISTIC_LOAD") && (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-900">
+              <Clock className="h-3 w-3 text-amber-700" aria-hidden="true" />{" "}
+              Queue Model ({ticket.aiEstimatedMinutes ?? 25}m)
+            </span>
+          )}
           {ticket.estimateSource === "MANAGER_OVERRIDE" && (
             <span className="inline-flex items-center gap-1 rounded-full border border-[#dec9ec] bg-[#f7f2fa] px-2.5 py-0.5 text-[11px] font-bold text-[#4a1d5a]">
               <Sliders className="h-3 w-3 text-[#6b21a8]" aria-hidden="true" />{" "}
@@ -1102,6 +1126,20 @@ function KitchenTicket({
           </p>
         </div>
       )}
+
+      {ticket.aiExplanation &&
+        (ticket.estimateSource === "GEMINI_FALLBACK" ||
+          ticket.estimateSource === "HEURISTIC_LOAD") && (
+          <div className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-xs text-amber-950">
+            <p className="flex items-center gap-1.5 font-bold text-amber-900">
+              <Clock className="h-3 w-3 text-amber-700" aria-hidden="true" />
+              <span>Deterministic Queue Buffer Note:</span>
+            </p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-amber-900">
+              {ticket.aiExplanation}
+            </p>
+          </div>
+        )}
 
       {ticket.managerOverrideReason && (
         <p className="mt-2.5 rounded-xl border border-[#dec9ec] bg-[#faf6fd] p-2.5 text-xs text-[#3b1747]">

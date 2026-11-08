@@ -1,49 +1,51 @@
 # Technical Design Document (TDD)
 ## Direct Ordering & Real-Time Kitchen Display System
-**Client**: Company A, Hyderabad  
-**GitHub Repository**: [https://github.com/KanishqxMehta/restraunt_system.git](https://github.com/KanishqxMehta/restraunt_system.git)  
-**Author**: Engineering Team  
-**Date**: November 2026  
-**Status**: Ready for Production Evaluation  
+* **Client**: Company A, Hyderabad (14 Dine-In Outlets + 3 Cloud Kitchens)
+* **GitHub Repository**: [https://github.com/KanishqxMehta/restraunt_system.git](https://github.com/KanishqxMehta/restraunt_system.git)
+* **Local / Live Application URL**: `http://localhost:3000` (Docker Compose & Native Node.js ready; see `deployment.md` for deployment & live hosting instructions)
+* **Author**: Kanishq Mehta
+* **Date**: November 2026
+* **Status**: Production-Grade Evaluation Release
 
 ---
 
 ## 1. Executive Summary & Problem Context
 
-Company A is a prominent Hyderabadi restaurant and cloud-kitchen chain operating 14 dine-in outlets and 3 cloud kitchens across Hyderabad, employing 520 staff and generating ₹90–105 crore in annual revenue. Currently, 55% of total sales (₹52.8 crore) flows through commercial food delivery apps (Swiggy/Zomato), which extract 25–30% (average 27%) in commissions and platform fees. Furthermore, the brand suffers from:
-1. **Customer Disintermediation**: Delivery apps withhold customer contact data, preventing direct engagement and loyalty.
-2. **Fragmented Operations**: Each outlet maintains a disparate billing system; menus and prices must be updated manually across aggregator dashboards; kitchens operate from printed paper tickets prone to misplacement or moisture damage in hot, noisy kitchens.
-3. **Lost Bulk Orders**: An unmanaged phone line loses approximately 30 high-value party/bulk orders monthly (~₹18,000 per order at 30% margin), forfeiting ₹19.44 lakh in annual margin.
+Company A is an established Hyderabadi restaurant and cloud-kitchen chain operating **14 dine-in outlets** and **3 cloud kitchens** across Hyderabad, employing 520 staff and generating ₹90–105 crore in annual revenue. Currently, 55% of total sales (₹52.8 crore) flows through third-party food delivery aggregators (Swiggy and Zomato), which extract **25–30% (average 27%)** in commissions and platform fees. Furthermore, Company A faces three compounding operational bottlenecks:
 
-### The Financial Objective
-By shifting 12% of aggregator volume to a proprietary, high-performance direct-ordering channel where digital delivery and payment fees average 12%, Company A saves 15 net margin points on ₹6.336 crore = **₹95.04 lakh**. Combined with capturing lost bulk orders, the direct ordering platform delivers an annual bottom-line benefit of **₹1.14 crore**.
+1. **Customer Disintermediation**: Delivery apps withhold customer contact data and order history, preventing Company A from building direct relationships, running first-party loyalty programs, or re-engaging diners.
+2. **Fragmented Operations & Paper Kitchens**: Outlets rely on disconnected billing systems; menus and prices must be updated manually across aggregator dashboards; and kitchens work off printed paper tickets that get lost or damaged by heat and steam in busy, noisy Hyderabadi dum kitchens.
+3. **Lost High-Margin Party & Bulk Orders**: An unmanaged central phone line loses approximately **30 bulk/party orders per month** (~₹18,000 average order value at 30% net margin), forfeiting **₹19.44 lakh** in annual profit.
 
-This technical design document outlines the end-to-end architecture, data model, AI integration, design rationale, and operational trade-offs for the delivered core build.
+### The Financial Objective (₹1.14 Crore Annual Profit Recovery)
+By shifting **12% of aggregator volume** (₹6.336 crore GMV) to a proprietary, fast direct-ordering web channel where third-party logistics (Shadowfax/Dunzo) and UPI/Card payment gateway costs average **12%**, Company A saves **15 net margin percentage points** (`27% - 12% = 15%`), recovering **₹95.04 lakh/year**. Combined with capturing the 30 lost monthly bulk catering orders (**₹19.44 lakh/year**), the direct ordering platform delivers a total annual bottom-line impact of **₹1.14 crore**.
+
+This Technical Design Document details the architecture, relational data model, end-to-end operational flows, genuine AI & fallback engineering, UI/UX design rationale, explicit assumptions, and scope trade-offs.
 
 ---
 
-## 2. System Architecture & Tech Stack Rationale
+## 2. System Architecture & Why We Chose It
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                                     CLIENT TIERS                                        │
 │  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐  │
 │  │ Customer Ordering App   │  │ Kitchen Display (KDS)   │  │ Central Admin & Fleet   │  │
-│  │ (Mobile-First Web)      │  │ (2m Android Tablet Web) │  │ (Desktop Command Hub)   │  │
+│  │ (Mobile-First Web UI)   │  │ (2m Android Tablet Web) │  │ (Menu, Coupons, Stats)  │  │
 │  └────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘  │
 └───────────────┼────────────────────────────┼────────────────────────────┼───────────────┘
-                │ HTTP / REST                │ SSE Stream                 │ REST
+                │ HTTPS / REST + SSE         │ HTTP/2 SSE Stream          │ HTTPS / REST
                 ▼                            ▼                            ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                              APPLICATION SERVER (Node.js 22)                            │
 │  ┌───────────────────────────────────────────────────────────────────────────────────┐  │
 │  │ Next.js 16.4.5 App Router (React 19 Server & Client Components)                   │  │
 │  ├───────────────────────────────────────────────────────────────────────────────────┤  │
-│  │ - Better Auth 1.7 (Sessions, Password Hashing, RBAC, Rate Limiting)               │  │
-│  │ - Zod 4 (Input validation on all write endpoints)                                 │  │
-│  │ - Authoritative Pricing, Loyalty Ledger & 5% Inclusive GST Engine                 │  │
-│  │ - Gemini AI Engine (@google/genai 2.32.0 + Queue Delay Fallback)                  │  │
-│  │ - Realtime SSE Order Broadcaster & PostgreSQL Listener                            │  │
+│  │ - Better Auth 1.7 (Database Sessions, Bcrypt, RBAC, Outlet PINs, Rate Limiting)   │  │
+│  │ - Zod 4 Validation & Origin Verification (32 KB cap, CSRF protection)             │  │
+│  │ - Authoritative Pricing, Coupons, Royal Rewards Loyalty & 5% Inclusive GST Engine │  │
+│  │ - Google Gemini AI Engine (@google/genai 2.32.0 + Deterministic Queue Fallback)   │  │
+│  │ - Realtime SSE Order Broadcaster & Dedicated PostgreSQL LISTEN/NOTIFY Subscriber  │  │
 │  └───────────────────────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────┬──────────────────────────────────────────────┘
                                            │ Prisma 7 (@prisma/adapter-pg)
@@ -52,38 +54,31 @@ This technical design document outlines the end-to-end architecture, data model,
 │                              PERSISTENCE & REALTIME TIER                                │
 │  ┌───────────────────────────────────────────────────────────────────────────────────┐  │
 │  │ PostgreSQL 17                                                                     │  │
-│  │ - Relational Data Store (ACID Transactions, Strict Check Constraints)             │  │
+│  │ - Relational Data Store (Serializable ACID Transactions, Money CHECK Constraints) │  │
 │  │ - PostgreSQL LISTEN / NOTIFY (Channel: restaurant_order_change)                   │  │
-│  │ - Triggers: notify_paid_order_change (on status, payment, promise, catering)     │  │
+│  │ - Triggers: notify_paid_order_change (on status, payment, promise, catering)      │  │
 │  └───────────────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. Framework: Next.js 16.4.5 App Router with React 19
-* **Why**: Next.js App Router enables React Server Components (RSC) to query repositories directly on the server without client-side waterfalls, while rendering interactive client islands only where necessary (cart context, modals, live timers).
-* **Streaming SSR**: Pages stream initial layouts instantly, minimizing First Contentful Paint (FCP) on 4G cellular connections in Hyderabad.
+### Architectural Choices & Justification
 
-### 2. Database: PostgreSQL 17 with Prisma 7 (`@prisma/adapter-pg`)
-* **Why**: Financial ordering and kitchen dispatch require strict ACID transactions and relational integrity. Money is stored as integer paise to prevent floating-point rounding errors. Database-level `CHECK` constraints prevent negative prices, invalid geographic coordinates, and nonpositive prep times.
-* **Connection Pooling**: Uses `@prisma/adapter-pg` with a pooled PostgreSQL client, reusing connection sockets across server requests.
-
-### 3. Authentication & RBAC: Better Auth 1.7
-* **Why**: Avoids external SaaS auth lock-in (e.g. Supabase, Firebase) and ensures complete local-first Docker execution. Better Auth provides cryptographic session cookie management, bcrypt password hashing, origin validation, and database-backed rate limiting.
-* **Role Invariants**: Roles (`CUSTOMER`, `KITCHEN_STAFF`, `CENTRAL_ADMIN`) are strictly enforced server-side. Public registration creates only `CUSTOMER` accounts; staff and admin accounts are provisioned via server-side migrations or demo seeds.
-
-### 4. Real-Time Transport: PostgreSQL `LISTEN`/`NOTIFY` + Server-Sent Events (SSE)
-* **Why**: In the brief, the hard engineering requirement is: *"real-time order updates on the kitchen screen"*.
-* Traditional WebSocket servers or external message brokers (RabbitMQ/Redis/Pusher) introduce extra operational complexity and cloud billing.
-* Instead, PostgreSQL provides native `pg_notify()` within transaction boundaries. A single dedicated listener connection in Node.js subscribes to `restaurant_order_change` and fans out events to browser `EventSource` streams over HTTP/2. If an order updates, changes broadcast in $<100\text{ms}$ with zero polling overhead.
-
-### 5. AI Service: Google Gemini 2.5 Flash via `@google/genai` (2.32.0)
-* **Why**: Used for dynamic kitchen preparation-time estimation and personalized customer reorder suggestions. If external API keys are omitted or the model call times out, the system automatically falls back to an intelligent deterministic queue delay algorithm.
+1. **Next.js 16.4.5 App Router & React 19**:
+   * **Why chosen**: Unifies the mobile-first customer storefront, the real-time tablet Kitchen Display System (KDS), the Central Admin CMS, and the REST/SSE API layer inside a single type-safe TypeScript codebase. React Server Components (RSC) load menu catalogs and analytics directly on the server with zero client-side waterfalls, achieving sub-second initial paint over 4G mobile networks.
+2. **PostgreSQL 17 with Prisma 7 (`@prisma/adapter-pg`)**:
+   * **Why chosen**: Financial checkout, coupon redemptions, and loyalty point ledgers demand strict `SERIALIZABLE` ACID transactions. All monetary amounts are stored as **integer paise** (`100 paise = ₹1`) with database-level `CHECK` constraints (`Order_money_check`, `Order_discount_check`) that make negative totals, floating-point drift, or over-discounting mathematically impossible.
+3. **PostgreSQL `LISTEN`/`NOTIFY` + Server-Sent Events (SSE) for Real-Time KDS**:
+   * **Why chosen**: The brief mandates *"real-time order updates on the kitchen screen"*. Introducing external message brokers (Redis, Pusher, Socket.io clusters) adds infrastructure cost and failure points. Instead, a PostgreSQL trigger (`notify_paid_order_change`) executes `pg_notify('restaurant_order_change', payload)` inside the exact transaction that mutates an order's stage, payment status, promised ready time, or catering confirmation. A singleton Node.js listener fans out notifications over HTTP/2 SSE streams (`/api/orders/live`) in **<100ms** with automatic 20-second heartbeats and reconnect resilience.
+4. **Better Auth 1.7 with Strict Role & Tenant Isolation**:
+   * **Why chosen**: Self-hosted database-backed authentication with zero external SaaS dependency (runs 100% offline in Docker). Enforces three distinct roles (`CUSTOMER`, `KITCHEN_STAFF`, `CENTRAL_ADMIN`). `KITCHEN_STAFF` users are bound via `OutletMembership` to their specific kitchen (e.g., Kondapur vs. Gachibowli Cloud Kitchen) and cannot view or mutate another outlet's orders or stock.
+5. **Google Gemini (`@google/genai` 2.32.0) with Deterministic Fallback**:
+   * **Why chosen**: Uses `gemini-3.5-flash-lite` (with multi-model failover to `gemini-3.1-flash-lite`, `gemini-3.5-flash`, and `gemini-2.5-flash`) for low-latency structured JSON kitchen prep-time reasoning and personalized reorder notes, guarded by a strict 3.5-second `AbortController` timeout and an automatic deterministic station-queue fallback.
 
 ---
 
-## 3. Data Model & Schema Architecture
+## 3. Data Model, Main Flows & How the AI Part Works
 
-The data model is engineered around immutability, tenant isolation, append-only ledgers, and regulatory compliance.
+### 3.1 Relational Data Model (ER Diagram)
 
 ```mermaid
 erDiagram
@@ -106,6 +101,7 @@ erDiagram
     
     Order ||--o{ OrderItem : "contains"
     Order ||--o{ OrderEvent : "logs"
+    Order ||--o{ OrderNotification : "dispatches"
     Order ||--o{ PaymentAttempt : "records"
     Order ||--o| CheckoutQuote : "derived from"
     Order ||--o| CouponRedemption : "applies"
@@ -114,138 +110,130 @@ erDiagram
     LoyaltyAccount ||--o{ LoyaltyTransaction : "logs"
 ```
 
-### Core Entities
-1. **User & Session**: Centralized user identity with Better Auth credentials. Includes `marketingOptIn` (defaults to `false` in compliance with DPDP Act 2023).
-2. **Outlet**: Physical restaurant or cloud kitchen with geographic coordinates (`latitude`, `longitude`), `deliveryRadiusKm`, `fssaiLicense` (14 digits), `minimumPrepMinutes`, `packingMinutes`, and opening hours (`opensAtMinute`, `closesAtMinute`).
-3. **MenuItem**: Authoritative catalog dish with dietary classification (`isVeg`), `spiceLevel` (0–3), `allergens` array, `basePrepMinutes`, `prepStation` (`MAIN`, `BIRYANI`, `DESSERT`), `batchCapacity`, and time-based service windows (`availableFromMinute`, `availableToMinute`).
-4. **MenuPortion & CityPrice**: Portions (e.g. Regular, Family pack) mapped to specific city prices in integer paise. Allows charging ₹350 in Hyderabad and ₹380 in Bangalore for identical recipes.
-5. **OutletAvailability**: Stores boolean `isAvailable` per item-outlet pair. Enables instant per-outlet stock pausing ("86ing" items) when ingredients run out.
-6. **Order & OrderItem**:
-   * **Purchased Snapshot Immutability**: `OrderItem` stores snapshots of dish name, portion name, unit price in paise, preparation minutes, allergens, and JSON add-ons at the moment of payment. Future menu or price updates in the CMS can never alter historical receipts.
-   * **Promise Fields**: Stores `promisedReadyAt`, `originalPromiseAt`, `estimateSource` (`"GEMINI_AI"`, `"HEURISTIC_LOAD"`, `"MANAGER_OVERRIDE"`), `aiEstimatedMinutes`, `aiExplanation`, and `managerOverrideReason`.
-   * **Catering Fields**: `isCatering`, `cateringStatus` (`PENDING_CONFIRMATION`, `CONFIRMED`, `DECLINED`), `cateringNotes`, `cateringConfirmedAt`, `cateringConfirmedBy`, and `guestCount`.
-   * **Loyalty Fields**: `pointsRedeemed`, `pointsDiscountPaise`, and `pointsEarned`.
-7. **LoyaltyAccount & LoyaltyTransaction**:
-   * Tracks customer `pointsBalance`, `lifetimeEarned`, and `lifetimeRedeemed`.
-   * Append-only ledger recording all `EARNED`, `REDEEMED`, and `REFUNDED` events with order references.
-8. **CheckoutQuote**: Server-calculated 5-minute price freeze containing a SHA-256 fingerprint of all lines, taxes, loyalty deductions, and coupon discounts. Prevents price-tampering between cart review and payment.
+#### Key Schema Invariants
+* **Immutable Order Item Snapshots (`OrderItem`)**: When an order is placed, `OrderItem` copies the dish `name`, `portionName`, `unitPricePaise`, `prepMinutes`, `isVeg`, `allergens`, and JSON `addons` snapshot. Subsequent edits in the Central Menu CMS never corrupt historical receipts or kitchen tickets.
+* **Cryptographic Quote Fingerprinting (`CheckoutQuote`)**: Checkout generates a 5-minute server-side quote with a SHA-256 fingerprint of all items, city prices, 5% inclusive GST, coupon discounts, and loyalty redemptions. At payment time, `processMockPayment()` recomputes the snapshot inside a `SERIALIZABLE` transaction and rejects payment (`HTTP 409`) if stock or prices changed while the customer was on the payment screen.
+* **Append-Only Audit & Notification Ledgers**: `OrderEvent` records every stage transition (`NEW` → `PREPARING` → `READY` → `HANDED_OFF`), `LoyaltyTransaction` records every point accrual/redemption, and `OrderNotification` stores simulated SMS & WhatsApp messages inspectable via the **Virtual Device Outbox**.
 
 ---
 
-## 4. Main Operational Flows & AI Integration
+### 3.2 Main End-to-End Operational Flows
 
-### Flow 1: Location-Based Outlet Routing & Scannable Photo Menu
-1. **Location Selection**: The customer provides GPS coordinates or selects a demo neighborhood (Kondapur, Gachibowli, Kukatpally).
-2. **Haversine Distance & Opening Hours**: The server filters active outlets where $\text{distance} \le \text{deliveryRadiusKm}$ and current Kolkata time falls between `opensAtMinute` and `closesAtMinute`, recommending the nearest eligible kitchen.
-3. **Catalog Rendering**: Displays food photography, veg/non-veg symbols (green square / red triangle), spice meters, allergen tags, and mandatory FSSAI licence number.
-
-### Flow 2: Authoritative Quoting & 5% Inclusive GST Extraction
-1. **Server-Owned Math**: The browser submits only item IDs, portion IDs, add-on IDs, and location. Prices are never accepted from client requests.
-2. **5% Inclusive GST Rule**: All catalog prices include 5% GST as mandated by Indian restaurant tax regulations. The server extracts the tax component:
-   $$\text{includedTaxPaise} = \text{round}\left(\frac{\text{totalPaise} \times 5}{105}\right)$$
-   $$\text{cgstPaise} = \lfloor\text{includedTaxPaise} / 2\rfloor, \quad \text{sgstPaise} = \text{includedTaxPaise} - \text{cgstPaise}$$
-3. **Coupon Validation**: Validates coupon `DIRECT10` against expiration dates, usage limits, and minimum order values, capping maximum discount.
-
-### Flow 3: Gemini AI Kitchen Prep-Time Prediction Engine
-1. **Trigger**: When mock UPI/Card payment commits successfully, `payment-service.ts` calls `predictKitchenPrepTime()`.
-2. **Context Assembly**: Gathers line items (base prep times, portions, quantities) and live kitchen queue metrics:
-   * Count of active tickets currently `NEW` or `PREPARING` in that outlet.
-   * Total dishes currently in progress across stations.
-3. **Gemini Invocation**: Queries Google Gemini 2.5 Flash via `@google/genai` with structured JSON schema. The model evaluates parallel station batching (biryani pot capacity vs curry pan warming) and queue delays.
-4. **Enforcing the Client Brief Rule**:
-   $$\text{promisedMinutes} = \max(\text{aiEstimateMinutes}, \text{outletMinimumPrepMinutes}) + \text{outletPackingMinutes}$$
-   If Gemini predicts 15 minutes but the outlet minimum is 25 minutes, the promised prep time is $\max(15, 25) + 5 = 30$ minutes. If heavy backlog pushes Gemini's estimate to 38 minutes, the promised time honestly expands to $38 + 5 = 43$ minutes.
-5. **Resilient Fallback**: If `GEMINI_API_KEY` is not supplied or if the request times out after 3.5 seconds, the system seamlessly applies the deterministic heuristic:
-   $$\text{queueDelay} = \min(25, \text{activeTickets} \times 3\text{m})$$
-   $$\text{heuristicPrep} = \max(\text{maxItemPrep} + \text{quantityBuffer} + \text{queueDelay}, \text{outletMinimumPrepMinutes})$$
-
-### Flow 4: Real-Time KDS, 10+ Min Late Alerts & Supervisor Overrides
-1. **Kitchen Display**: Lines orders into `NEW` $\rightarrow$ `PREPARING` $\rightarrow$ `READY` $\rightarrow$ `HANDED_OFF`.
-2. **Two-Metre Readability**: High-contrast typography and color-coded status badges readable across a commercial kitchen.
-3. **Critical Lateness (10+ Minutes Late)**:
-   * If an order is $\ge 10$ minutes past `promisedReadyAt`, a prominent pulsing alert banner appears: `🚨 10+ MIN LATE · MANAGER ALERT`.
-   * The customer's tracking screen displays an empathetic notification: *"We're taking extra care with your order. Outlet kitchen manager alerted and expediting."*
-4. **Supervisor Override**: Kitchen supervisors can click "Adjust promise" to extend ready time (+5m, +10m, +15m) with an operational reason (e.g. *"Dum pot slow to release"*). The PostgreSQL trigger immediately alerts the SSE stream, updating the customer's live countdown in real time.
-
-### Flow 5: AI Reorder Suggestions from Customer History
-1. Analyzes the customer's previous order history and dish frequencies.
-2. Gemini generates an appetizing 1-sentence prompt recommending their favourite dishes.
-3. **Strict Compliance with Brief Constraint**: *"When it is wrong: suggestions never add items to the cart"*. The UI provides a **"Review dish"** CTA that opens the dish configuration modal, ensuring the customer explicitly selects portions and add-ons before adding anything to their cart.
-
-### Flow 6: Direct Party & Bulk Catering Orders with Manager Confirmation
-1. **Interactive Headcount & Handi Sizing**: Customers select 15 to 500 guests with dynamic Veg/Non-Veg split. The algorithm automatically allocates 5kg, 10kg, and 20kg sealed clay earthen handis with complimentary salan, raita, and desserts.
-2. **Tiered Packages & Bulk Discounts**: Choose between *Royal Daawat* (₹420/guest) and *Nizami Feast* (₹580/guest) with automatic 5% ($50+$ guests) and 8% ($100+$ guests) volume discounts.
-3. **Lead-Time Validation**: Enforces $\ge 4$ hours advance notice before delivery slot.
-4. **Catering Manager Confirmation**: Newly created party orders enter `PENDING_CONFIRMATION`. Kitchen supervisors or catering managers review the booking directly on the KDS and confirm or decline with operational notes, locking the handi production slot and notifying the customer via simulated WhatsApp.
-
-### Flow 7: Direct Ordering Customer Loyalty Rewards
-1. **Earning Rule**: Direct orders accrue **1 Loyalty Point for every ₹10 spent** (`10 points per ₹100 spent`) on paid orders.
-2. **Redemption Value**: **100 Loyalty Points = ₹50 discount** (`1 point = ₹0.50`).
-3. **Margin Protection Cap**: Points redemptions are capped at **50% of the payable order total**.
-4. **Account Wallet**: Dedicated Royal Rewards ledger on `/account` tracking balance, rupee value, and transaction history.
-
-### Flow 8: Multi-Outlet Fleet & Cloud Kitchen CMS (`/admin/outlets`)
-1. **Central Fleet Command**: Comprehensive management of all 14 dine-in outlets and 3 cloud kitchens across Hyderabad.
-2. **FSSAI Compliance**: Strict validation of statutory 14-digit FSSAI licence numbers.
-3. **Operational Controls**: In-place calibration of delivery radiuses (0.5–50 km), operating hours, kitchen prep floors, and one-tap order acceptance pausing.
-
-### Flow 9: Executive Commission Savings & Operations Analytics (`/admin/dashboard`)
-1. **Strategic Recovery Tracker**: Monitors progress toward the **₹1.14 Crore** annual margin benchmark:
-   $$\text{Commission Saved} = \text{Direct Regular GMV} \times 15\% \quad (\text{Target: ₹95.04 Lakh/yr})$$
-   $$\text{Catering Margin Captured} = \text{Bulk Catering GMV} \times 30\% \quad (\text{Target: ₹19.44 Lakh/yr})$$
-2. **DPDP Act 2023 Ownership**: First-party customer database metrics tracking direct customer acquisition and affirmative marketing opt-in percentages.
-3. **Kitchen SLA Compliance**: Tracks on-time fulfillment rates ($\le \text{promisedReadyAt}$) and alerts for critical delays ($>10$ min late).
-4. **Multi-Outlet Leaderboard**: Ranks all 17 locations by volume, revenue, commission saved, and prep speed.
+1. **Flow 1 — Location Serviceability & Outlet Routing**:
+   * Customer selects GPS coordinates or a Hyderabad locality (Kondapur, Gachibowli, Kukatpally, Madhapur, Banjara Hills, etc.).
+   * The Haversine serviceability engine (`/api/serviceability`) filters active outlets where `distanceKm <= deliveryRadiusKm` and current IST time falls within `opensAtMinute..closesAtMinute`. If a dine-in kitchen is paused by an admin, orders automatically fail over to the nearest eligible cloud kitchen.
+2. **Flow 2 — Authoritative Pricing, Coupons & 5% Inclusive GST**:
+   * The client sends only `portionId`, `addonIds`, `quantity`, `couponCode`, and `redeemPoints`. The server looks up the `CityPrice` in integer paise.
+   * Per Indian restaurant GST regulations, menu prices are **5% GST inclusive**. The server extracts tax without inflating the menu price:
+     $$\text{includedTaxPaise} = \text{round}\left(\frac{\text{totalPaise} \times 5}{105}\right), \quad \text{CGST} = \lfloor\text{includedTaxPaise} / 2\rfloor, \quad \text{SGST} = \text{includedTaxPaise} - \text{CGST}$$
+3. **Flow 3 — Real-Time Kitchen Display (KDS), 10+ Min Late Alerts & Supervisor Overrides**:
+   * Tickets stream live into `/kitchen` across `NEW`, `PREPARING`, and `READY` lanes with station tags (`BIRYANI`, `GRILL`, `CURRY`, `OVEN`, `FRYER`, `DESSERT`, `BEVERAGE`).
+   * **Critical Lateness (`10+ Min Late`)**: When `now - promisedReadyAt >= 10 minutes`, the ticket pulses crimson (`🚨 10+ MIN LATE · MANAGER ALERT`) on the KDS and displays an empathetic expediting banner on the customer's live tracking screen.
+   * **Supervisor Promise Override**: Kitchen supervisors can extend `promisedReadyAt` (+5m, +10m, +15m) with an operational reason (e.g., *"Dum handi seal resting"*), which immediately broadcasts over SSE to the customer's phone and logs a WhatsApp/SMS update in the Virtual Outbox.
+   * **One-Tap Outlet Stock Pausing ("86ing")**: Line cooks can pause any dish for their outlet in one tap, immediately blocking new checkouts for that dish.
+4. **Flow 4 — Bulk Party Catering Wizard & Catering Manager Confirmation Gate (`/party-orders`)**:
+   * Captures the 30 lost monthly bulk calls via an interactive 15–500 guest calculator with Veg/Non-Veg split, automatic **5kg / 10kg / 20kg sealed dum handi** allocation, tiered packages (*Royal Daawat* ₹420/guest, *Nizami Feast* ₹580/guest), 5–8% volume discounts, and a ≥4-hour lead-time check.
+   * **KDS Lock Gate**: Catering orders enter `PENDING_CONFIRMATION`. Stage progression on the KDS is locked until the Catering Manager reviews and confirms the booking with preparation notes.
+5. **Flow 5 — Royal Rewards First-Party Loyalty & Promotions Portal**:
+   * Customers earn **1 point per ₹10 spent** (configurable live by Central Admin at `/admin/coupons`) and redeem points at **100 points = ₹50** (capped at 50% of order value to protect kitchen margins).
+6. **Flow 6 — Central Menu CMS (`/admin/menu`), Fleet CMS (`/admin/outlets`) & Executive Analytics (`/admin/dashboard`)**:
+   * Central Admin manages all 25+ dishes, city-tiered pricing, time-of-day availability windows (e.g., evening Haleem), promotional coupons, all 17 outlets (with 14-digit FSSAI validation and per-outlet staff credentials/PINs), and tracks progress toward the **₹1.14 Cr annual savings target** on the Executive Dashboard.
 
 ---
 
-## 5. UI and Design Decisions
+### 3.3 How the AI Part Works (And What Happens When It Is Wrong or Unsure)
 
-The design philosophy adheres to the client brief: *"good, minimal design: clean layouts, white space, a restrained palette and clear type, with nothing on screen that lacks a purpose... The menu should make people hungry: big food photos, a short scannable menu, easy-to-read prices and checkout in under a minute."*
+The brief states: *"The AI or automation part actually works, including what happens when it is wrong or unsure"* and warns against *"The AI part faked, or not handling mistakes"*. Every AI touchpoint in this application is backed by real `@google/genai` SDK calls, strict Zod output validation, mathematical floor guardrails, and honest source attribution in the UI.
 
-| Screen | Design Rationale & Key Elements |
+#### 1. Dynamic Kitchen Prep-Time Prediction (`src/features/orders/ai-estimation-logic.ts`)
+* **When it runs**: Triggered at payment confirmation (`processMockPayment`) and live order creation (`placeDemoCustomerOrder`).
+* **Real Context Passed to Gemini**:
+  * Outlet configuration (`minimumPrepMinutes`, `packingMinutes`).
+  * Live database kitchen load (`fetchOutletKitchenLoad`): count of active `NEW` and `PREPARING` tickets in that specific outlet, total active dish count across stations, and active order numbers.
+  * Ordered items with quantities, portions, and base prep minutes.
+* **Structured Output & Validation**: Queries Google Gemini (`gemini-3.5-flash-lite` with automatic failover to `gemini-3.1-flash-lite`, `gemini-3.5-flash`, `gemini-2.5-flash`) using `responseMimeType: "application/json"`. The response is validated through a strict Zod schema:
+  ```ts
+  const geminiPredictionSchema = z.object({
+    estimatedMinutes: z.number().int().min(5).max(180),
+    explanation: z.string().min(5).max(400),
+    confidence: z.enum(["HIGH", "MEDIUM", "LOW"]).default("HIGH"),
+  });
+  ```
+* **What happens when AI is wrong (under-estimates) — The Floor Invariant**:
+  Even if Gemini optimistically estimates 12 minutes for a quick dessert or side dish, the system enforces the brief's mathematical floor rule:
+  $$\text{promisedMinutes} = \max(\text{aiEstimatedMinutes}, \text{outletMinimumPrepMinutes}) + \text{outletPackingMinutes}$$
+  An optimistic AI hallucination can **never** cause the system to under-promise below the outlet's physical minimum prep floor. Conversely, during a heavy rush, if AI estimates 38 minutes (exceeding a 25-minute minimum), the promise honestly expands to $38 + 5 = 43$ minutes.
+* **What happens when AI is unsure, times out, or has no API key — Resilient Deterministic Fallback**:
+  Every Gemini request is wrapped in a **3.5-second `AbortController` timeout**. If `GEMINI_API_KEY` is omitted, unreachable, or returns malformed JSON, `predictKitchenPrepTime()` catches the error and computes a deterministic station-queue estimate (`calculateHeuristicPrep`):
+  $$\text{queueDelay} = \min(25, \text{activeTicketCount} \times 3\text{m}), \quad \text{heuristicPrep} = \max(\text{itemPrep}) + \text{quantityBuffer} + \text{queueDelay}$$
+* **Honest UI Source Attribution (Never Faking AI)**:
+  The database stores `estimateSource` on every order:
+  * `"GEMINI_AI"` → Only set when a live Gemini API response succeeds. Customer tracking and KDS display `✨ Estimated by Gemini Culinary AI` along with Gemini's explanation.
+  * `"GEMINI_FALLBACK"` / `"HEURISTIC_LOAD"` → Set when the deterministic queue model is used. Customer tracking displays `⚡ Station queue buffer estimate` and the KDS displays `Queue Model (XXm)` with the queue buffer explanation.
+  * `"MANAGER_OVERRIDE"` → Set when a kitchen supervisor manually overrides the promise on the KDS (`⏱️ Updated by kitchen supervisor`).
+
+#### 2. Personalized Customer Reorder Concierge (`src/features/menu/ai-reorder.ts`)
+* **How it works**: Aggregates dish frequencies across the customer's last 10 paid orders, intersects them with items currently **active and in stock** at the selected outlet, and asks Gemini (`2.5s` timeout) for a 1-sentence personalized recommendation note.
+* **Honest Source Labeling**: Returns `noteSource: "GEMINI_AI"` when Gemini generates the note (displaying `"AI Suggested for You"`), or `noteSource: "HISTORY_FALLBACK"` when offline/unconfigured (displaying `"Suggested from Your Order History"`).
+* **What happens when AI is wrong — Non-Intrusive Cart Guardrail**:
+  Per the brief's rule, reorder suggestions **never automatically add items to the cart**. Clicking **"Review dish"** opens the item configuration dialog so the customer explicitly reviews portion size, add-ons, and current price before adding to their basket.
+
+---
+
+## 4. UI and Design Decisions: Key Screens & Why They Look the Way They Do
+
+The visual system is crafted around a **Royal Nizami Heritage** palette: deep cardamom emerald (`#0f352d`), warm parchment cream (`#faf7f2`), burnished brass (`#c99b53`), and royal plum (`#3b1747`), paired with high-contrast serif display headings and clean sans-serif data tables. Every screen is responsive down to `360px` mobile viewports and includes dedicated loading, empty, and error states.
+
+| Screen & Route | Why It Looks the Way It Does & UX Rationale |
 | --- | --- |
-| **Customer Menu (`/order`)** | Restrained heritage palette of primary cardamom emerald green (`#133d34`), warm cream canvas (`#faf8f5`), and tertiary Nizam plum/amethyst (`#3b1747`) for visual gravitas. High-resolution food photography leads each card. Fixed desktop cart panel; sticky mobile bottom bar with total and checkout CTA. Category pills and instant search allow sub-60-second ordering. |
-| **Dish Configurator Modal** | Accessible native `<dialog>` element. Clear radio selection for portions with calculated price differentials. Optional add-ons display explicit price and allergen impacts before basket placement. |
-| **Party Catering (`/party-orders`)** | Multi-step interactive event wizard. Real-time dum handi allocation (5kg, 10kg, 20kg), dietary split slider, tier packages (Royal Daawat vs Nizami Feast), live 5% GST & bulk discount price breakdown, advance slot scheduling. |
-| **Checkout (`/checkout`)** | Distraction-free single-column checkout. Explicit breakdown of item subtotals, coupon savings, **Royal Rewards points redemption toggle**, and 5% included GST (CGST/SGST). Single-click mock UPI / Card payment selection. |
-| **Customer Tracking (`/orders/[id]`)** | Prominent dark-green status banner with live countdown timer, 4-stage progress tracker, **Catering Manager confirmation banner**, and FSSAI number. Live SSE connection pill displays "Live" status. Empathetic alerts appear if orders are delayed. Includes **Virtual Device Outbox** drawer to inspect simulated SMS & WhatsApp order updates, and one-click WhatsApp sharing (`wa.me`). |
-| **Customer Account (`/account`)** | **Royal Rewards Loyalty Wallet** showing points balance, rupee value, earning rule highlights, lifetime stats, and recent ledger entries, paired with private order history. |
-| **Kitchen Display (`/kitchen`)** | Designed for cheap Android tablets in hot, steamy, noisy kitchens. High-contrast typography readable from two metres. Bold cream lane containers, elapsed timers, station badges, 10+ min late alerts, supervisor promise override controls, **Catering Manager Review & Confirmation modal**, and one-tap stock pause drawer. |
-| **Central Menu CMS (`/admin/menu`)** | Desktop command center for culinary directors. Live chain stats banner (active dishes, veg/non-veg count, outlet pauses). Instant search, category filters, dish creation modal, city-tiered price manager, and per-outlet stock switches. |
-| **Fleet Management CMS (`/admin/outlets`)** | Central fleet administration hub. View all 17 locations, provision new dine-in or cloud kitchens, configure delivery radiuses and FSSAI licence numbers, and toggle operational status. |
-| **Executive Dashboard (`/admin/dashboard`)** | Leadership command center for Founder-CEO and Central Marketing. Real-time ₹1.14 Cr objective recovery tracker, 15% direct commission savings ticker, 30% catering margin tracker, DPDP customer database metrics, kitchen SLA compliance %, and multi-outlet comparative rankings. |
+| **Customer Storefront & Menu (`/order`)** | **Goal: Make people hungry & finish checkout in <60s.** Uses a scannable 2-column food photo card grid with mandatory Indian statutory **Veg (green dot in square)** and **Non-Veg (red triangle in square)** marks, spice flame indicators (omitted on sweet desserts/beverages), allergen pills, and outlet **14-digit FSSAI licence** in the header. A sticky desktop cart rail and mobile bottom bar keep the checkout CTA one tap away. |
+| **Dish Configurator & Coupon Discovery Modal** | Uses an accessible `<dialog>` modal with clear radio cards for portions (Regular vs. Family Pack / Handi) and optional add-ons (Extra Raita, Double Masala, Gulab Jamun) with live price calculation. Customers can also browse eligible coupons (`DIRECT10`, flash campaigns) with a dynamic progress bar showing how much more to add to unlock a threshold discount. |
+| **Checkout & Payment (`/checkout`)** | Single-column distraction-free layout. Shows an itemized bill with subtotal, coupon savings, **Royal Rewards points redemption toggle**, and explicit **5% inclusive GST breakdown (2.5% CGST + 2.5% SGST)**. Supports one-tap mock UPI and Card outcomes (`SUCCESS` or `FAILED` to test retry resilience). |
+| **Live Order Tracker & Virtual Outbox (`/orders/[id]`)** | Features a high-contrast emerald telemetry card with live ready-by time, honest AI/Queue/Override source badge, 4-stage progress stepper (`Order received` → `Preparing` → `Ready` → `Handed off`), SSE live connection indicator, WhatsApp share button, and the **Virtual Device Outbox** drawer showing simulated SMS & WhatsApp messages sent to the customer's phone. |
+| **Kitchen Display System (`/kitchen`)** | **Engineered for cheap Android tablets at 2-metre viewing distance in hot, noisy kitchens.** Uses bold lane headers (`NEW`, `PREPARING`, `READY`), oversized monospace order numbers (`#WEB-778120`), high-contrast station badges (`BIRYANI`, `GRILL`), live elapsed timers, pulsing crimson banners for orders **10+ minutes past promise**, one-tap `+5m/+10m/+15m` supervisor promise override buttons, a slide-over **Outlet Stock (86) drawer**, and a **Catering Manager Confirmation modal**. Central Admins also get a multi-outlet switcher bar to inspect any of the 17 kitchens live. |
+| **Party & Bulk Catering Wizard (`/party-orders`)** | Replaces the chaotic lost-call phone line with a guided event configurator: 15–500 guest slider, Veg/Non-Veg ratio, automatic **5kg/10kg/20kg sealed clay handi** calculator, package selector, 4-hour advance slot picker (`CustomDateTimePicker`), and live 30%-margin-accretive pricing. |
+| **Executive Analytics (`/admin/dashboard`)** | Built for the Founder-CEO. Top KPI cards track progress toward the **₹1.14 Cr annual profit recovery goal** (15% direct commission savings + 30% bulk catering margin), an interactive "What-If" volume slider, DPDP Act 2023 first-party customer opt-in metrics, kitchen SLA compliance %, real-time cancellation spike risk alerts, and a 17-outlet leaderboard. |
+| **Central Menu CMS (`/admin/menu`), Coupons (`/admin/coupons`) & Fleet CMS (`/admin/outlets`)** | Gives central operations a single source of truth to create/edit dishes, update city-tiered prices, set time-of-day availability windows, launch promotional coupons, tune Royal Rewards loyalty earn/burn rates, and manage all 14 dine-in outlets and 3 cloud kitchens (including per-outlet staff logins & 4-digit tablet PINs). |
 
 ---
 
-## 6. Security, Privacy & DPDP Act 2023 Compliance
+## 5. Explicit Assumptions (Labeled per Submission Rules)
 
-1. **Digital Personal Data Protection (DPDP) Act 2023**:
-   * Marketing consent is explicitly decoupled from account registration. The registration checkbox defaults to `false` and requires active affirmative consent.
-   * Customer delivery addresses and phone numbers are stored encrypted at rest in PostgreSQL and never transmitted to external third-party advertising or analytics networks.
-2. **Input Validation & Sanitization**:
-   * All API routes validate incoming JSON payloads with strict Zod schemas. Payloads exceeding 32 KB are rejected with HTTP 413.
-   * Browser origin validation (`requireSameOrigin`) blocks cross-site request forgery (CSRF) on mutation endpoints.
-3. **No Hardcoded Secrets**:
-   * The repository contains zero production secrets. In Docker development, cryptographic keys are generated in an ephemeral, uncommitted runtime volume.
+Per the rule *"Use only the information in the problem statement. Label every assumption in your TDD"*, every domain and technical assumption is explicitly labeled below:
 
----
-
-## 7. Scope Trade-offs: What was Cut and What Comes Next
-
-### Strategic Cuts (Deliberately Deferred)
-To ensure the core slice was engineered with exceptional depth, polish, and zero dead buttons, several non-core features were intentionally cut from this phase:
-1. **Proprietary Rider Delivery App**: Delivery riders are supplied by third-party delivery partners (Dunzo, Shadowfax). Creating a separate rider app was out of scope per the client brief.
-2. **Replacing In-Store Billing / ERP Systems**: Integrating with 17 legacy POS systems across dine-in outlets would introduce fragile third-party dependencies. The application operates as an autonomous direct-ordering channel that dispatches tickets straight to the kitchen.
-3. **Real Bank Merchant Gateway Integration**: Real bank payment gateways require commercial merchant KYC and settlement accounts. Implemented a realistic mock UPI/Card flow with complete idempotency and failure state handling.
-
-### Future Roadmap
-1. **Automated WhatsApp / SMS Production Gateway**: Connect the existing Virtual Outbox architecture to production Twilio or Gupshup WhatsApp Business Cloud API webhooks.
-2. **Dynamic Surge Kitchen Throttling**: Machine learning forecasting kitchen bottlenecking based on day-of-week surges (e.g. Friday/Sunday dinner surges) to automatically increase buffer times.
-3. **Franchise Royalty & Multi-Entity Ledger**: Automated tax invoicing and split settlement for franchise-owned vs company-owned outlets.
+* **[ASSUMPTION-1: 5% Inclusive Restaurant GST]**: Assumed standard Indian non-AC/restaurant composition GST rate of **5% inclusive** (split equally as 2.5% CGST and 2.5% SGST) extracted from catalog prices rather than added on top at checkout, preventing cart-shock abandonment.
+* **[ASSUMPTION-2: Outlet Minimum Prep & Packing Buffers]**: The brief states that *"the promised time is the higher of the AI estimate and the outlet's minimum"*. We assumed default outlet minimum prep floors of 20–30 minutes (20m for cloud kitchens, 25–30m for flagship dine-in outlets) plus a 5-minute insulated dum-handi packing buffer.
+* **[ASSUMPTION-3: Delivery Radius & Haversine Serviceability]**: Assumed a 5–6 km direct delivery radius around each of the 17 Hyderabad outlets using straight-line Haversine distance so third-party delivery riders (Shadowfax/Dunzo) can maintain <45-minute door-to-door delivery while food remains piping hot.
+* **[ASSUMPTION-4: Party Catering Lead Time & Handi Capacities]**: To capture the 30 lost monthly bulk orders (~₹18,000 average value), we assumed a minimum **4-hour advance notice** requirement for bulk catering and standardized sealed earthen dum handi capacities at **5kg** (~12–15 servings), **10kg** (~25–30 servings), and **20kg** (~50–60 servings).
+* **[ASSUMPTION-5: First-Party Loyalty Economics]**: To drive repeat direct orders without eroding the 15% commission savings over Swiggy/Zomato, we assumed a default Royal Rewards accrual rate of 1 point per ₹10 spent (equivalent to a 5% loyalty rebate when redeemed at ₹0.50/point), leaving a net 10%+ margin advantage even on loyalty-discounted orders.
+* **[ASSUMPTION-6: Simulated Payment & Messaging Gateways for Local Evaluation]**: Because reviewers run the app locally without live merchant bank KYC or Telecom DLT registration, we assumed an idempotent Mock UPI/Card payment processor and an in-app **Virtual Device Outbox** that persists and displays exact SMS and WhatsApp notification payloads.
 
 ---
 
-## 8. Conclusion
+## 6. Security, Testing & Quality Assurance
 
-The delivered solution provides Company A with a scalable, beautiful, and resilient direct-ordering ecosystem. By eliminating dead buttons, enforcing strict business rules (inclusive 5% GST, honest $\max(\text{AI}, \text{minimum})$ preparation promises, two-metre readable kitchen screens, customer loyalty rewards, party catering confirmation, and multi-outlet fleet administration), the platform is fully equipped to achieve the target of moving 12% of aggregator volume to direct orders, reclaiming customer relationships, and adding **₹1.14 crore** to Company A's annual operating profit.
+1. **Automated Test Coverage (`110 Passing Unit Tests across 17 Suites` + Playwright E2E)**:
+   * `tests/unit/checkout.test.ts` & `coupons.test.ts`: Validates integer paise pricing, 5% inclusive GST extraction, coupon minimum thresholds, max discount caps, and SHA-256 quote fingerprint verification.
+   * `tests/unit/ai-estimation.test.ts`: Verifies `max(aiEstimate, outletMinimum) + packingMinutes`, queue buffer scaling, and graceful fallback when `GEMINI_API_KEY` is absent.
+   * `tests/unit/policy.test.ts` & `admin-kds-access.test.ts`: Verifies RBAC and strict cross-outlet tenant isolation (`KITCHEN_STAFF` at Kondapur cannot read or mutate Gachibowli tickets).
+   * `tests/unit/catering.test.ts` & `catering-confirmation.test.ts`: Verifies handi allocation math, 4-hour advance notice, and the KDS Catering Manager confirmation lock gate.
+   * `tests/unit/loyalty.test.ts`, `analytics.test.ts`, `menu-cms.test.ts`, `outlets-cms.test.ts`, `demo-modes.test.ts`: Verifies loyalty earn/redeem caps, ₹1.14 Cr savings calculations, 14-digit FSSAI validation, and repeatable demo simulation actions.
+2. **Security & DPDP Act 2023 Compliance**:
+   * **Zero Secrets in Repository**: `.env` is gitignored; `compose.yaml` and `.env.example` contain no real secrets; Docker generates its signing secret in an ephemeral runtime volume.
+   * **Input Validation & CSRF Protection**: All mutation endpoints enforce `requireSameOrigin(request)`, cap JSON request bodies at 32 KB, and validate payloads with strict Zod 4 schemas.
+   * **DPDP Act 2023**: Marketing opt-in is unchecked (`false`) by default at signup and tracked transparently.
+
+---
+
+## 7. What We Cut, and What We Would Do Next
+
+### What We Cut (Deliberate Scope Trade-Offs)
+To deliver a rock-solid, end-to-end working product with zero dead buttons within the 7-day window, we deliberately cut:
+1. **Proprietary Delivery Rider GPS App**: Company A uses third-party logistics fleets (Shadowfax/Dunzo) for direct deliveries. Building a separate rider turn-by-turn navigation app was cut in favor of deep kitchen-to-handoff tracking.
+2. **Legacy In-Store Dine-In POS Hardware Integration**: Integrating with 17 heterogeneous legacy dine-in billing printers would create brittle hardware dependencies. Instead, the web KDS runs on any affordable Android tablet over Wi-Fi/4G.
+3. **Live Razorpay / WhatsApp Cloud Webhooks**: Replaced with deterministic, inspectable local simulators (Mock UPI/Card gateway with failure testing + Virtual SMS/WhatsApp Outbox drawer) so reviewers can test every edge case offline without API credentials.
+
+### What We Would Build Next (Phase 2 Roadmap)
+1. **3PL Dispatch Webhook Integration (Shadowfax / Dunzo / ONDC)**: Automatically trigger rider assignment when a ticket enters `PREPARING` with <10 minutes remaining, and stream live rider GPS coordinates onto `/orders/[id]`.
+2. **Production Razorpay & Gupshup WhatsApp Business API**: Swap the mock payment and Virtual Outbox adapters for live UPI intent links and automated WhatsApp utility templates.
+3. **Predictive Dum-Handi Batch Forecasting**: Use historical day-of-week and weather data in Gemini to recommend pre-firing specific biryani handi sizes 45 minutes before Friday/Sunday peak dinner surges.

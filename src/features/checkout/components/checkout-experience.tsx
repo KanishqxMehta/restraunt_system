@@ -545,7 +545,7 @@ export function CheckoutExperience({
         </form>
 
         <div
-          className={pending ? "pointer-events-none opacity-60" : ""}
+          className={cn("lg:sticky lg:top-20", pending && "pointer-events-none opacity-60")}
           inert={pending || undefined}
         >
           <CartPanel menu={menu} checkoutLink={false} />

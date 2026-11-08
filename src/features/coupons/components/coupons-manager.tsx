@@ -145,6 +145,8 @@ export function CouponsManager({
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponItem | null>(null);
+  const [couponToDelete, setCouponToDelete] = useState<CouponItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState<FormState>(DEFAULT_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -257,17 +259,18 @@ export function CouponsManager({
     }
   }
 
-  // Delete or archive coupon
-  async function handleDelete(coupon: CouponItem) {
-    const confirmMessage =
-      coupon.redemptionCount > 0
-        ? `Coupon "${coupon.code}" has ${coupon.redemptionCount} redemptions. Deleting will safely pause/archive it to preserve customer order ledgers. Proceed?`
-        : `Are you sure you want to delete coupon "${coupon.code}"?`;
+  // Request deletion confirmation via custom modal
+  function handleDelete(coupon: CouponItem) {
+    setCouponToDelete(coupon);
+  }
 
-    if (!window.confirm(confirmMessage)) return;
+  // Execute deletion or archival after user confirms in custom modal
+  async function confirmDelete() {
+    if (!couponToDelete) return;
+    setIsDeleting(true);
 
     try {
-      const res = await fetch(`/api/admin/coupons/${coupon.id}`, {
+      const res = await fetch(`/api/admin/coupons/${couponToDelete.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -278,28 +281,31 @@ export function CouponsManager({
 
       if (outcome.archived) {
         const updated = coupons.map((c) =>
-          c.id === coupon.id ? { ...c, isActive: false } : c,
+          c.id === couponToDelete.id ? { ...c, isActive: false } : c,
         );
         setCoupons(updated);
         setMetrics(recalculateMetrics(updated));
         alert.general(
           "Coupon Archived",
-          `Coupon "${coupon.code}" was paused because existing orders reference it.`,
+          `Coupon "${couponToDelete.code}" was paused because existing orders reference it.`,
         );
       } else {
-        const updated = coupons.filter((c) => c.id !== coupon.id);
+        const updated = coupons.filter((c) => c.id !== couponToDelete.id);
         setCoupons(updated);
         setMetrics(recalculateMetrics(updated));
         alert.success(
           "Coupon Deleted",
-          `Coupon "${coupon.code}" has been permanently removed.`,
+          `Coupon "${couponToDelete.code}" has been permanently removed.`,
         );
       }
+      setCouponToDelete(null);
     } catch (err: unknown) {
       alert.failure(
         "Deletion Failed",
         err instanceof Error ? err.message : "Unable to delete coupon.",
       );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -1050,6 +1056,60 @@ export function CouponsManager({
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Custom Luxury Deletion Confirmation Modal */}
+      {couponToDelete && (
+        <Modal
+          onClose={() => !isDeleting && setCouponToDelete(null)}
+          title={`Delete Coupon: ${couponToDelete.code}`}
+          subtitle="Admin Coupon Removal Confirmation"
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4 p-5">
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900">
+              <strong className="block text-sm font-bold text-rose-950 mb-1">
+                {couponToDelete.redemptionCount > 0
+                  ? "Preserve Accounting History"
+                  : "Permanent Removal"}
+              </strong>
+              {couponToDelete.redemptionCount > 0 ? (
+                <p className="leading-relaxed">
+                  Coupon &ldquo;<strong>{couponToDelete.code}</strong>&rdquo; has{" "}
+                  <strong>{couponToDelete.redemptionCount} redemptions</strong>.
+                  To protect past customer orders and financial ledgers, it will be safely deactivated and archived.
+                </p>
+              ) : (
+                <p className="leading-relaxed">
+                  Are you sure you want to permanently delete coupon &ldquo;<strong>{couponToDelete.code}</strong>&rdquo;? This action cannot be undone.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCouponToDelete(null)}
+                disabled={isDeleting}
+                className="rounded-xl border border-[#d5c7b3] bg-white px-4 py-2 text-xs font-bold text-[#554b3f] hover:bg-[#f6f1e7] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="rounded-xl bg-rose-700 px-4 py-2 text-xs font-bold text-white hover:bg-rose-800 disabled:opacity-50"
+              >
+                {isDeleting
+                  ? "Processing…"
+                  : couponToDelete.redemptionCount > 0
+                    ? "Archive Coupon"
+                    : "Delete Coupon"}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

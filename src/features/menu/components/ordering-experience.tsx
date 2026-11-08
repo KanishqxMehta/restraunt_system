@@ -348,7 +348,7 @@ export function OrderingExperience() {
                   </p>
                 </section>
 
-                <aside className="hidden lg:sticky lg:top-24 lg:block">
+                <aside className="hidden lg:sticky lg:top-20 lg:block">
                   <CartPanel menu={menu} />
                 </aside>
 

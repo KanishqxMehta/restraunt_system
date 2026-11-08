@@ -30,7 +30,11 @@ export async function fetchOutletKitchenLoad(
 
   const activeTicketCount = activeOrders.length;
   const activeItemCount = activeOrders.reduce(
-    (sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0),
+    (sum, o) =>
+      sum +
+      (Array.isArray(o.items)
+        ? o.items.reduce((s, i) => s + i.quantity, 0)
+        : 0),
     0,
   );
   const activeOrderNumbers = activeOrders.map((o) => o.orderNumber);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MessageSquare, Phone, X, ExternalLink, CheckCheck, RefreshCw, Send } from "lucide-react";
+import { MessageSquare, Phone, X, CheckCheck, RefreshCw, Send } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { requestJson } from "@/lib/http-client";
 
@@ -204,20 +204,6 @@ export function VirtualOutboxDrawer({
                       <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" />
                     </div>
                   </div>
-
-                  {msg.whatsappDeepLink && (
-                    <div className="mt-2 pt-2 border-t border-[#b7e4b0]/70 flex justify-end">
-                      <a
-                        href={msg.whatsappDeepLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 rounded-lg bg-[#00a884] px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-[#008f6f]"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Preview in Real WhatsApp
-                      </a>
-                    </div>
-                  )}
                 </article>
               ))}
             </div>

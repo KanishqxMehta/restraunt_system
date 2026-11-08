@@ -173,7 +173,8 @@ export default async function CustomerOrderPage({
                       {order.managerOverrideReason ||
                         "Extended for careful preparation"}
                     </span>
-                  ) : order.estimateSource === "GEMINI_FALLBACK" ? (
+                  ) : order.estimateSource === "GEMINI_FALLBACK" ||
+                    order.estimateSource === "HEURISTIC_LOAD" ? (
                     <div className="flex flex-col gap-0.5 text-stone-300">
                       <span className="font-medium text-amber-200">
                         ⚡ Station queue buffer estimate ({order.aiEstimatedMinutes ?? 25}m prep)

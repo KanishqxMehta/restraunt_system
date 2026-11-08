@@ -1,4 +1,5 @@
-import { promises as fs } from "node:fs";
+import fs from "node:fs";
+import { promises as fsp } from "node:fs";
 import path from "node:path";
 
 export interface LoyaltySettings {
@@ -22,17 +23,42 @@ const SETTINGS_FILE_PATH = path.join(
 );
 
 export function getLoyaltySettingsSync(): LoyaltySettings {
+  if (process.env.NODE_ENV === "test") {
+    return inMemorySettings;
+  }
+  try {
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      const raw = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8");
+      const parsed = JSON.parse(raw);
+      inMemorySettings = {
+        earnRupeesPerPoint:
+          Number(parsed.earnRupeesPerPoint) || DEFAULT_LOYALTY_SETTINGS.earnRupeesPerPoint,
+        redeemPaisePerPoint:
+          Number(parsed.redeemPaisePerPoint) || DEFAULT_LOYALTY_SETTINGS.redeemPaisePerPoint,
+        maxRebatePercent:
+          Number(parsed.maxRebatePercent) || DEFAULT_LOYALTY_SETTINGS.maxRebatePercent,
+      };
+    }
+  } catch {
+    // Keep in-memory
+  }
   return inMemorySettings;
 }
 
 export async function getLoyaltySettings(): Promise<LoyaltySettings> {
+  if (process.env.NODE_ENV === "test") {
+    return inMemorySettings;
+  }
   try {
-    const raw = await fs.readFile(SETTINGS_FILE_PATH, "utf-8");
+    const raw = await fsp.readFile(SETTINGS_FILE_PATH, "utf-8");
     const parsed = JSON.parse(raw);
     inMemorySettings = {
-      earnRupeesPerPoint: Number(parsed.earnRupeesPerPoint) || DEFAULT_LOYALTY_SETTINGS.earnRupeesPerPoint,
-      redeemPaisePerPoint: Number(parsed.redeemPaisePerPoint) || DEFAULT_LOYALTY_SETTINGS.redeemPaisePerPoint,
-      maxRebatePercent: Number(parsed.maxRebatePercent) || DEFAULT_LOYALTY_SETTINGS.maxRebatePercent,
+      earnRupeesPerPoint:
+        Number(parsed.earnRupeesPerPoint) || DEFAULT_LOYALTY_SETTINGS.earnRupeesPerPoint,
+      redeemPaisePerPoint:
+        Number(parsed.redeemPaisePerPoint) || DEFAULT_LOYALTY_SETTINGS.redeemPaisePerPoint,
+      maxRebatePercent:
+        Number(parsed.maxRebatePercent) || DEFAULT_LOYALTY_SETTINGS.maxRebatePercent,
     };
   } catch {
     // Keep in-memory
@@ -61,8 +87,8 @@ export async function updateLoyaltySettings(
 
   inMemorySettings = updated;
   try {
-    await fs.mkdir(path.dirname(SETTINGS_FILE_PATH), { recursive: true });
-    await fs.writeFile(
+    await fsp.mkdir(path.dirname(SETTINGS_FILE_PATH), { recursive: true });
+    await fsp.writeFile(
       SETTINGS_FILE_PATH,
       JSON.stringify(updated, null, 2),
       "utf-8",

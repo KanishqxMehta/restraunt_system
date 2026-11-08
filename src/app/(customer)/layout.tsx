@@ -9,10 +9,10 @@ export default async function CustomerLayout({
 }) {
   const viewer = await requirePageViewer(["CUSTOMER"]);
   return (
-    <WorkspaceShell viewer={viewer}>
-      <CartProvider key={viewer.id} userId={viewer.id}>
+    <CartProvider key={viewer.id} userId={viewer.id}>
+      <WorkspaceShell viewer={viewer}>
         {children}
-      </CartProvider>
-    </WorkspaceShell>
+      </WorkspaceShell>
+    </CartProvider>
   );
 }

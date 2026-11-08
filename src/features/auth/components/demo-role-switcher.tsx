@@ -12,9 +12,7 @@ export function DemoRoleSwitcher({ currentEmail }: { currentEmail: string }) {
   const router = useRouter();
   const [switchingTo, setSwitchingTo] = useState<string | null>(null);
 
-  const visibleAccounts = demoAccounts.filter(
-    (a) => a.id !== "demo-customer-two",
-  );
+  const visibleAccounts = demoAccounts;
 
   async function handleSwitchRole(nextEmail: string) {
     if (switchingTo || nextEmail === currentEmail) return;

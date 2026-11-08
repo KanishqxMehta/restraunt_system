@@ -7,6 +7,7 @@ import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { DemoRoleSwitcher } from "@/features/auth/components/demo-role-switcher";
 import { cn } from "@/lib/classes";
 import { MobileTabBar, WorkspaceNav } from "./workspace-nav";
+import { DemoModeToolbar } from "@/features/demo/components/demo-mode-toolbar";
 
 export function WorkspaceShell({
   viewer,
@@ -146,6 +147,9 @@ export function WorkspaceShell({
       </footer>
 
       {hasTabBar && <MobileTabBar role={viewer.role} />}
+      {process.env.ENABLE_DEMO_DATA === "true" && (
+        <DemoModeToolbar viewer={viewer} />
+      )}
     </div>
   );
 }

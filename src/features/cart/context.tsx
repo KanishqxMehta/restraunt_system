@@ -37,3 +37,19 @@ export function useCart() {
   );
   return { ...store, ...state, hydrated };
 }
+
+export function useOptionalCart() {
+  const store = useContext(CartContext);
+  const state = useSyncExternalStore(
+    store ? store.subscribe : subscribeHydration,
+    store ? store.getSnapshot : () => EMPTY_CART,
+    () => EMPTY_CART,
+  );
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false,
+  );
+  if (!store) return null;
+  return { ...store, ...state, hydrated };
+}

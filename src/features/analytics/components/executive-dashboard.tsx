@@ -215,6 +215,8 @@ export function ExecutiveDashboard({
         redeemPaisePerPoint: sanitized.loyaltyRedeemPaisePerPoint,
         maxRebatePercent: sanitized.loyaltyMaxRebatePercent,
       }),
+    }).then(() => {
+      window.dispatchEvent(new Event("loyalty:settings-updated"));
     });
 
     setShowSettingsModal(false);
@@ -240,6 +242,8 @@ export function ExecutiveDashboard({
         redeemPaisePerPoint: DEFAULT_BENCHMARKS.loyaltyRedeemPaisePerPoint,
         maxRebatePercent: DEFAULT_BENCHMARKS.loyaltyMaxRebatePercent,
       }),
+    }).then(() => {
+      window.dispatchEvent(new Event("loyalty:settings-updated"));
     });
     alert.general(
       "Default Benchmarks & Loyalty Rules Restored",
@@ -447,6 +451,49 @@ export function ExecutiveDashboard({
           </button>
         </div>
       </section>
+
+      {/* Real-Time Operational Risk Warning Banner (Triggered on Cancellation Spikes) */}
+      {(scopedMetrics.cancelledOrdersCount >= 4 ||
+        scopedMetrics.cancellationRatePercent > 5) && (
+        <section
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-rose-300 bg-gradient-to-r from-rose-50 via-[#fff5f5] to-amber-50 p-4 shadow-xs"
+        >
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-xs">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  Operational Risk Alert
+                </span>
+                <strong className="text-sm font-bold text-rose-950">
+                  Abnormal Cancellation Spike Detected in {scopedMetrics.label}
+                </strong>
+              </div>
+              <p className="mt-1 text-xs text-rose-900/90">
+                <strong>{scopedMetrics.cancelledOrdersCount} cancelled orders</strong>{" "}
+                ({scopedMetrics.cancellationRatePercent}% cancellation rate) recorded. Inspect kitchen queue congestion, 86 stockouts, or temporarily pause affected outlets.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/kitchen"
+              className="rounded-xl bg-rose-700 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-rose-800"
+            >
+              Inspect Kitchen KDS
+            </Link>
+            <Link
+              href="/admin/outlets"
+              className="rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs font-bold text-rose-900 transition hover:bg-rose-50"
+            >
+              Manage Outlets
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* 4 Primary Business & Operational KPI Cards */}
       <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

@@ -4,14 +4,22 @@ import {
   lineKey,
   type CartLine,
 } from "@/features/checkout/validation";
-import {
-  locationSchema,
-  type Location,
-} from "@/features/outlets/serviceability";
+import { type Location } from "@/features/outlets/serviceability";
+
+const tolerantLocationSchema = z
+  .object({
+    latitude: z.number().finite().min(-90).max(90),
+    longitude: z.number().finite().min(-180).max(180),
+  })
+  .passthrough()
+  .transform((loc) => ({
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+  }));
 
 const stateSchema = z.object({
   outletId: z.string().nullable(),
-  location: locationSchema.nullable(),
+  location: tolerantLocationSchema.nullable(),
   lines: z.array(cartLineSchema).max(30),
 });
 export type CartState = z.infer<typeof stateSchema>;
@@ -36,6 +44,22 @@ export function createCartStore(userId: string) {
     }
   }
   const listeners = new Set<() => void>();
+
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("demo:cart-sync", () => {
+      try {
+        const parsed = stateSchema.safeParse(
+          JSON.parse(sessionStorage.getItem(key) ?? "null"),
+        );
+        if (parsed.success) {
+          state = parsed.data;
+          listeners.forEach((listener) => listener());
+        }
+      } catch {
+        /* Ignore parse error */
+      }
+    });
+  }
   function update(next: CartState) {
     state = next;
     try {
@@ -88,8 +112,14 @@ export function createCartStore(userId: string) {
           .filter((line) => line.quantity > 0),
       });
     },
+    setLines(lines: CartLine[]) {
+      update({ ...state, lines });
+    },
     clear() {
       update({ ...state, lines: [] });
+    },
+    reset() {
+      update(EMPTY_CART);
     },
   };
 }

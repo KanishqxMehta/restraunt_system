@@ -41,9 +41,7 @@ export function DemoAccountPicker() {
     }
   }
 
-  const visibleAccounts = demoAccounts.filter(
-    (a) => a.id !== "demo-customer-two",
-  );
+  const visibleAccounts = demoAccounts;
 
   return (
     <details

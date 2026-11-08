@@ -1,10 +1,11 @@
 import "server-only";
 import { getDatabase } from "@/server/db/client";
 import type { Prisma } from "@/generated/prisma/client";
-import { getLoyaltySettingsSync } from "./settings";
+import { getLoyaltySettings } from "./settings";
 
 export async function getOrCreateLoyaltyAccount(userId: string) {
   const db = getDatabase();
+  const settings = await getLoyaltySettings();
 
   let account = await db.loyaltyAccount.findUnique({
     where: { userId },
@@ -51,8 +52,11 @@ export async function getOrCreateLoyaltyAccount(userId: string) {
     pointsBalance: account.pointsBalance,
     lifetimeEarned: account.lifetimeEarned,
     lifetimeRedeemed: account.lifetimeRedeemed,
+    redeemPaisePerPoint: settings.redeemPaisePerPoint,
+    earnRupeesPerPoint: settings.earnRupeesPerPoint,
+    maxRebatePercent: settings.maxRebatePercent,
     rupeeValue: Math.floor(
-      (account.pointsBalance * getLoyaltySettingsSync().redeemPaisePerPoint) / 100,
+      (account.pointsBalance * settings.redeemPaisePerPoint) / 100,
     ),
     transactions: account.transactions.map((t) => ({
       id: t.id,

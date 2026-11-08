@@ -10,7 +10,7 @@ export async function advanceKitchenStage(
   id: string,
   expectedStage: KitchenStage,
 ) {
-  requireRole(viewer, ["KITCHEN_STAFF"]);
+  requireRole(viewer, ["KITCHEN_STAFF", "CENTRAL_ADMIN"]);
   const next = stageActions[expectedStage].next;
 
   const result = await serializable(async (transaction) => {

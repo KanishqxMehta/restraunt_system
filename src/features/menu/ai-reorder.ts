@@ -15,7 +15,11 @@ export interface ReorderSuggestion {
 export async function getCustomerReorderSuggestions(
   customerId: string,
   outletId?: string,
-): Promise<{ suggestions: ReorderSuggestion[]; aiNote: string | null }> {
+): Promise<{
+  suggestions: ReorderSuggestion[];
+  aiNote: string | null;
+  noteSource: "GEMINI_AI" | "HISTORY_FALLBACK";
+}> {
   const db = getDatabase();
 
   // Find customer's completed or paid orders
@@ -38,7 +42,7 @@ export async function getCustomerReorderSuggestions(
   });
 
   if (pastOrders.length === 0) {
-    return { suggestions: [], aiNote: null };
+    return { suggestions: [], aiNote: null, noteSource: "HISTORY_FALLBACK" };
   }
 
   // Count dish frequencies
@@ -83,10 +87,11 @@ export async function getCustomerReorderSuggestions(
 
   const topItems = matched.slice(0, 3);
   if (topItems.length === 0) {
-    return { suggestions: [], aiNote: null };
+    return { suggestions: [], aiNote: null, noteSource: "HISTORY_FALLBACK" };
   }
 
   let aiNote: string | null = null;
+  let noteSource: "GEMINI_AI" | "HISTORY_FALLBACK" = "HISTORY_FALLBACK";
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (apiKey && topItems.length > 0) {
@@ -97,11 +102,15 @@ export async function getCustomerReorderSuggestions(
 In 1 friendly, appetizing sentence (max 18 words), suggest a reorder for today. Do not output quotes.`;
 
       const preferredModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
-      const candidateModels = [
-        preferredModel,
-        ...(preferredModel !== "gemini-3.1-flash-lite" ? ["gemini-3.1-flash-lite"] : []),
-        ...(preferredModel !== "gemini-3.5-flash" ? ["gemini-3.5-flash"] : []),
-      ];
+      const candidateModels = Array.from(
+        new Set([
+          preferredModel,
+          "gemini-3.5-flash-lite",
+          "gemini-3.1-flash-lite",
+          "gemini-3.5-flash",
+          "gemini-2.5-flash",
+        ]),
+      );
 
       for (const modelToTry of candidateModels) {
         const controller = new AbortController();
@@ -119,6 +128,7 @@ In 1 friendly, appetizing sentence (max 18 words), suggest a reorder for today. 
           const t = response.text?.trim();
           if (t) {
             aiNote = t;
+            noteSource = "GEMINI_AI";
             break;
           }
         } catch {
@@ -146,5 +156,5 @@ In 1 friendly, appetizing sentence (max 18 words), suggest a reorder for today. 
     reason: `Ordered ${frequencies.get(item.name)?.count ?? 1} time${(frequencies.get(item.name)?.count ?? 1) > 1 ? "s" : ""} recently`,
   }));
 
-  return { suggestions, aiNote };
+  return { suggestions, aiNote, noteSource };
 }

@@ -29,17 +29,23 @@ export function ReorderSuggestions({
 }) {
   const [suggestions, setSuggestions] = useState<ReorderSuggestion[]>([]);
   const [aiNote, setAiNote] = useState<string | null>(null);
+  const [noteSource, setNoteSource] = useState<"GEMINI_AI" | "HISTORY_FALLBACK">(
+    "HISTORY_FALLBACK",
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    requestJson<{ suggestions: ReorderSuggestion[]; aiNote: string | null }>(
-      `/api/customer/reorder-suggestions?outletId=${encodeURIComponent(outletId)}`,
-    )
+    requestJson<{
+      suggestions: ReorderSuggestion[];
+      aiNote: string | null;
+      noteSource?: "GEMINI_AI" | "HISTORY_FALLBACK";
+    }>(`/api/customer/reorder-suggestions?outletId=${encodeURIComponent(outletId)}`)
       .then((data) => {
         if (!active) return;
         setSuggestions(data.suggestions || []);
         setAiNote(data.aiNote);
+        setNoteSource(data.noteSource || "HISTORY_FALLBACK");
       })
       .catch(() => {
         // Silently skip if user is not signed in or has no history
@@ -73,12 +79,16 @@ export function ReorderSuggestions({
               Personal Culinary Concierge
             </span>
             <h2 className="font-display text-lg font-bold text-[#3b1747]">
-              AI Suggested for You
+              {noteSource === "GEMINI_AI"
+                ? "AI Suggested for You"
+                : "Suggested from Your Order History"}
             </h2>
           </div>
         </div>
         <span className="rounded-full border border-[#dec9ec] bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#4a1d5a]">
-          Tailored to your palate & live stock
+          {noteSource === "GEMINI_AI"
+            ? "Gemini AI · Tailored to your palate & live stock"
+            : "Order History · Filtered by live kitchen stock"}
         </span>
       </div>
 

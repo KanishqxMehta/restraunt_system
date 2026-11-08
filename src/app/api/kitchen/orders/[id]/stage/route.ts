@@ -12,7 +12,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const viewer = await requireViewer(["KITCHEN_STAFF"]);
+    const viewer = await requireViewer(["KITCHEN_STAFF", "CENTRAL_ADMIN"]);
     requireSameOrigin(request);
     const { id } = await context.params;
     if (!id || id.length > 128) throw new HttpError(400, "Invalid ticket.");
