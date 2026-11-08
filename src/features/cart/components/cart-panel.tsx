@@ -118,10 +118,13 @@ export function CartPanel({
                       <button
                         type="button"
                         aria-label={`Decrease ${line.name}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#1f1c18] transition hover:bg-white"
-                        onClick={() =>
-                          cart.setQuantity(lineKey(line), line.quantity - 1)
-                        }
+                        disabled={line.quantity <= 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#1f1c18] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                        onClick={() => {
+                          if (line.quantity > 1) {
+                            cart.setQuantity(lineKey(line), line.quantity - 1);
+                          }
+                        }}
                       >
                         <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
