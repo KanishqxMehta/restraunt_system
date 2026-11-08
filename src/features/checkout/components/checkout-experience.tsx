@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   MapPin,
@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCart } from "@/features/cart/context";
+import { previewCart } from "@/features/cart/preview";
 import { CartPanel } from "@/features/cart/components/cart-panel";
 import { useCustomerMenu } from "@/features/menu/use-customer-menu";
 import { Button } from "@/components/ui/button";
@@ -20,16 +21,25 @@ import { AlertBanner, useAlert } from "@/components/ui/alert-toast";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
 import { quoteInputSchema, deliveryAddressSchema } from "../validation";
 import type { CheckoutQuote } from "../types";
+import type { AvailableCustomerCoupon } from "@/features/coupons/types";
 import { PriceBreakdown } from "./price-breakdown";
 import { PaymentMethodPicker } from "./payment-method";
+import { cn } from "@/lib/classes";
 
-export function CheckoutExperience() {
+export function CheckoutExperience({
+  initialAvailableCoupons = [],
+}: {
+  initialAvailableCoupons?: AvailableCustomerCoupon[];
+}) {
   const cart = useCart();
   const router = useRouter();
   const alert = useAlert();
   const { menu, error: menuError, retry } = useCustomerMenu(cart.outletId);
   const [address, setAddress] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [availableCoupons, setAvailableCoupons] = useState<
+    AvailableCustomerCoupon[]
+  >(initialAvailableCoupons);
   const [redeemPoints, setRedeemPoints] = useState(false);
   const [loyalty, setLoyalty] = useState<{
     pointsBalance: number;
@@ -41,7 +51,7 @@ export function CheckoutExperience() {
     quote: CheckoutQuote;
   } | null>(null);
 
-  // Fetch customer loyalty balance
+  // Fetch customer loyalty balance and live available coupons
   useEffect(() => {
     fetch("/api/customer/loyalty")
       .then((res) => (res.ok ? res.json() : null))
@@ -51,6 +61,15 @@ export function CheckoutExperience() {
             pointsBalance: data.account.pointsBalance,
             rupeeValue: data.account.rupeeValue,
           });
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/coupons/available")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.coupons) {
+          setAvailableCoupons(data.coupons);
         }
       })
       .catch(() => {});
@@ -74,6 +93,16 @@ export function CheckoutExperience() {
   };
   const inputKey = JSON.stringify(input);
   const quote = quoteResult?.key === inputKey ? quoteResult.quote : null;
+
+  const cartSubtotalPaise = useMemo(() => {
+    if (quote?.subtotalPaise) return quote.subtotalPaise;
+    if (!menu) return 0;
+    const lines = previewCart(cart.lines, menu.items);
+    return lines.reduce(
+      (sum, line) => sum + line.unitPricePaise * line.quantity,
+      0,
+    );
+  }, [quote?.subtotalPaise, menu, cart.lines]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -217,46 +246,196 @@ export function CheckoutExperience() {
             </p>
           </div>
 
-          {/* Coupon Code */}
+          {/* Coupon Code & Available Coupons */}
           <div className="border-t border-[#ece3d5] pt-5">
             <label
               htmlFor="coupon-code"
-              className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0f352d]"
+              className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0f352d]"
             >
-              <TicketPercent
-                className="h-4 w-4 text-[#4a1d5a]"
-                aria-hidden="true"
-              />
-              <span>
-                Coupon{" "}
-                <span className="font-normal normal-case text-[#6b6255]">
-                  · optional
-                </span>
+              <span className="flex items-center gap-2">
+                <TicketPercent
+                  className="h-4 w-4 text-[#4a1d5a]"
+                  aria-hidden="true"
+                />
+                <span>Coupon Code</span>
+              </span>
+              <span className="font-normal normal-case text-[#6b6255]">
+                · optional
               </span>
             </label>
-            <input
-              id="coupon-code"
-              value={couponCode}
-              onChange={(event) => setCouponCode(event.target.value)}
-              maxLength={32}
-              disabled={pending}
-              placeholder="Enter a code (e.g. DIRECT10)"
-              className="min-h-12 w-full rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-4 font-mono text-sm font-bold uppercase text-[#1f1c18] outline-none transition placeholder:font-sans placeholder:font-normal placeholder:normal-case placeholder:text-[#9c9283] focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
-            />
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3.5 py-2 text-xs">
-              <span className="font-semibold text-[#4a1d5a]">
-                Try DIRECT10: 10% off orders from ₹300, up to ₹100.
-              </span>
-              {couponCode.toUpperCase() !== "DIRECT10" && (
+            <div className="flex gap-2">
+              <input
+                id="coupon-code"
+                value={couponCode}
+                onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                maxLength={32}
+                disabled={pending}
+                placeholder="Enter a code (e.g. DIRECT10)"
+                className="min-h-12 flex-1 rounded-xl border border-[#dcd2c2] bg-[#fffdfa] px-4 font-mono text-sm font-bold uppercase text-[#1f1c18] outline-none transition placeholder:font-sans placeholder:font-normal placeholder:normal-case placeholder:text-[#9c9283] focus:border-[#0f352d] focus:ring-3 focus:ring-[#0f352d]/12"
+              />
+              {couponCode && (
                 <button
                   type="button"
-                  onClick={() => setCouponCode("DIRECT10")}
-                  className="rounded-lg bg-[#3b1747] px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] transition hover:bg-[#290e32]"
+                  onClick={() => setCouponCode("")}
+                  className="rounded-xl border border-[#dfd4c2] px-3.5 text-xs font-bold text-[#635b50] hover:bg-[#faf7f2]"
                 >
-                  Apply code
+                  Clear
                 </button>
               )}
             </div>
+
+            {/* Customer Coupons Discovery Drawer */}
+            {availableCoupons.length > 0 ? (
+              <div className="mt-3.5 space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6f60]">
+                  Available Coupons For This Order
+                </p>
+                <div className="space-y-2">
+                  {availableCoupons.map((coupon) => {
+                    const isSelected =
+                      couponCode.trim().toUpperCase() === coupon.code.toUpperCase();
+                    const isUserLimitReached = coupon.isUserLimitReached;
+                    const isUnderMinSpend = cartSubtotalPaise < coupon.minOrderPaise;
+                    const deficitRupees = Math.max(
+                      0,
+                      Math.ceil((coupon.minOrderPaise - cartSubtotalPaise) / 100),
+                    );
+
+                    const discountText =
+                      coupon.discountType === "PERCENT"
+                        ? `${coupon.value}% off${
+                            coupon.maxDiscountPaise
+                              ? ` (max ₹${Math.round(coupon.maxDiscountPaise / 100)})`
+                              : ""
+                          }`
+                        : `₹${Math.round(coupon.value / 100)} flat off`;
+
+                    // State 1: Reached per-user redemptions -> Faded & shows "Used"
+                    if (isUserLimitReached) {
+                      return (
+                        <div
+                          key={coupon.code}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-[#e3d8c6] bg-[#f5efe4]/60 p-3 opacity-45 cursor-not-allowed select-none"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold line-through text-[#635b50]">
+                                {coupon.code}
+                              </span>
+                              <span className="rounded-full bg-[#dec9ec]/60 px-2 py-0.5 text-[9px] font-bold text-[#4a1d5a]">
+                                {discountText}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-[10px] text-[#7a6f60]">
+                              You have already redeemed this coupon.
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-lg bg-[#ded5c7] px-2.5 py-1 text-[10px] font-bold text-[#635b50]">
+                            Used
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // State 2: Ineligible due to Cart Minimum -> Faded & shows deficit
+                    if (isUnderMinSpend) {
+                      return (
+                        <div
+                          key={coupon.code}
+                          className="flex flex-col gap-1.5 rounded-xl border border-dashed border-[#dec9ec] bg-[#fcf8ff]/70 p-3 opacity-75 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-[#4a1d5a]">
+                                {coupon.code}
+                              </span>
+                              <span className="rounded-full bg-[#f4ebfa] border border-[#dec9ec] px-2 py-0.5 text-[9px] font-bold text-[#4a1d5a]">
+                                {discountText}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-semibold text-amber-900">
+                              Add items worth ₹{deficitRupees} more to unlock this coupon
+                            </p>
+                            <span className="text-[10px] text-[#7a6f60]">
+                              Minimum spend required: ₹{Math.round(coupon.minOrderPaise / 100)}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            disabled
+                            className="self-start rounded-lg border border-[#e0d6cb] bg-[#f5efe4] px-2.5 py-1 text-[10px] font-bold text-[#8c8273] opacity-60 cursor-not-allowed sm:self-center"
+                          >
+                            Min spend needed
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // State 3: Eligible & Ready to Apply!
+                    return (
+                      <div
+                        key={coupon.code}
+                        className={cn(
+                          "flex items-center justify-between gap-3 rounded-xl p-3 transition shadow-2xs",
+                          isSelected
+                            ? "border-2 border-emerald-700 bg-emerald-50/70 ring-1 ring-emerald-700/20"
+                            : "border border-[#dec9ec] bg-[#fffdfa] hover:border-[#4a1d5a]",
+                        )}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-black tracking-wide text-[#0f352d]">
+                              {coupon.code}
+                            </span>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-100/70 px-2 py-0.5 text-[10px] font-bold text-emerald-900">
+                              {discountText}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-[#635b50]">
+                            {coupon.minOrderPaise > 0
+                              ? `Applicable on orders from ₹${Math.round(coupon.minOrderPaise / 100)}`
+                              : "No minimum spend required"}
+                          </p>
+                        </div>
+
+                        {isSelected ? (
+                          <button
+                            type="button"
+                            onClick={() => setCouponCode("")}
+                            className="shrink-0 rounded-lg bg-emerald-800 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-900"
+                          >
+                            Applied ✓
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setCouponCode(coupon.code)}
+                            className="shrink-0 rounded-lg bg-[#3b1747] px-3 py-1.5 text-xs font-bold text-[#f4d6a9] shadow-2xs transition hover:bg-[#280d31]"
+                          >
+                            Apply code
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3.5 py-2 text-xs">
+                <span className="font-semibold text-[#4a1d5a]">
+                  Try DIRECT10: 10% off orders from ₹300, up to ₹100.
+                </span>
+                {couponCode.toUpperCase() !== "DIRECT10" && (
+                  <button
+                    type="button"
+                    onClick={() => setCouponCode("DIRECT10")}
+                    className="rounded-lg bg-[#3b1747] px-2.5 py-1 text-[11px] font-bold text-[#f4d6a9] transition hover:bg-[#290e32]"
+                  >
+                    Apply code
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Royal Rewards Loyalty Points */}

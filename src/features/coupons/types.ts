@@ -36,3 +36,14 @@ export interface CouponMetrics {
   totalDiscountGivenPaise: number;
   topCouponCode: string | null;
 }
+
+export interface AvailableCustomerCoupon {
+  code: string;
+  discountType: DiscountType;
+  value: number; // in % (e.g. 10) or in paise (for flat)
+  minOrderPaise: number;
+  maxDiscountPaise: number | null;
+  perCustomerLimit: number | null;
+  isUserLimitReached: boolean;
+  expiresAt: string;
+}

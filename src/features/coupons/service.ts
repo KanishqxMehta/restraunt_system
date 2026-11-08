@@ -1,6 +1,11 @@
 import { getDatabase } from "@/server/db/client";
 import { HttpError } from "@/server/http/errors";
-import type { CouponFormInput, CouponItem, CouponMetrics } from "./types";
+import type {
+  AvailableCustomerCoupon,
+  CouponFormInput,
+  CouponItem,
+  CouponMetrics,
+} from "./types";
 
 export async function listCoupons(): Promise<{
   coupons: CouponItem[];
@@ -294,4 +299,57 @@ export async function deleteCoupon(id: string): Promise<{ deleted: boolean; arch
 
   await db.coupon.delete({ where: { id } });
   return { deleted: true, archived: false };
+}
+
+export async function listAvailableCustomerCoupons(
+  customerId?: string,
+): Promise<AvailableCustomerCoupon[]> {
+  const db = getDatabase();
+  const now = new Date();
+
+  const activeCoupons = await db.coupon.findMany({
+    where: {
+      isActive: true,
+      startsAt: { lte: now },
+      expiresAt: { gt: now },
+    },
+    include: {
+      redemptions: {
+        select: {
+          customerId: true,
+        },
+      },
+    },
+    orderBy: { startsAt: "desc" },
+  });
+
+  const available: AvailableCustomerCoupon[] = [];
+
+  for (const c of activeCoupons) {
+    // Exclude if global usage limit has been reached
+    if (c.usageLimit !== null && c.redemptions.length >= c.usageLimit) {
+      continue;
+    }
+
+    // Check if per-customer limit has been reached for this user
+    const userUsageCount = customerId
+      ? c.redemptions.filter((r) => r.customerId === customerId).length
+      : 0;
+
+    const isUserLimitReached =
+      c.perCustomerLimit !== null && userUsageCount >= c.perCustomerLimit;
+
+    available.push({
+      code: c.code,
+      discountType: c.discountType,
+      value: c.value,
+      minOrderPaise: c.minOrderPaise,
+      maxDiscountPaise: c.maxDiscountPaise,
+      perCustomerLimit: c.perCustomerLimit,
+      isUserLimitReached,
+      expiresAt: c.expiresAt.toISOString(),
+    });
+  }
+
+  return available;
 }

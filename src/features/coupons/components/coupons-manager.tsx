@@ -12,7 +12,6 @@ import {
   Check,
   Edit2,
   Trash2,
-  Percent,
   TrendingUp,
   Tag,
   ShieldCheck,
@@ -60,6 +59,31 @@ function formatRupees(paise: number): string {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(paise / 100);
+}
+
+function formatValidityWindow(dateIso: string): string {
+  const d = new Date(dateIso);
+  const now = new Date();
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+
+  const timeStr = d.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  if (isToday) {
+    return `Today - ${timeStr}`;
+  }
+
+  return `Until ${d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })}`;
 }
 
 function getCouponStatus(coupon: CouponItem): {
@@ -589,12 +613,8 @@ export function CouponsManager({
 
                       {/* Discount Rule */}
                       <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1 rounded-md border border-[#c99b53]/40 bg-[#fbf6ed] px-2 py-0.5 font-bold text-[#73511f]">
-                          {isPercent ? (
-                            <Percent className="h-3 w-3" />
-                          ) : (
-                            <Tag className="h-3 w-3" />
-                          )}
+                        <span className="inline-flex items-center gap-1.5 rounded-md border border-[#c99b53]/40 bg-[#fbf6ed] px-2 py-0.5 font-bold text-[#73511f]">
+                          <Tag className="h-3 w-3" />
                           <span>{discountDescription}</span>
                         </span>
                       </td>
@@ -644,17 +664,7 @@ export function CouponsManager({
                       <td className="px-4 py-3.5 text-[11px] text-[#635b50]">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3 text-[#a0907d]" />
-                          <span>
-                            Until{" "}
-                            {new Date(coupon.expiresAt).toLocaleDateString(
-                              "en-IN",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              },
-                            )}
-                          </span>
+                          <span>{formatValidityWindow(coupon.expiresAt)}</span>
                         </div>
                       </td>
 
