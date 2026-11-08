@@ -24,7 +24,7 @@ import { SelectMenu } from "@/components/ui/select-menu";
 import { useAlert } from "@/components/ui/alert-toast";
 import { DietaryMark } from "@/features/menu/components/dietary-mark";
 import { ClientError, errorMessage, requestJson } from "@/lib/http-client";
-import { formatTime } from "@/lib/format";
+import { formatElapsed, formatTime } from "@/lib/format";
 import { cn } from "@/lib/classes";
 import type { listKitchenOrders } from "../repository";
 import { snapshotAddons } from "../snapshots";
@@ -63,15 +63,7 @@ const laneStyles: Record<
   },
 };
 
-function duration(ms: number) {
-  const seconds = Math.floor(Math.abs(ms) / 1000);
-  return (
-    Math.floor(seconds / 60) +
-    "m " +
-    String(seconds % 60).padStart(2, "0") +
-    "s"
-  );
-}
+const duration = formatElapsed;
 
 const PAGE_SIZE = 10;
 
@@ -1070,8 +1062,11 @@ function KitchenTicket({
       )}
 
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="font-mono text-xl font-black tracking-tight break-all text-[#0f352d]">
+        <div className="min-w-0">
+          <h3
+            title={ticket.orderNumber}
+            className="truncate font-mono text-lg font-black tracking-tight text-[#0f352d]"
+          >
             {ticket.orderNumber}
           </h3>
           <p className="mt-0.5 text-xs font-semibold text-[#635b50]">
@@ -1080,9 +1075,9 @@ function KitchenTicket({
         </div>
 
         {/* AI & Override Status Badges */}
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           {ticket.estimateSource === "GEMINI_AI" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-2.5 py-0.5 text-[11px] font-bold text-[#065f46]">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-2.5 py-0.5 text-[11px] font-bold text-[#065f46]">
               <Sparkles className="h-3 w-3 text-[#059669]" aria-hidden="true" />{" "}
               Gemini AI ({ticket.aiEstimatedMinutes ?? 25}m)
             </span>
@@ -1125,7 +1120,7 @@ function KitchenTicket({
       {/* Timer & Due Display */}
       <div
         className={cn(
-          "font-mono-tabular mt-3.5 flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold",
+          "font-mono-tabular mt-3.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3.5 py-2.5 text-sm font-bold",
           criticalLate
             ? "bg-red-700 text-white"
             : late
@@ -1133,7 +1128,7 @@ function KitchenTicket({
               : "border border-[#a7f3d0]/70 bg-[#eef6f4] text-[#0f352d]",
         )}
       >
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
           <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {stage === "READY"
             ? pickupWait === null
@@ -1145,7 +1140,7 @@ function KitchenTicket({
                 ? "Late by " + duration(remaining)
                 : "Due in " + duration(remaining)}
         </span>
-        <span className="text-xs font-normal opacity-85">
+        <span className="whitespace-nowrap text-xs font-normal opacity-85">
           Promised {formatTime(ticket.promisedReadyAt)}
         </span>
       </div>

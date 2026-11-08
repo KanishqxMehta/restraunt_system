@@ -5,7 +5,8 @@ import type { Viewer } from "@/features/auth/policy";
 import { roleLabels } from "@/features/auth/roles";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { DemoRoleSwitcher } from "@/features/auth/components/demo-role-switcher";
-import { WorkspaceNav } from "./workspace-nav";
+import { cn } from "@/lib/classes";
+import { MobileTabBar, WorkspaceNav } from "./workspace-nav";
 
 export function WorkspaceShell({
   viewer,
@@ -20,6 +21,8 @@ export function WorkspaceShell({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const hasTabBar =
+    viewer.role === "CUSTOMER" || viewer.role === "CENTRAL_ADMIN";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,7 +40,7 @@ export function WorkspaceShell({
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="group flex shrink-0 items-center gap-2.5 tracking-tight text-[#0f352d]"
+            className="group flex min-w-0 items-center gap-2.5 tracking-tight text-[#0f352d]"
           >
             <span
               aria-hidden="true"
@@ -45,29 +48,30 @@ export function WorkspaceShell({
             >
               <UtensilsCrossed className="h-4.5 w-4.5" />
             </span>
-            <div className="leading-tight">
-              <span className="font-display block text-base font-bold text-[#0f352d] sm:text-lg">
+            <div className="min-w-0 leading-tight">
+              <span className="font-display block truncate text-base font-bold text-[#0f352d] sm:text-lg">
                 Restaurant System
               </span>
-              <span className="block text-[10px] font-bold tracking-[0.16em] uppercase text-[#4a1d5a]">
+              <span className="block truncate text-[10px] font-bold tracking-[0.16em] uppercase text-[#4a1d5a]">
                 Company A · Hyderabad
               </span>
             </div>
           </Link>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="overflow-x-auto py-0.5">
-              <WorkspaceNav role={viewer.role} />
-            </div>
+            <WorkspaceNav role={viewer.role} />
 
-            <div className="hidden items-center gap-2 rounded-2xl border border-[#e7ddd0] bg-[#faf7f2] py-1 pr-2.5 pl-1.5 xl:flex">
+            <div
+              title={`${viewer.name} · ${roleLabels[viewer.role]}`}
+              className="flex items-center gap-2 rounded-2xl border border-[#e7ddd0] bg-[#faf7f2] p-1 xl:py-1 xl:pr-2.5 xl:pl-1.5"
+            >
               <span
                 aria-hidden="true"
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#3b1747] text-[11px] font-extrabold text-[#f4d6a9]"
               >
                 {initials || "CA"}
               </span>
-              <div className="text-left leading-tight">
+              <div className="hidden text-left leading-tight xl:block">
                 <p className="text-xs font-bold text-[#1f1c18]">{viewer.name}</p>
                 <span className="inline-block text-[9px] font-bold tracking-wide uppercase text-[#4a1d5a]">
                   {roleLabels[viewer.role]}
@@ -82,7 +86,10 @@ export function WorkspaceShell({
 
       <main
         id="main"
-        className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-8 sm:py-10"
+        className={cn(
+          "mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-8 sm:py-10",
+          hasTabBar && "pb-24 lg:pb-10",
+        )}
       >
         {process.env.ENABLE_DEMO_DATA === "true" && (
           <div className="mb-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e2d4be] bg-gradient-to-r from-[#fcf8f0] via-[#fffdfa] to-[#f7f2fa] px-4 py-2.5 text-xs text-[#544d42] shadow-2xs">
@@ -105,7 +112,13 @@ export function WorkspaceShell({
         {children}
       </main>
 
-      <footer className="mt-16 border-t border-[#e5dbc9] bg-[#f6f1e7]/80">
+      <footer
+        className={cn(
+          "mt-16 border-t border-[#e5dbc9] bg-[#f6f1e7]/80",
+          hasTabBar &&
+            "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0",
+        )}
+      >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6 text-xs text-[#655c50] sm:px-8">
           <div className="flex items-center gap-2.5">
             <ShieldCheck
@@ -131,6 +144,8 @@ export function WorkspaceShell({
           </div>
         </div>
       </footer>
+
+      {hasTabBar && <MobileTabBar role={viewer.role} />}
     </div>
   );
 }

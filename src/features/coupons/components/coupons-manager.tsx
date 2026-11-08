@@ -61,25 +61,28 @@ function formatRupees(paise: number): string {
   }).format(paise / 100);
 }
 
+// Coupons are configured for Hyderabad outlets, so always render in IST.
+// Pinning the zone also keeps server and browser output identical.
+const IST = "Asia/Kolkata";
+
 function formatValidityWindow(dateIso: string): string {
   const d = new Date(dateIso);
-  const now = new Date();
-  const isToday =
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear();
-
-  const timeStr = d.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const dayKey = (date: Date) =>
+    date.toLocaleDateString("en-CA", { timeZone: IST });
+  const isToday = dayKey(d) === dayKey(new Date());
 
   if (isToday) {
+    const timeStr = d.toLocaleTimeString("en-IN", {
+      timeZone: IST,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
     return `Today - ${timeStr}`;
   }
 
   return `Until ${d.toLocaleDateString("en-IN", {
+    timeZone: IST,
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -613,7 +616,7 @@ export function CouponsManager({
 
                       {/* Discount Rule */}
                       <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 rounded-md border border-[#c99b53]/40 bg-[#fbf6ed] px-2 py-0.5 font-bold text-[#73511f]">
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-[#c99b53]/40 bg-[#fbf6ed] px-2 py-0.5 font-bold text-[#73511f]">
                           <Tag className="h-3 w-3" />
                           <span>{discountDescription}</span>
                         </span>

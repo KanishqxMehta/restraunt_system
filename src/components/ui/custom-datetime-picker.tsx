@@ -38,6 +38,18 @@ const MONTH_NAMES = [
 
 const DAYS_OF_WEEK = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+function parseDateTime(val: string): Date {
+  if (!val) return new Date();
+  if (
+    val.includes("Z") ||
+    val.includes("+") ||
+    (val.length > 19 && val.includes("-", 10))
+  ) {
+    return new Date(val);
+  }
+  return new Date(val.length === 16 ? `${val}:00+05:30` : `${val}+05:30`);
+}
+
 export function CustomDateTimePicker({
   label,
   helperText,
@@ -65,7 +77,7 @@ export function CustomDateTimePicker({
   });
 
   // Parse current value
-  const parsedDate = new Date(value);
+  const parsedDate = parseDateTime(value);
   const isValidDate = !isNaN(parsedDate.getTime());
   const activeDate = isValidDate ? parsedDate : new Date();
 
@@ -210,9 +222,10 @@ export function CustomDateTimePicker({
     );
   }
 
-  // Formatted trigger display
+  // Formatted trigger display (pinned to Asia/Kolkata for SSR/CSR consistency)
   const displayString = isValidDate
     ? parsedDate.toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
         day: "numeric",
         month: "short",
         year: "numeric",

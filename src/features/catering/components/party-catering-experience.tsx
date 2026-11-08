@@ -58,12 +58,12 @@ export function PartyCateringExperience({
     "ROYAL_DAAWAT" | "NIZAMI_FEAST"
   >("ROYAL_DAAWAT");
 
-  // Scheduling (Default: Tomorrow at 13:00)
+  // Scheduling (Default: Tomorrow at 13:00 IST)
   const [defaultDateStr] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    d.setHours(13, 0, 0, 0);
-    return d.toISOString().slice(0, 16);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T13:00`;
   });
 
   const [eventDateTime, setEventDateTime] = useState<string>(defaultDateStr);
@@ -524,9 +524,9 @@ export function PartyCateringExperience({
                   )}
                 >
                   <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span>
+                  <span suppressHydrationWarning>
                     Requires min 4h preparation window. Lead time:{" "}
-                    <strong>{quote.leadTimeHours}h</strong>.
+                    <strong suppressHydrationWarning>{quote.leadTimeHours}h</strong>.
                   </span>
                 </p>
               </div>

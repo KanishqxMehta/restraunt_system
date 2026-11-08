@@ -24,6 +24,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Modal } from "@/components/ui/modal";
 import { useAlert } from "@/components/ui/alert-toast";
 import { cn } from "@/lib/classes";
+import { formatMinutes } from "@/lib/format";
 
 const STORAGE_KEY = "company_a_analytics_benchmarks_v1";
 
@@ -470,7 +471,7 @@ export function ExecutiveDashboard({
           </div>
           <div className="mt-4 flex items-baseline gap-2.5">
             <p className="font-mono-tabular text-3xl font-black text-[#0f352d]">
-              {scopedMetrics.avgPrepMinutes}m
+              {formatMinutes(scopedMetrics.avgPrepMinutes)}
             </p>
             <span
               className={cn(
@@ -774,7 +775,7 @@ export function ExecutiveDashboard({
                               : "text-amber-800",
                           )}
                         >
-                          {outlet.avgPrepMinutes}m
+                          {formatMinutes(outlet.avgPrepMinutes)}
                         </span>
                         <span className="block text-[10px] text-[#635b50]">
                           min {outlet.minimumPrepMinutes}m
@@ -909,7 +910,7 @@ export function ExecutiveDashboard({
                         )}
                         {order.prepMinutes && order.status !== "CANCELLED" && (
                           <span className="text-[11px] font-medium text-[#635b50]">
-                            · Prep ~{order.prepMinutes}m
+                            · Prep ~{formatMinutes(order.prepMinutes)}
                           </span>
                         )}
                       </div>
