@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -65,6 +65,25 @@ function formatRupees(paise: number): string {
 
 type SortKey = "ORDERS" | "REVENUE" | "PREP" | "REPEAT" | "CANCELLATIONS";
 
+function subscribeStorage(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getStoredBenchmarksSnapshot(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function getServerStoredBenchmarksSnapshot(): string {
+  return "";
+}
+
 export function ExecutiveDashboard({
   summary,
 }: {
@@ -80,22 +99,28 @@ export function ExecutiveDashboard({
   const [outletPage, setOutletPage] = useState(1);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // Admin-configurable benchmarks (persisted in localStorage)
-  const [benchmarks, setBenchmarks] = useState<AnalyticsBenchmarks>(() => {
-    if (typeof window === "undefined") return DEFAULT_BENCHMARKS;
+  // Admin-configurable benchmarks synced with external storage and server loyalty policy
+  const storedJson = useSyncExternalStore(
+    subscribeStorage,
+    getStoredBenchmarksSnapshot,
+    getServerStoredBenchmarksSnapshot,
+  );
+
+  const baseBenchmarks = useMemo(() => {
+    if (!storedJson) return DEFAULT_BENCHMARKS;
     try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<AnalyticsBenchmarks>;
-        return { ...DEFAULT_BENCHMARKS, ...parsed };
-      }
+      const parsed = JSON.parse(storedJson) as Partial<AnalyticsBenchmarks>;
+      return { ...DEFAULT_BENCHMARKS, ...parsed };
     } catch {
-      // Ignore storage errors
+      return DEFAULT_BENCHMARKS;
     }
-    return DEFAULT_BENCHMARKS;
-  });
-  const [draftBenchmarks, setDraftBenchmarks] =
-    useState<AnalyticsBenchmarks>(benchmarks);
+  }, [storedJson]);
+
+  const [loyaltySettings, setLoyaltySettings] = useState<{
+    earnRupeesPerPoint?: number;
+    redeemPaisePerPoint?: number;
+    maxRebatePercent?: number;
+  } | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -103,25 +128,7 @@ export function ExecutiveDashboard({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!ignore && data?.settings) {
-          const s = data.settings;
-          setBenchmarks((prev) => ({
-            ...prev,
-            loyaltyEarnRupeesPerPoint:
-              s.earnRupeesPerPoint ?? prev.loyaltyEarnRupeesPerPoint,
-            loyaltyRedeemPaisePerPoint:
-              s.redeemPaisePerPoint ?? prev.loyaltyRedeemPaisePerPoint,
-            loyaltyMaxRebatePercent:
-              s.maxRebatePercent ?? prev.loyaltyMaxRebatePercent,
-          }));
-          setDraftBenchmarks((prev) => ({
-            ...prev,
-            loyaltyEarnRupeesPerPoint:
-              s.earnRupeesPerPoint ?? prev.loyaltyEarnRupeesPerPoint,
-            loyaltyRedeemPaisePerPoint:
-              s.redeemPaisePerPoint ?? prev.loyaltyRedeemPaisePerPoint,
-            loyaltyMaxRebatePercent:
-              s.maxRebatePercent ?? prev.loyaltyMaxRebatePercent,
-          }));
+          setLoyaltySettings(data.settings);
         }
       })
       .catch(() => {
@@ -131,6 +138,25 @@ export function ExecutiveDashboard({
       ignore = true;
     };
   }, []);
+
+  const benchmarks = useMemo(() => {
+    if (!loyaltySettings) return baseBenchmarks;
+    return {
+      ...baseBenchmarks,
+      loyaltyEarnRupeesPerPoint:
+        loyaltySettings.earnRupeesPerPoint ??
+        baseBenchmarks.loyaltyEarnRupeesPerPoint,
+      loyaltyRedeemPaisePerPoint:
+        loyaltySettings.redeemPaisePerPoint ??
+        baseBenchmarks.loyaltyRedeemPaisePerPoint,
+      loyaltyMaxRebatePercent:
+        loyaltySettings.maxRebatePercent ??
+        baseBenchmarks.loyaltyMaxRebatePercent,
+    };
+  }, [baseBenchmarks, loyaltySettings]);
+
+  const [draftBenchmarks, setDraftBenchmarks] =
+    useState<AnalyticsBenchmarks>(DEFAULT_BENCHMARKS);
 
   function handleSaveBenchmarks(e: React.FormEvent) {
     e.preventDefault();
@@ -173,10 +199,10 @@ export function ExecutiveDashboard({
         Math.max(5, Number(draftBenchmarks.loyaltyMaxRebatePercent) || 50),
       ),
     };
-    setBenchmarks(sanitized);
     setDraftBenchmarks(sanitized);
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+      window.dispatchEvent(new Event("storage"));
     } catch {
       // Ignore storage errors
     }
@@ -200,9 +226,9 @@ export function ExecutiveDashboard({
 
   function handleResetDefaults() {
     setDraftBenchmarks(DEFAULT_BENCHMARKS);
-    setBenchmarks(DEFAULT_BENCHMARKS);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.dispatchEvent(new Event("storage"));
     } catch {
       // Ignore storage errors
     }
@@ -1018,7 +1044,10 @@ export function ExecutiveDashboard({
                 <div className="rounded-2xl border border-[#e3d2b4] bg-[#fcf6eb] p-4">
                   <div className="flex items-center justify-between text-xs font-bold text-[#1f1c18]">
                     <span>Custom Target Progress</span>
-                    <span className="font-mono-tabular text-[#0f352d]">
+                    <span
+                      className="font-mono-tabular text-[#0f352d]"
+                      suppressHydrationWarning
+                    >
                       {customGoalProgressPercent}%
                     </span>
                   </div>
@@ -1030,7 +1059,7 @@ export function ExecutiveDashboard({
                       }}
                     />
                   </div>
-                  <p className="mt-2 text-[11px] text-[#544d42]">
+                  <p className="mt-2 text-[11px] text-[#544d42]" suppressHydrationWarning>
                     <strong>{formatRupees(dynamicTotalValuePaise)}</strong>{" "}
                     captured toward your{" "}
                     <strong>{formatRupees(customGoalPaise)}</strong> configured
