@@ -17,6 +17,7 @@ interface CustomDateTimePickerProps {
   value: string; // "YYYY-MM-DDTHH:mm" format
   onChange: (value: string) => void;
   minDate?: Date;
+  disablePast?: boolean; // defaults to true
   className?: string;
 }
 
@@ -42,6 +43,8 @@ export function CustomDateTimePicker({
   helperText,
   value,
   onChange,
+  minDate,
+  disablePast = true,
   className,
 }: CustomDateTimePickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,6 +77,21 @@ export function CustomDateTimePicker({
   );
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth();
+
+  // Minimum selectable date boundary (default: today 00:00:00)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const minBoundary: Date | null = minDate
+    ? new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate())
+    : disablePast
+      ? todayStart
+      : null;
+
+  // Month navigation boundary check
+  const isPrevMonthDisabled = minBoundary
+    ? new Date(viewYear, viewMonth, 0) < minBoundary
+    : false;
 
   // Derived time state
   const rawHours = activeDate.getHours();
@@ -115,6 +133,7 @@ export function CustomDateTimePicker({
 
   // Month navigation
   function handlePrevMonth() {
+    if (isPrevMonthDisabled) return;
     setMonthOffset((prev) => prev - 1);
   }
 
@@ -140,6 +159,10 @@ export function CustomDateTimePicker({
   }
 
   function handleSelectDay(day: number) {
+    if (minBoundary) {
+      const thisDayDate = new Date(viewYear, viewMonth, day);
+      if (thisDayDate < minBoundary) return;
+    }
     emitDateTime(
       viewYear,
       viewMonth,
@@ -172,7 +195,11 @@ export function CustomDateTimePicker({
 
   // Quick preset shortcuts
   function handlePreset(daysToAdd: number) {
-    const target = new Date();
+    const base =
+      minBoundary && minBoundary > todayStart
+        ? new Date(minBoundary)
+        : new Date();
+    const target = new Date(base);
     target.setDate(target.getDate() + daysToAdd);
     target.setHours(23, 59, 0, 0); // End of day
 
@@ -242,9 +269,15 @@ export function CustomDateTimePicker({
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                disabled={isPrevMonthDisabled}
                 onClick={handlePrevMonth}
                 title="Previous month"
-                className="rounded-lg border border-[#e8dfcf] p-1 text-[#635b50] transition hover:bg-[#faf7f2] hover:text-[#0f352d]"
+                className={cn(
+                  "rounded-lg border border-[#e8dfcf] p-1 transition",
+                  isPrevMonthDisabled
+                    ? "cursor-not-allowed opacity-25 text-[#a0907d]"
+                    : "text-[#635b50] hover:bg-[#faf7f2] hover:text-[#0f352d]",
+                )}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -276,7 +309,7 @@ export function CustomDateTimePicker({
               return (
                 <span
                   key={`prev-${i}`}
-                  className="py-1 text-[11px] text-[#cfc4b4] select-none"
+                  className="py-1 text-[11px] text-[#cfc4b4] select-none opacity-40"
                 >
                   {dayNum}
                 </span>
@@ -286,6 +319,11 @@ export function CustomDateTimePicker({
             {/* Days of current month */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
+              const thisDayDate = new Date(viewYear, viewMonth, day);
+              const isPastDisabled = minBoundary
+                ? thisDayDate < minBoundary
+                : false;
+
               const isSelected =
                 isValidDate &&
                 parsedDate.getDate() === day &&
@@ -301,14 +339,17 @@ export function CustomDateTimePicker({
                 <button
                   key={day}
                   type="button"
+                  disabled={isPastDisabled}
                   onClick={() => handleSelectDay(day)}
                   className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition mx-auto",
-                    isSelected
-                      ? "bg-[#0f352d] text-white shadow-xs font-bold"
-                      : isToday
-                        ? "border border-[#c99b53] font-bold text-[#0f352d] hover:bg-[#f6efe4]"
-                        : "text-[#25221e] hover:bg-[#faf7f2] hover:text-[#0f352d]",
+                    isPastDisabled
+                      ? "cursor-not-allowed opacity-30 text-[#b5a998] select-none hover:bg-transparent hover:text-[#b5a998]"
+                      : isSelected
+                        ? "bg-[#0f352d] text-white shadow-xs font-bold"
+                        : isToday
+                          ? "border border-[#c99b53] font-bold text-[#0f352d] hover:bg-[#f6efe4]"
+                          : "text-[#25221e] hover:bg-[#faf7f2] hover:text-[#0f352d]",
                   )}
                 >
                   {day}

@@ -959,17 +959,25 @@ export function CouponsManager({
               />
             </div>
 
-            {/* Row 5: Validity Dates (Custom Luxury DateTimePickers) */}
+            {/* Row 5: Validity Dates (Custom Luxury DateTimePickers with Past Days Disabled) */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <CustomDateTimePicker
                 label="Start Date & Time"
                 helperText="When code becomes active"
                 value={formData.startsAt}
+                disablePast={true}
                 onChange={(val) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    startsAt: val,
-                  }))
+                  setFormData((prev) => {
+                    const newStarts = new Date(val);
+                    const currentExpires = new Date(prev.expiresAt);
+                    const expiresAt =
+                      !isNaN(currentExpires.getTime()) && currentExpires <= newStarts
+                        ? new Date(newStarts.getTime() + 30 * 24 * 60 * 60 * 1000)
+                            .toISOString()
+                            .slice(0, 16)
+                        : prev.expiresAt;
+                    return { ...prev, startsAt: val, expiresAt };
+                  })
                 }
               />
 
@@ -977,6 +985,11 @@ export function CouponsManager({
                 label="Expiration Date & Time"
                 helperText="When code automatically expires"
                 value={formData.expiresAt}
+                minDate={
+                  formData.startsAt
+                    ? new Date(formData.startsAt)
+                    : new Date()
+                }
                 onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
