@@ -5,7 +5,6 @@ import {
   Plus,
   ShoppingBag,
   Trash2,
-  Sparkles,
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
@@ -72,15 +71,6 @@ export function CartPanel({
           </div>
         ) : (
           <>
-            {/* Coupon Savings Hint */}
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-[#dec9ec] bg-[#f7f2fa] px-3 py-2 text-xs text-[#4a1d5a]">
-              <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span>
-                Use code <strong>DIRECT10</strong> at checkout for 10% off orders
-                above ₹300.
-              </span>
-            </div>
-
             <ul className="divide-y divide-[#ece3d5]">
               {lines.map((line) => (
                 <li key={lineKey(line)} className="py-4 first:pt-1">
