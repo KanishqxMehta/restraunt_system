@@ -1149,7 +1149,7 @@ export function ExecutiveDashboard({
                   </p>
                   <input
                     type="number"
-                    min={1}
+                    min={5}
                     max={500}
                     step={5}
                     value={draftBenchmarks.loyaltyRedeemPaisePerPoint}
@@ -1325,8 +1325,8 @@ export function ExecutiveDashboard({
                   </p>
                   <input
                     type="number"
-                    min={1000}
-                    step={5000}
+                    min={0}
+                    step={1000}
                     disabled={!draftBenchmarks.enableSavingsGoal}
                     value={draftBenchmarks.customSavingsGoalRupees}
                     onChange={(e) =>
