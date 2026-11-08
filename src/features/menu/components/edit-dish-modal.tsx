@@ -221,7 +221,7 @@ export function EditDishModal({
 
           <div>
             <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#433d35]">
-              Spice level ({["Mild", "Gentle", "Medium", "Hot"][spiceLevel]})
+              Spice level ({["No spice (Sweets / Drinks)", "Mild", "Medium", "Hot"][spiceLevel]})
             </label>
             <input
               type="range"

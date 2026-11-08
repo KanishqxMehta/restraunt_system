@@ -6,7 +6,11 @@ import type { CustomerMenuItem } from "../types";
 import { DietaryMark } from "./dietary-mark";
 import { DishImage } from "./dish-image";
 
-const SPICE_LABELS = ["Mild", "Gentle spice", "Medium spice", "Hot"];
+const SPICE_LABELS: Record<number, string> = {
+  1: "Mild spice",
+  2: "Medium spice",
+  3: "Hot",
+};
 
 export function MenuCard({
   item,
@@ -20,6 +24,14 @@ export function MenuCard({
   const minPrice = item.portions.length
     ? Math.min(...item.portions.map((portion) => portion.pricePaise))
     : null;
+
+  const isSweetOrDessert =
+    item.category?.toLowerCase().includes("dessert") ||
+    item.category?.toLowerCase().includes("sweet") ||
+    item.category?.toLowerCase().includes("beverage") ||
+    item.category?.toLowerCase().includes("drink");
+
+  const showSpiceBadge = item.spiceLevel > 0 && !isSweetOrDessert;
 
   return (
     <article
@@ -45,10 +57,12 @@ export function MenuCard({
           {/* Top Gradient Overlay & Badges */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 bg-gradient-to-b from-black/50 via-black/15 to-transparent p-3.5">
             <DietaryMark isVeg={item.isVeg} />
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-[#f4d6a9] backdrop-blur-xs">
-              <Flame className="h-3 w-3 text-[#f4d6a9]" aria-hidden="true" />
-              {SPICE_LABELS[item.spiceLevel] ?? "Medium spice"}
-            </span>
+            {showSpiceBadge && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-[#f4d6a9] backdrop-blur-xs">
+                <Flame className="h-3 w-3 text-[#f4d6a9]" aria-hidden="true" />
+                {SPICE_LABELS[item.spiceLevel] ?? "Medium spice"}
+              </span>
+            )}
           </div>
 
           {/* Category Tag in bottom-left of image */}

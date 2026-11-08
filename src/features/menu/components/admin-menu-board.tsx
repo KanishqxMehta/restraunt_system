@@ -668,10 +668,16 @@ export function AdminMenuBoard({ initialItems, outlets }: AdminMenuBoardProps) {
                         </h2>
                         {/* Meta Row: Spice, Station, Prep, Batch */}
                         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-[#faf7f2] border border-[#e5dbc9] px-2 py-0.5 font-semibold text-[#544d42]">
-                            <Flame className="h-3 w-3 text-[#c99b53]" aria-hidden="true" />
-                            {["Mild", "Gentle", "Medium", "Hot"][item.spiceLevel ?? 1]}
-                          </span>
+                          {item.spiceLevel > 0 && !item.category?.toLowerCase().includes("dessert") ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-[#faf7f2] border border-[#e5dbc9] px-2 py-0.5 font-semibold text-[#544d42]">
+                              <Flame className="h-3 w-3 text-[#c99b53]" aria-hidden="true" />
+                              {["No spice", "Mild", "Medium", "Hot"][item.spiceLevel] ?? "Medium"}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-[#faf7f2] border border-[#e5dbc9] px-2 py-0.5 font-medium text-[#7c7569]">
+                              {item.category?.toLowerCase().includes("dessert") ? "Dessert (No spice)" : "No spice"}
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1 rounded-md bg-[#faf7f2] border border-[#e5dbc9] px-2 py-0.5 font-semibold text-[#544d42]">
                             <Clock className="h-3 w-3 text-[#0f352d]" aria-hidden="true" />
                             {item.basePrepMinutes}m prep
