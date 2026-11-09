@@ -7,6 +7,7 @@ import {
   Search,
   ArrowRight,
   ShoppingBag,
+  ShoppingCart,
   Sparkles,
   Clock,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { useCart } from "@/features/cart/context";
 import { CartPanel } from "@/features/cart/components/cart-panel";
 import { previewCart } from "@/features/cart/preview";
 import { OutletPicker } from "@/features/outlets/components/outlet-picker";
+import { FloatingBlobModal } from "@/components/ui/floating-blob-modal";
 import { useCustomerMenu } from "../use-customer-menu";
 import type { CustomerMenuItem } from "../types";
 import { ItemConfiguration } from "./item-configuration";
@@ -35,6 +37,7 @@ export function OrderingExperience() {
   const [configuredItem, setConfiguredItem] = useState<CustomerMenuItem | null>(
     null,
   );
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
   if (!cart.hydrated) return <p role="status">Loading your basket…</p>;
 
@@ -53,6 +56,7 @@ export function OrderingExperience() {
     (sum, line) => sum + line.quantity * line.unitPricePaise,
     0,
   );
+  const itemCount = cart.lines.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
     <div className="pb-24 lg:pb-0">
@@ -352,22 +356,55 @@ export function OrderingExperience() {
                   <CartPanel menu={menu} />
                 </aside>
 
-                {cart.lines.length > 0 && (
-                  <Link
-                    href="/checkout"
-                    className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-30 flex min-h-15 items-center gap-3 rounded-2xl border border-[#f4d6a9]/30 bg-gradient-to-r from-[#0f352d] to-[#1a4e42] px-5 text-sm font-bold text-white shadow-[0_12px_32px_rgba(15,53,45,0.4)] transition hover:from-[#144339] hover:to-[#0f352d] active:scale-[0.99] lg:hidden"
+                {/* Mobile Floating Blob Cart Modal (Only visible on mobile) */}
+                <div className="lg:hidden">
+                  <FloatingBlobModal
+                    id="mobile-cart-blob"
+                    isOpen={isMobileCartOpen}
+                    onOpenChange={setIsMobileCartOpen}
+                    anchorClassName="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] right-4 z-40 lg:hidden"
+                    contentClassName="w-[calc(100vw-2rem)] sm:w-[420px] max-h-[82vh]"
+                    ariaLabel="Your shopping basket"
+                    trigger={({ isOpen, toggle, buttonRef }) => (
+                      <button
+                        ref={buttonRef}
+                        type="button"
+                        onClick={toggle}
+                        aria-expanded={isOpen}
+                        aria-label={`Open shopping cart (${itemCount} items)`}
+                        className="group relative z-30 flex items-center gap-2.5 rounded-full border border-[#f4d6a9]/50 bg-gradient-to-r from-[#0f352d] to-[#184e42] px-4 py-3 text-white shadow-[0_8px_24px_rgba(15,53,45,0.45)] transition-all hover:from-[#14453a] hover:to-[#1e5a4d] active:scale-95"
+                      >
+                        <div className="relative flex items-center justify-center">
+                          <ShoppingCart
+                            className="h-5 w-5 text-[#f4d6a9] transition-transform group-hover:scale-110"
+                            aria-hidden="true"
+                          />
+                          {itemCount > 0 && (
+                            <span className="absolute -top-2 -right-2 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#c99b53] px-1 text-[10px] font-black text-[#0f352d] shadow-sm">
+                              {itemCount}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold tracking-wide">
+                          {itemCount > 0 ? (
+                            <span className="flex items-center gap-1.5">
+                              <span>{formatMoney(subtotal)}</span>
+                              <span className="text-white/50">·</span>
+                              <span className="text-[#f4d6a9] font-medium">View Cart</span>
+                            </span>
+                          ) : (
+                            <span>View Cart</span>
+                          )}
+                        </span>
+                      </button>
+                    )}
                   >
-                    <ShoppingBag
-                      className="h-5 w-5 text-[#f4d6a9]"
-                      aria-hidden="true"
+                    <CartPanel
+                      menu={menu}
+                      onClose={() => setIsMobileCartOpen(false)}
                     />
-                    <span>
-                      View basket ({cart.lines.reduce((s, l) => s + l.quantity, 0)}{" "}
-                      {cart.lines.reduce((s, l) => s + l.quantity, 0) === 1 ? "item" : "items"}) · {formatMoney(subtotal)}
-                    </span>
-                    <ArrowRight className="ml-auto h-5 w-5" aria-hidden="true" />
-                  </Link>
-                )}
+                  </FloatingBlobModal>
+                </div>
               </div>
             </>
           )}

@@ -7,6 +7,7 @@ import {
   Trash2,
   ArrowRight,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { useCart } from "../context";
 import { previewCart } from "../preview";
@@ -17,9 +18,11 @@ import { formatMoney } from "@/lib/format";
 export function CartPanel({
   menu,
   checkoutLink = true,
+  onClose,
 }: {
   menu: CustomerMenu;
   checkoutLink?: boolean;
+  onClose?: () => void;
 }) {
   const cart = useCart();
   const lines = previewCart(cart.lines, menu.items);
@@ -54,6 +57,16 @@ export function CartPanel({
           <span className="ml-auto rounded-full border border-[#f4d6a9]/35 bg-white/12 px-2.5 py-0.5 text-xs font-bold text-[#f4d6a9]">
             {itemCount} items
           </span>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close basket"
+              className="ml-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 active:scale-95"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -161,6 +174,7 @@ export function CartPanel({
             {checkoutLink && (
               <Link
                 href="/checkout"
+                onClick={onClose}
                 className="mt-3.5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#15463b] to-[#0d3129] px-4 text-sm font-bold text-white shadow-[0_4px_12px_rgba(15,53,45,0.22)] transition hover:from-[#195246] hover:to-[#0f382f] active:scale-[0.99]"
               >
                 <span>Go to checkout</span>

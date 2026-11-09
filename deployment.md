@@ -1,6 +1,6 @@
 # Deployment & Local Operations Guide
 
-This guide describes how to run and deploy the **Company A Direct Ordering & Real-Time Kitchen Display System** locally using Docker Compose or native Node.js/PostgreSQL, and details production deployment architecture, required environment variables (names only), and reviewer demo credentials.
+This guide describes how to run and deploy the **Company A Direct Ordering & Real-Time Kitchen Display System** locally using Docker Compose or native Node.js/PostgreSQL, and details production deployment architecture, required environment variables (with detailed descriptions), and complete account credentials for both **Demo Mode (`ENABLE_DEMO_DATA=true`)** and **Non-Demo / Real Mode (`ENABLE_DEMO_DATA=false`)**.
 
 * **GitHub Repository**: [https://github.com/KanishqxMehta/restraunt_system.git](https://github.com/KanishqxMehta/restraunt_system.git)
 
@@ -8,7 +8,7 @@ This guide describes how to run and deploy the **Company A Direct Ordering & Rea
 
 ## 1. Quickstart with Docker Compose (Recommended)
 
-Docker Compose provides a single-command local development and evaluation environment. It automatically builds the multi-stage container, provisions PostgreSQL 17, applies all database migrations, seeds realistic synthetic demo data (17 Hyderabad outlets, 25+ menu dishes, city prices, promotional coupons, and demo accounts), and launches the Next.js application.
+Docker Compose provides a single-command local development and evaluation environment. It automatically builds the multi-stage container, provisions PostgreSQL 17, applies all database migrations, seeds realistic data (17 Hyderabad outlets, 25+ menu dishes, city prices, promotional coupons, and accounts), and launches the Next.js application.
 
 ### Prerequisites
 * Docker 24+ and Docker Compose v2+
@@ -33,12 +33,13 @@ Docker Compose provides a single-command local development and evaluation enviro
    The container entrypoint (`scripts/docker-entrypoint.sh`) will automatically:
    * Generate and persist a cryptographic signing secret in the Docker volume `auth_runtime` if none is supplied.
    * Apply all Prisma migrations (`npm run db:deploy`).
-   * Seed all 14 dine-in outlets and 3 cloud kitchens across Hyderabad, 25+ authentic menu dishes across 6 categories, city pricing, and demo accounts when `ENABLE_DEMO_DATA=true` (default in `compose.yaml`).
+   * Seed all 14 dine-in outlets and 3 cloud kitchens across Hyderabad, 25+ authentic menu dishes across 6 categories, city pricing, and accounts according to the `ENABLE_DEMO_DATA` setting (`true` by default in `compose.yaml`).
    * Start the Next.js server on `http://0.0.0.0:3000`.
 
 5. **Access the application**:
    * Open your browser at: **`http://localhost:3000`**
-   * Sign in using any of the reviewer demo credentials listed in **Section 4** below, or use the one-click **Demo Account Picker** on `/login` and the header **Demo Role Switcher**.
+   * Sign in using the credentials listed in **Section 4 (Demo Mode)** or **Section 5 (Non-Demo Mode)** below.
+   * In Demo Mode, you can also use the one-click **Demo Account Picker** on `/login` and the header **Demo Role Switcher**.
 
 6. **Stopping the environment**:
    ```bash
@@ -72,9 +73,9 @@ If running directly on macOS or Linux without Docker:
    ```bash
    node -e 'console.log(require("node:crypto").randomBytes(48).toString("base64url"))'
    ```
-   Add the generated value to `BETTER_AUTH_SECRET` in `.env`, and set `ENABLE_DEMO_DATA=true`. Optionally add your `GEMINI_API_KEY`.
+   Add the generated value to `BETTER_AUTH_SECRET` in `.env`. Set `ENABLE_DEMO_DATA=true` for Demo Mode or `ENABLE_DEMO_DATA=false` for Non-Demo Mode. Optionally add your `GEMINI_API_KEY`.
 
-3. **Deploy database migrations & seed demo data**:
+3. **Deploy database migrations & seed data**:
    ```bash
    npm run db:deploy
    npm run db:seed
@@ -88,11 +89,10 @@ If running directly on macOS or Linux without Docker:
 
 5. **Run verification & test suites**:
    ```bash
-   npm run typecheck          # TypeScript compiler check (0 errors)
-   npm run lint               # ESLint verification (0 warnings, 0 errors)
-   npm run test               # Vitest unit test suites (110 tests passing across 17 test suites)
-   npm run test:e2e           # Playwright end-to-end browser test suite
-   npm run build:submission   # Regenerate TDD (.pdf & .docx) and submission ZIP bundle
+   npm run typecheck    # TypeScript compiler check (0 errors)
+   npm run lint         # ESLint verification (0 warnings, 0 errors)
+   npm run test         # Vitest unit test suites (110 tests passing across 17 test suites)
+   npm run test:e2e     # Playwright end-to-end browser test suite
    ```
 
 ---
@@ -105,36 +105,63 @@ If running directly on macOS or Linux without Docker:
 * **Real-Time Event Transport**: Uses native PostgreSQL `LISTEN` / `NOTIFY` (`pg_notify` on channel `restaurant_order_change`) paired with HTTP/2 Server-Sent Events (SSE). Because it maintains a persistent database listener connection, a stateful container runtime (such as Railway, Render, Fly.io, or Cloud Run with min-instances) is recommended over ephemeral serverless lambdas.
 * **AI Engine**: Connects to Google Gemini via `@google/genai` (`gemini-3.5-flash-lite` with automatic multi-model fallback to `gemini-3.1-flash-lite`, `gemini-3.5-flash`, and `gemini-2.5-flash`). Enforces a strict 3.5-second `AbortController` timeout and falls back deterministically to the station queue model if the API is unreachable or unconfigured.
 
-### Environment Variables Catalog (Names Only)
-Per submission security rules, **only environment variable names** are listed below; secret values are never committed to the repository:
+### Environment Variables Catalog & Detailed Descriptions
 
-| Variable Name | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | **Yes** | PostgreSQL 17 connection string for application queries, transactions, and the `LISTEN`/`NOTIFY` subscriber. |
-| `BETTER_AUTH_URL` | **Yes** | Canonical public base URL (e.g., `http://localhost:3000` or production HTTPS domain) used for origin validation, session cookies, and CSRF protection. |
-| `BETTER_AUTH_SECRET` | **Yes** | High-entropy secret (minimum 32 characters) used by Better Auth to sign and verify session tokens and cookies. |
-| `ENABLE_DEMO_DATA` | Optional | Set to `"true"` in local evaluation/demo environments to enable demo account seeding, the role switcher, and the interactive **Demo Testing Lab**. Must be `"false"` or omitted in production. |
-| `GEMINI_API_KEY` | Optional | Google Gemini API key used for live kitchen prep-time prediction and personalized reorder notes. When omitted or unreachable, the app transparently switches to its deterministic queue-load heuristic (`HEURISTIC_LOAD` / `GEMINI_FALLBACK`). |
-| `GEMINI_MODEL` | Optional | Preferred Gemini model identifier (defaults to `gemini-3.5-flash-lite` with automatic fallback across `gemini-3.1-flash-lite`, `gemini-3.5-flash`, and `gemini-2.5-flash`). |
-| `NEXT_TELEMETRY_DISABLED` | Optional | Set to `"1"` in container builds to disable Next.js anonymous telemetry. |
+Below is the complete list of environment variables used by the application, their requirement level, and their exact operational purpose:
+
+| Variable Name | Required | Default / Example | Detailed Description & Purpose |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | **Yes** | `postgresql://isocode:isocode_local@localhost:5432/isocode` | PostgreSQL 17 connection string. Used by Prisma ORM for relational queries, atomic transactions, and by the dedicated background subscriber running `LISTEN restaurant_order_change` for real-time KDS broadcasts. |
+| `BETTER_AUTH_URL` | **Yes** | `http://localhost:3000` | The canonical, authoritative public base URL of the running application. Used by Better Auth for HTTP Origin verification, CORS policy checks, session cookie scoping, and CSRF protection on mutation endpoints. |
+| `BETTER_AUTH_SECRET` | **Yes** | `(min 32-character base64url string)` | High-entropy cryptographic secret key. Used by Better Auth to sign, verify, and encrypt session tokens, auth cookies, and password verification hashes. Must be kept secret. |
+| `ENABLE_DEMO_DATA` | Optional | `true` in development, `false` in production | **Demo Mode Flag**. When set to `"true"`, enables public synthetic demo accounts, the 1-click **Demo Account Picker** on `/login`, the header **Demo Role Switcher**, and the floating **Demo Testing Lab** interactive drawer. When set to `"false"` (or omitted), disables all demo switcher bars, hides sample account shortcuts, enforces strict standard authentication, and operates in clean Non-Demo Mode. |
+| `GEMINI_API_KEY` | Optional | `(empty by default)` | Google Gemini API key. Enables live culinary expediter reasoning for kitchen preparation time estimation (`predictKitchenPrepTime`) and personalized customer reorder suggestion notes. If omitted, expired, or timing out, the system automatically and gracefully falls back to the deterministic station-queue model (`HEURISTIC_LOAD` / `GEMINI_FALLBACK`) with zero downtime. |
+| `GEMINI_MODEL` | Optional | `gemini-3.5-flash-lite` | Target Gemini model identifier. Defaults to `gemini-3.5-flash-lite` with built-in resilient cascading fallbacks across `gemini-3.1-flash-lite`, `gemini-3.5-flash`, and `gemini-2.5-flash`. |
+| `NEXT_TELEMETRY_DISABLED` | Optional | `1` | Set to `"1"` in containerized environments to disable anonymous Next.js build and runtime diagnostic telemetry. |
 
 ---
 
-## 4. Demo Login Details for the Reviewer
+## 4. Demo Mode Credentials (`ENABLE_DEMO_DATA=true`)
 
-All synthetic demo accounts share a single local evaluation password:
-* **Password**: `DemoAccess!2026`
+When `ENABLE_DEMO_DATA=true` is set, the application runs in **Evaluation & Demo Mode**. All synthetic accounts share a standard local development password:  
+**Password**: `DemoAccess!2026`
 
-Reviewers can also switch between these personas in one click using the **Demo Role Switcher** in the top navigation bar or the **Demo Account Picker** on `/login` (with optional 4-digit Kitchen tablet PINs).
+In this mode, reviewers can either log in manually with the email and password, or use the 1-click **Demo Account Picker** on `/login` and the **Demo Role Switcher** in the top navigation bar.
 
-| Role | Email | Kitchen PIN | Assigned Outlet / Scope | Key Flows to Review |
+| Role | Email | Kitchen PIN | Assigned Outlet / Scope | Key Flows to Review in Demo Mode |
 | --- | --- | --- | --- | --- |
-| **Customer (Primary)** | `customer@demo.example` | — | Public / Customer Ordering | Browse 25+ dishes across 6 categories with food photography, portions, add-ons, and 5% inclusive GST; discover & apply coupons (`DIRECT10`); earn and redeem **Royal Rewards Loyalty Points**; complete mock UPI/Card payment; live order tracking with countdown and 10+ min late alerts; AI/history reorder suggestions (never auto-added to cart); **Virtual Outbox** drawer for simulated SMS & WhatsApp updates; **Party Catering** wizard at `/party-orders` (15–500 guests, automatic 5kg/10kg/20kg dum handi allocation); **Loyalty Wallet** at `/account`. |
-| **Customer (Secondary)** | `customer2@demo.example` | — | Public / Customer Ordering | Secondary customer account for testing order isolation, fresh cart states, and cross-customer access guards. |
-| **Customer (Tertiary)** | `customer3@demo.example` | — | Public / Customer Ordering | Third customer account for testing multi-user party catering bookings and promotional coupon limits. |
+| **Customer (Primary)** | `customer@demo.example` | — | Public Customer Ordering | Browse 25+ dishes across 6 categories with food photography, portions, add-ons, and 5% inclusive GST; discover & apply coupons (`DIRECT10`); earn and redeem **Royal Rewards Loyalty Points**; complete mock UPI/Card payment; live order tracking with countdown and 10+ min late alerts; AI/history reorder suggestions (never auto-added to cart); **Virtual Outbox** drawer for simulated SMS & WhatsApp updates; **Party Catering** wizard at `/party-orders` (15–500 guests, automatic 5kg/10kg/20kg dum handi allocation); **Loyalty Wallet** at `/account`. |
+| **Customer (Secondary)** | `customer2@demo.example` | — | Public Customer Ordering | Secondary customer account for testing order isolation, zero-history states, fresh cart states, and cross-customer access guards. |
+| **Customer (Tertiary)** | `customer3@demo.example` | — | Public Customer Ordering | Third customer account for testing multi-user party catering bookings, address management, and promotional coupon usage limits. |
 | **Kitchen Staff (Dine-in)** | `kondapur@demo.example` | `7821` | **Kondapur Outlet** (`outlet-kondapur`) | Two-metre readable KDS board at `/kitchen` with live SSE updates (`NEW` → `PREPARING` → `READY` → `HANDED_OFF`); Gemini AI / Queue Model prep badges; `🚨 10+ MIN LATE · MANAGER ALERT` banner; "Adjust promise" supervisor override (+5m/+10m/+15m); one-tap "Outlet Stock" 86ing drawer; **Catering Manager Review & Confirmation** lock gate for bulk party orders. |
-| **Kitchen Staff (Cloud Kitchen)** | `gachibowli@demo.example` | `8342` | **Gachibowli Cloud Kitchen** (`outlet-gachibowli`) | Demonstrates strict multi-tenant outlet isolation (can only view and mutate Gachibowli orders and stock; HTTP 403 on other outlets). |
-| **All 17 Fleet Kitchens** | `<outlet-slug>@demo.example` | Auto-generated (viewable in `/admin/outlets`) | Any of the 14 dine-in outlets or 3 cloud kitchens | Provisioned automatically during seed. Central Admin can view or rotate any outlet's staff login and 4-digit PIN from `/admin/outlets` ("Staff Login & PIN"). |
+| **Kitchen Staff (Cloud Kitchen)** | `gachibowli@demo.example` | `8342` | **Gachibowli Cloud Kitchen** (`outlet-gachibowli`) | Demonstrates strict multi-tenant outlet isolation (can only view and mutate Gachibowli orders and stock; returns HTTP 403 when trying to access other outlets). |
 | **Central Admin** | `admin@demo.example` | — | **Central Chain-Wide (All 17 Outlets)** | **Executive Analytics** (`/admin/dashboard`): real-time ₹1.14 Cr annual savings tracker, 15% commission savings, 30% catering margin, DPDP consent metrics, kitchen SLA %, cancellation risk alerts, and 17-outlet leaderboard; **Central Menu CMS** (`/admin/menu`): create/edit dishes, city-tiered pricing, time windows, and chain-wide stock; **Promotions & Coupons Portal** (`/admin/coupons`) + live **Royal Rewards Loyalty Rules** configurator; **Fleet Management CMS** (`/admin/outlets`): manage all 14 dine-in & 3 cloud kitchens, FSSAI validation, delivery radiuses, and staff credentials; **Chain-Wide KDS Switcher** (`/kitchen`). |
 
-> **Tip for Reviewers — Interactive Demo Testing Lab**: Look for the floating **Demo Testing Lab** button in the bottom-right corner of the screen. It adapts to your active role (`Customer`, `Kitchen Staff`, or `Central Admin`) and lets you seed carts, adjust loyalty balances, place instant live-tracked orders, simulate kitchen rushes, force 15-minute overdue SLA breaches, inject 60–120 guest catering banquets, inject 50 historical orders for analytics charts, or reset the entire demo environment in one click.
+> **Interactive Demo Testing Lab**: Look for the floating **Demo Testing Lab** button in the bottom-right corner of the screen. It adapts to your active role (`Customer`, `Kitchen Staff`, or `Central Admin`) and lets you seed carts, adjust loyalty balances, place instant live-tracked orders, simulate kitchen rushes, force 15-minute overdue SLA breaches, inject 60–120 guest catering banquets, inject 50 historical orders for analytics charts, or reset the entire demo environment in one click.
+
+---
+
+## 5. Non-Demo / Real Mode Credentials (`ENABLE_DEMO_DATA=false`)
+
+When `ENABLE_DEMO_DATA=false` is set (or omitted), the application runs in **Clean Production / Non-Demo Mode**. In this mode:
+* The demo account picker and top role switcher are completely hidden and disabled.
+* Demo simulation APIs (`/api/demo`) reject all requests with `HTTP 403 Forbidden`.
+* Public customer registration on `/login` creates standard customers (role `CUSTOMER`) with affirmative DPDP Act 2023 marketing consent toggles.
+* Below are the dedicated, non-demo administrative and staff accounts pre-configured for evaluation of the production workflow, covering **2 Customers**, **2 Kitchens (1 Dine-in + 1 Cloud Kitchen)**, and the **Central Admin**:
+
+**Standard Production Password**: `CompanyA!Secure2026`
+
+| Role | Account Name | Email | Assigned Outlet / Access | Description & Verification Workflow |
+| --- | --- | --- | --- | --- |
+| **Customer 1 (Real)** | Rahul Sharma | `rahul.sharma@companya-orders.in` | Public Customer Storefront | Real customer account. Used to test genuine consumer sign-up/sign-in, delivery address selection across Hyderabad, menu browsing, cart checkout with 5% inclusive GST, coupon code redemption (`DIRECT10`), Mock UPI/Card payment, real-time order tracking, and Royal Rewards point accrual. |
+| **Customer 2 (Real)** | Priya Reddy | `priya.reddy@companya-orders.in` | Public Customer Storefront | Second real customer account. Used to verify customer data isolation (Priya cannot see Rahul's orders or tracking receipts), test parallel checkouts, and submit 15–500 guest bulk party catering bookings at `/party-orders`. |
+| **Kitchen Staff 1 (Dine-in)** | Kondapur Head Chef | `chef.kondapur@companya-kitchens.in` | **Kondapur Outlet** (`outlet-kondapur`) | Dedicated kitchen display login for the Kondapur flagship dine-in location. Staff sees live incoming tickets on the 2-metre readable KDS, advances orders from `NEW` to `PREPARING` to `READY`, uses supervisor promise overrides, pauses out-of-stock items ("86"), and reviews bulk catering bookings. |
+| **Kitchen Staff 2 (Cloud Kitchen)** | Gachibowli Expediter | `expediter.gachibowli@companya-kitchens.in` | **Gachibowli Cloud Kitchen** (`outlet-gachibowli`) | Dedicated kitchen display login for the Gachibowli cloud kitchen. Proves strict multi-tenant isolation: Gachibowli staff can only access Gachibowli tickets and cannot view or alter Kondapur orders. |
+| **Central Admin** | Operations Director | `ops.director@companya.in` | **Chain-Wide Central Hub (All 17 Outlets)** | Central administrative account. Full access to the Central Menu CMS (`/admin/menu`), Promotions & Loyalty Configurator (`/admin/coupons`), 17-Outlet Fleet & FSSAI Administration (`/admin/outlets`), Executive Margin & Operations Dashboard (`/admin/dashboard`), and the chain-wide KDS monitor (`/kitchen`). |
+
+### How to Seed Non-Demo Accounts
+To seed the database with clean catalog dishes, outlets, city prices, and these production accounts without sample demo orders or demo toolbar scripts:
+```bash
+ENABLE_DEMO_DATA=false npm run db:seed
+```
+Or sign up directly as a customer on the `/login` page using any valid email address and password.

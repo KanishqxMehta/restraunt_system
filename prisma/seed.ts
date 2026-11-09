@@ -4,19 +4,21 @@ import { getDatabase } from "../src/server/db/client";
 import {
   demoAccounts,
   DEMO_PASSWORD,
+  productionAccounts,
+  PRODUCTION_PASSWORD,
   getOutletStaffCredentials,
 } from "../src/features/auth/demo-accounts";
 import { menu, outlets } from "./seed-data";
 
 async function seed() {
-  if (process.env.ENABLE_DEMO_DATA !== "true")
-    throw new Error(
-      "Demo seeding requires ENABLE_DEMO_DATA=true. Do not enable on a real deployment.",
-    );
+  const isDemo = process.env.ENABLE_DEMO_DATA === "true";
   const db = getDatabase();
-  const password = await hashPassword(DEMO_PASSWORD);
+  const demoPassHash = await hashPassword(DEMO_PASSWORD);
+  const prodPassHash = await hashPassword(PRODUCTION_PASSWORD);
+
   await db.$transaction(
     async (transaction) => {
+      // 1. Seed Outlets
       for (const outlet of outlets) {
         await transaction.outlet.upsert({
           where: { id: outlet.id },
@@ -24,17 +26,12 @@ async function seed() {
           create: outlet,
         });
       }
-      for (const user of demoAccounts) {
-        const existing = await transaction.user.findUnique({
-          where: { email: user.email },
-        });
-        if (existing && existing.id !== user.id)
-          throw new Error(
-            "A demo email is already registered to another account; seed aborted.",
-          );
+
+      // 2. Always seed Production Accounts (2 Customers, 2 Kitchens, 1 Admin)
+      for (const user of productionAccounts) {
         await transaction.user.upsert({
           where: { id: user.id },
-          update: {},
+          update: { email: user.email, name: user.name, role: user.role },
           create: {
             id: user.id,
             email: user.email,
@@ -49,16 +46,16 @@ async function seed() {
               accountId: user.id,
             },
           },
-          update: {},
+          update: { password: prodPassHash },
           create: {
             id: `credential-${user.id}`,
             accountId: user.id,
             providerId: "credential",
             userId: user.id,
-            password,
+            password: prodPassHash,
           },
         });
-        if ("outletId" in user && user.outletId)
+        if ("outletId" in user && user.outletId) {
           await transaction.outletMembership.upsert({
             where: {
               userId_outletId: { userId: user.id, outletId: user.outletId },
@@ -66,51 +63,99 @@ async function seed() {
             update: {},
             create: { userId: user.id, outletId: user.outletId },
           });
+        }
       }
 
-      // Seed dedicated kitchen staff accounts for all fleet outlets
-      for (const outlet of outlets) {
-        const creds = getOutletStaffCredentials(outlet);
-        const existingStaff = await transaction.user.findUnique({
-          where: { email: creds.email },
-        });
-        const staffUserId = existingStaff?.id ?? `staff-${outlet.id}`;
-
-        await transaction.user.upsert({
-          where: { id: staffUserId },
-          update: { role: "KITCHEN_STAFF" },
-          create: {
-            id: staffUserId,
-            email: creds.email,
-            name: creds.staffName,
-            role: "KITCHEN_STAFF",
-          },
-        });
-
-        await transaction.account.upsert({
-          where: {
-            providerId_accountId: {
-              providerId: "credential",
-              accountId: staffUserId,
+      // 3. When ENABLE_DEMO_DATA=true, also seed Demo Accounts & All Fleet Kitchen Logins
+      if (isDemo) {
+        for (const user of demoAccounts) {
+          const existing = await transaction.user.findUnique({
+            where: { email: user.email },
+          });
+          if (existing && existing.id !== user.id)
+            throw new Error(
+              "A demo email is already registered to another account; seed aborted.",
+            );
+          await transaction.user.upsert({
+            where: { id: user.id },
+            update: {},
+            create: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
             },
-          },
-          update: { password },
-          create: {
-            id: `credential-${staffUserId}`,
-            accountId: staffUserId,
-            providerId: "credential",
-            userId: staffUserId,
-            password,
-          },
-        });
+          });
+          await transaction.account.upsert({
+            where: {
+              providerId_accountId: {
+                providerId: "credential",
+                accountId: user.id,
+              },
+            },
+            update: {},
+            create: {
+              id: `credential-${user.id}`,
+              accountId: user.id,
+              providerId: "credential",
+              userId: user.id,
+              password: demoPassHash,
+            },
+          });
+          if ("outletId" in user && user.outletId)
+            await transaction.outletMembership.upsert({
+              where: {
+                userId_outletId: { userId: user.id, outletId: user.outletId },
+              },
+              update: {},
+              create: { userId: user.id, outletId: user.outletId },
+            });
+        }
 
-        await transaction.outletMembership.upsert({
-          where: {
-            userId_outletId: { userId: staffUserId, outletId: outlet.id },
-          },
-          update: {},
-          create: { userId: staffUserId, outletId: outlet.id },
-        });
+        // Seed dedicated kitchen staff accounts for all fleet outlets
+        for (const outlet of outlets) {
+          const creds = getOutletStaffCredentials(outlet);
+          const existingStaff = await transaction.user.findUnique({
+            where: { email: creds.email },
+          });
+          const staffUserId = existingStaff?.id ?? `staff-${outlet.id}`;
+
+          await transaction.user.upsert({
+            where: { id: staffUserId },
+            update: { role: "KITCHEN_STAFF" },
+            create: {
+              id: staffUserId,
+              email: creds.email,
+              name: creds.staffName,
+              role: "KITCHEN_STAFF",
+            },
+          });
+
+          await transaction.account.upsert({
+            where: {
+              providerId_accountId: {
+                providerId: "credential",
+                accountId: staffUserId,
+              },
+            },
+            update: { password: demoPassHash },
+            create: {
+              id: `credential-${staffUserId}`,
+              accountId: staffUserId,
+              providerId: "credential",
+              userId: staffUserId,
+              password: demoPassHash,
+            },
+          });
+
+          await transaction.outletMembership.upsert({
+            where: {
+              userId_outletId: { userId: staffUserId, outletId: outlet.id },
+            },
+            update: {},
+            create: { userId: staffUserId, outletId: outlet.id },
+          });
+        }
       }
       for (const item of menu) {
         const { portions, addons, ...details } = item;

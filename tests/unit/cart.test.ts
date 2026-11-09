@@ -60,4 +60,15 @@ describe("tab-scoped cart", () => {
     expect(store.getSnapshot().outletId).toBeNull();
     expect(store.getSnapshot().lines).toEqual([]);
   });
+
+  it("calculates total item count across distinct lines for mobile cart badge", () => {
+    const store = createCartStore("unit");
+    store.selectOutlet({ latitude: 17.46, longitude: 78.35 }, "outlet-kondapur");
+    store.setLines([
+      { portionId: "portion-1", addonIds: [], quantity: 2 },
+      { portionId: "portion-2", addonIds: ["addon-a"], quantity: 3 },
+    ]);
+    const totalCount = store.getSnapshot().lines.reduce((s, l) => s + l.quantity, 0);
+    expect(totalCount).toBe(5);
+  });
 });

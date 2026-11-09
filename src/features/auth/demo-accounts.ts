@@ -1,6 +1,9 @@
 /** Public credentials for synthetic local demo accounts only. Never use in production. */
 export const DEMO_PASSWORD = "DemoAccess!2026";
 
+/** Production credentials for non-demo evaluation accounts (2 customers, 2 kitchens, admin). */
+export const PRODUCTION_PASSWORD = "CompanyA!Secure2026";
+
 export interface DemoAccount {
   id: string;
   name: string;
@@ -10,6 +13,48 @@ export interface DemoAccount {
   outletId?: string;
   pin?: string;
 }
+
+export const productionAccounts = [
+  {
+    id: "prod-customer-1",
+    name: "Rahul Sharma",
+    email: "rahul.sharma@companya-orders.in",
+    role: "CUSTOMER" as const,
+    summary: "Real Customer Account 1 - Order placement, checkout & loyalty",
+  },
+  {
+    id: "prod-customer-2",
+    name: "Priya Reddy",
+    email: "priya.reddy@companya-orders.in",
+    role: "CUSTOMER" as const,
+    summary: "Real Customer Account 2 - Multi-user isolation & party catering",
+  },
+  {
+    id: "prod-kondapur-chef",
+    name: "Kondapur Head Chef",
+    email: "chef.kondapur@companya-kitchens.in",
+    role: "KITCHEN_STAFF" as const,
+    outletId: "outlet-kondapur",
+    pin: "4512",
+    summary: "Kondapur Dine-in Kitchen - Production KDS & Stock Management",
+  },
+  {
+    id: "prod-gachibowli-expediter",
+    name: "Gachibowli Expediter",
+    email: "expediter.gachibowli@companya-kitchens.in",
+    role: "KITCHEN_STAFF" as const,
+    outletId: "outlet-gachibowli",
+    pin: "6834",
+    summary: "Gachibowli Cloud Kitchen - Production KDS & Tenant Isolation",
+  },
+  {
+    id: "prod-admin",
+    name: "Operations Director",
+    email: "ops.director@companya.in",
+    role: "CENTRAL_ADMIN" as const,
+    summary: "Central Operations Director - Menu, Fleet, Coupons & BI",
+  },
+];
 
 export function getOutletStaffEmail(outletSlug: string): string {
   const cleanSlug = outletSlug

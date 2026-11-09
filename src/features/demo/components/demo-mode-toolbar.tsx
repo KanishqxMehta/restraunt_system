@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -29,6 +29,7 @@ import type { Viewer } from "@/features/auth/policy";
 import { roleLabels } from "@/features/auth/roles";
 import { useAlert } from "@/components/ui/alert-toast";
 import { Modal } from "@/components/ui/modal";
+import { FloatingBlobModal } from "@/components/ui/floating-blob-modal";
 
 interface DemoModeToolbarProps {
   viewer: Viewer;
@@ -110,8 +111,6 @@ export function DemoModeToolbar({ viewer }: DemoModeToolbarProps) {
   const router = useRouter();
   const alert = useAlert();
   const [isOpen, setIsOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const isRendered = isOpen || isClosing;
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
   const [loyaltySettings, setLoyaltySettings] = useState<{
@@ -159,254 +158,8 @@ export function DemoModeToolbar({ viewer }: DemoModeToolbarProps) {
   );
 
   const setMenuOpen = useCallback((nextOpen: boolean) => {
-    if (nextOpen) {
-      setIsClosing(false);
-      setIsOpen(true);
-    } else {
-      setIsOpen((prev) => {
-        if (prev) setIsClosing(true);
-        return false;
-      });
-    }
+    setIsOpen(nextOpen);
   }, []);
-
-  // Refs for 60fps liquid water-blob metaball & morph engine
-  const progressRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const backdropRef = useRef<HTMLDivElement | null>(null);
-  const gooLayerRef = useRef<HTMLDivElement | null>(null);
-  const reservoirBlobRef = useRef<HTMLDivElement | null>(null);
-  const tendrilBlobRef = useRef<HTMLDivElement | null>(null);
-  const dropletBlobRef = useRef<HTMLDivElement | null>(null);
-  const mainBlobRef = useRef<HTMLDivElement | null>(null);
-  const menuShellRef = useRef<HTMLDivElement | null>(null);
-  const colorOverlayRef = useRef<HTMLDivElement | null>(null);
-  const menuMeasureRef = useRef<HTMLDivElement | null>(null);
-
-  const applyLiquidFrame = useCallback((rawP: number) => {
-    const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
-    const seg = (v: number, a: number, b: number) => clamp((v - a) / (b - a), 0, 1);
-    const smootherstep = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
-    const easeInOutSine = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t);
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-    // Overall smooth ease-in-and-out progress p in [0, 1]
-    const p = easeInOutSine(clamp(rawP, 0, 1));
-
-    const btnEl = buttonRef.current;
-    const measureEl = menuMeasureRef.current;
-    const btnW = btnEl ? btnEl.offsetWidth : 216;
-    const btnH = btnEl ? btnEl.offsetHeight : 40;
-    const targetW = measureEl ? measureEl.offsetWidth : 440;
-    const targetH = measureEl ? measureEl.offsetHeight : 580;
-    const targetBottom = btnH + 14;
-
-    // 1. Backdrop smooth fade
-    if (backdropRef.current) {
-      const bgAlpha = smootherstep(seg(p, 0.05, 0.75));
-      backdropRef.current.style.opacity = String(bgAlpha);
-    }
-
-    // 2. Trigger button & reservoir liquid recoil / bulge
-    const pull = Math.sin(seg(p, 0.0, 0.44) * Math.PI);
-    const snapRipple = Math.sin(seg(p, 0.36, 0.72) * Math.PI * 2) * 0.035 * (1 - seg(p, 0.36, 0.72));
-    if (btnEl) {
-      const btnScaleX = 1 - pull * 0.06 + snapRipple;
-      const btnScaleY = 1 + pull * 0.14 - snapRipple;
-      const btnShiftY = -pull * 3;
-      btnEl.style.transform = `translate3d(0, ${btnShiftY.toFixed(2)}px, 0) scale(${btnScaleX.toFixed(4)}, ${btnScaleY.toFixed(4)})`;
-    }
-
-    if (reservoirBlobRef.current) {
-      const resScaleX = 1 - pull * 0.1;
-      const resScaleY = 1 + pull * 0.42;
-      const resShiftY = -pull * 7;
-      reservoirBlobRef.current.style.width = `${btnW}px`;
-      reservoirBlobRef.current.style.height = `${btnH}px`;
-      reservoirBlobRef.current.style.transform = `translate3d(0, ${resShiftY.toFixed(2)}px, 0) scale(${resScaleX.toFixed(4)}, ${resScaleY.toFixed(4)})`;
-    }
-
-    // 3. Main Blob Geometry:
-    // Stage A (0 -> 0.36): Oozes upward out of the center of the button as a bulbous #0f352d water droplet
-    // Stage B (0.36 -> 0.84): Detaches and expands smoothly into the full menu dimensions
-    const tRise = smootherstep(seg(p, 0.0, 0.38));
-    const tExpand = smootherstep(seg(p, 0.34, 0.84));
-
-    const midW = Math.min(targetW * 0.56, Math.max(btnW * 0.88, 220));
-    const midH = Math.min(targetH * 0.42, 230);
-
-    // Subtle squeeze in width at very start as water pushes upward out of the pill
-    const earlySqueeze = Math.sin(seg(p, 0.0, 0.24) * Math.PI) * 28;
-    const currentW =
-      p < 0.36
-        ? lerp(btnW, midW, tRise) - earlySqueeze
-        : lerp(midW, targetW, tExpand);
-
-    const currentH =
-      p < 0.36
-        ? lerp(btnH, midH, tRise)
-        : lerp(midH, targetH, tExpand);
-
-    const midBottom = targetBottom * 0.82;
-    const floatOvershoot = Math.sin(tExpand * Math.PI) * 4;
-    const currentBottom =
-      p < 0.36
-        ? lerp(0, midBottom, tRise)
-        : lerp(midBottom, targetBottom, tExpand) + floatOvershoot;
-
-    // Keep emerging droplet centered over the button while narrow, then align right: 0 as it expands
-    const centeredRight = Math.max(0, (btnW - currentW) * 0.5);
-    const currentRight = lerp(centeredRight, 0, tExpand);
-
-    // Organic water droplet border-radius (interpolated in px to 24px for zero discontinuity)
-    const morphToRect = smootherstep(seg(p, 0.42, 0.82));
-    const wobble1 = Math.sin(p * Math.PI * 3.5) * 0.11 * (1 - morphToRect);
-    const wobble2 = Math.cos(p * Math.PI * 3.0) * 0.09 * (1 - morphToRect);
-
-    const tlX = lerp(currentW * (0.53 + wobble1), 24, morphToRect);
-    const trX = lerp(currentW * (0.47 - wobble1), 24, morphToRect);
-    const brX = lerp(currentW * (0.46 + wobble2), 24, morphToRect);
-    const blX = lerp(currentW * (0.54 - wobble2), 24, morphToRect);
-
-    const tlY = lerp(currentH * (0.56 + wobble2), 24, morphToRect);
-    const trY = lerp(currentH * (0.54 - wobble2), 24, morphToRect);
-    const brY = lerp(currentH * (0.44 - wobble1), 24, morphToRect);
-    const blY = lerp(currentH * (0.46 + wobble1), 24, morphToRect);
-
-    const radiusStr = `${tlX.toFixed(1)}px ${trX.toFixed(1)}px ${brX.toFixed(1)}px ${blX.toFixed(1)}px / ${tlY.toFixed(1)}px ${trY.toFixed(1)}px ${brY.toFixed(1)}px ${blY.toFixed(1)}px`;
-
-    if (mainBlobRef.current) {
-      mainBlobRef.current.style.width = `${currentW.toFixed(1)}px`;
-      mainBlobRef.current.style.height = `${currentH.toFixed(1)}px`;
-      mainBlobRef.current.style.bottom = `${currentBottom.toFixed(1)}px`;
-      mainBlobRef.current.style.right = `${currentRight.toFixed(1)}px`;
-      mainBlobRef.current.style.borderRadius = radiusStr;
-    }
-
-    // 4. Viscous Liquid Neck Tendril connecting button & rising blob (pinches off at p = 0.45)
-    if (tendrilBlobRef.current) {
-      if (p > 0.01 && p < 0.46) {
-        const tNeck = seg(p, 0.01, 0.46);
-        const neckW = lerp(btnW * 0.54, 8, smootherstep(tNeck));
-        const neckBottom = btnH * 0.28;
-        const neckTop = currentBottom + currentH * 0.28;
-        const neckH = Math.max(12, neckTop - neckBottom);
-        const neckRight = (btnW - neckW) * 0.5;
-
-        tendrilBlobRef.current.style.opacity = "1";
-        tendrilBlobRef.current.style.width = `${neckW.toFixed(1)}px`;
-        tendrilBlobRef.current.style.height = `${neckH.toFixed(1)}px`;
-        tendrilBlobRef.current.style.bottom = `${neckBottom.toFixed(1)}px`;
-        tendrilBlobRef.current.style.right = `${neckRight.toFixed(1)}px`;
-      } else {
-        tendrilBlobRef.current.style.opacity = "0";
-      }
-    }
-
-    // 5. Satellite Water Droplet that pinches off from button and merges into main blob
-    if (dropletBlobRef.current) {
-      if (p > 0.2 && p < 0.58) {
-        const tDrop = smootherstep(seg(p, 0.2, 0.58));
-        const dropW = lerp(54, 22, tDrop);
-        const dropH = lerp(68, 22, tDrop);
-        const dropBottom = lerp(btnH * 0.25, targetBottom + 32, tDrop);
-        const dropRight = (btnW - dropW) * 0.5;
-
-        dropletBlobRef.current.style.opacity = "1";
-        dropletBlobRef.current.style.width = `${dropW.toFixed(1)}px`;
-        dropletBlobRef.current.style.height = `${dropH.toFixed(1)}px`;
-        dropletBlobRef.current.style.bottom = `${dropBottom.toFixed(1)}px`;
-        dropletBlobRef.current.style.right = `${dropRight.toFixed(1)}px`;
-      } else {
-        dropletBlobRef.current.style.opacity = "0";
-      }
-    }
-
-    // 6. Gooey Layer cross-fade as the water droplet finishes coalescing into the crisp menu shell
-    if (gooLayerRef.current) {
-      const gooFadeOut = smootherstep(seg(p, 0.54, 0.78));
-      gooLayerRef.current.style.opacity = String(1 - gooFadeOut);
-    }
-
-    // 7. Menu Shell & Color Transformation (#0f352d button color -> #fffdfa menu color)
-    if (menuShellRef.current) {
-      const shellFadeIn = smootherstep(seg(p, 0.44, 0.62));
-      menuShellRef.current.style.opacity = String(shellFadeIn);
-      menuShellRef.current.style.width = `${currentW.toFixed(1)}px`;
-      menuShellRef.current.style.height = `${currentH.toFixed(1)}px`;
-      menuShellRef.current.style.bottom = `${currentBottom.toFixed(1)}px`;
-      menuShellRef.current.style.right = `${currentRight.toFixed(1)}px`;
-      menuShellRef.current.style.borderRadius = radiusStr;
-    }
-
-    // Color overlay transitions smoothly from #0f352d (button color) to transparent (revealing #fffdfa menu)
-    if (colorOverlayRef.current) {
-      const tColor = smootherstep(seg(p, 0.5, 0.86));
-      const bloomRadius = lerp(0, 145, tColor);
-      colorOverlayRef.current.style.opacity = String(1 - smootherstep(seg(p, 0.6, 0.88)));
-      colorOverlayRef.current.style.background = `radial-gradient(circle at 82% 92%, #fffdfa 0%, #f4d6a9 ${Math.max(0, bloomRadius - 18).toFixed(1)}%, #0f352d ${bloomRadius.toFixed(1)}%)`;
-    }
-
-    // 8. Inner Menu Content glide & fade (only appears once blob has expanded & is morphing to menu color)
-    if (measureEl) {
-      const tContent = smootherstep(seg(p, 0.64, 0.98));
-      const shiftY = lerp(14, 0, tContent);
-      const scale = lerp(0.97, 1, tContent);
-      measureEl.style.opacity = String(tContent);
-      measureEl.style.transform = `translate3d(0, ${shiftY.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isRendered) return;
-
-    const target = isOpen ? 1 : 0;
-    const startVal = progressRef.current;
-    const distance = Math.abs(target - startVal);
-
-    // Smooth ease-in-out duration scaled by remaining distance
-    const totalDuration = Math.max(16, (isOpen ? 760 : 660) * distance);
-    let startTime: number | null = null;
-
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-
-    const tick = (now: number) => {
-      if (startTime === null) startTime = now;
-      const elapsed = now - startTime;
-      const t = Math.min(1, elapsed / totalDuration);
-      const nextP = startVal + (target - startVal) * t;
-      progressRef.current = nextP;
-      applyLiquidFrame(nextP);
-
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        progressRef.current = target;
-        applyLiquidFrame(target);
-        rafRef.current = null;
-        if (target === 0) {
-          setIsClosing(false);
-        }
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isOpen, isRendered, applyLiquidFrame]);
-
-  // Close when pressing Escape key
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [setMenuOpen]);
 
   // Universal Reset Action for ALL ROLES (executed after custom modal confirmation)
   async function executeResetDemo() {
@@ -521,106 +274,33 @@ export function DemoModeToolbar({ viewer }: DemoModeToolbarProps) {
 
   return (
     <>
-      {/* Hidden SVG Gooey / Metaball Filter for Liquid Water Surface Tension */}
-      <svg
-        aria-hidden="true"
-        className="pointer-events-none fixed h-0 w-0 overflow-hidden opacity-0"
-      >
-        <defs>
-          <filter
-            id="demo-water-goo"
-            x="-50%"
-            y="-50%"
-            width="200%"
-            height="200%"
-            colorInterpolationFilters="sRGB"
+      <FloatingBlobModal
+        id="demo-mode-toolbar"
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        anchorClassName="fixed bottom-[calc(9.25rem+env(safe-area-inset-bottom,0px))] right-4 z-40 lg:bottom-6 lg:right-6"
+        contentClassName="w-[calc(100vw-2rem)] sm:w-[440px] max-h-[78vh]"
+        ariaLabel="Demo Action Controls"
+        trigger={({ isOpen: isBtnOpen, toggle, buttonRef }) => (
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={toggle}
+            className="group relative z-30 flex items-center gap-2 rounded-full border border-[#c99b53]/60 bg-[#0f352d] px-4 py-2.5 text-xs font-bold text-[#faf7f2] shadow-[0_6px_24px_rgba(15,53,45,0.45)] transition-colors duration-300 hover:bg-[#14453a] hover:border-[#c99b53] focus:outline-none focus:ring-2 focus:ring-[#c99b53] focus:ring-offset-2"
+            aria-expanded={isBtnOpen}
+            aria-label="Toggle Demo Action Menu"
           >
-            <feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"
-              result="goo"
-            />
-            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-          </filter>
-        </defs>
-      </svg>
-
-      {/* Transparent Click-Outside Overlay */}
-      {isRendered && (
-        <div
-          ref={backdropRef}
-          style={{ opacity: 0 }}
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
-          onClick={() => setMenuOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Unified Bottom-Right Anchor for Button, Gooey Water Blob Stream, and Morphing Menu */}
-      <div className="fixed bottom-20 right-4 z-50 lg:bottom-6 lg:right-6">
-        {/* Gooey Liquid Water Layer (Same #0f352d Color as Button, Filtered with SVG Metaball Goo) */}
-        {isRendered && (
-          <div
-            ref={gooLayerRef}
-            aria-hidden="true"
-            className="water-goo-layer pointer-events-none absolute -bottom-24 -right-24 h-[95vh] w-[100vw] max-w-[640px] p-24"
-          >
-            <div className="relative h-full w-full">
-              {/* Button Liquid Reservoir */}
-              <div
-                ref={reservoirBlobRef}
-                style={{ width: 216, height: 40, bottom: 0, right: 0 }}
-                className="absolute rounded-full bg-[#0f352d]"
-              />
-              {/* Stretching Liquid Neck Tendril */}
-              <div
-                ref={tendrilBlobRef}
-                style={{ opacity: 0, bottom: 10, right: 60, width: 80, height: 30 }}
-                className="absolute rounded-full bg-[#0f352d]"
-              />
-              {/* Pinching Satellite Water Droplet */}
-              <div
-                ref={dropletBlobRef}
-                style={{ opacity: 0, bottom: 14, right: 80, width: 48, height: 58 }}
-                className="absolute rounded-full bg-[#0f352d]"
-              />
-              {/* Primary Emerging & Morphing Water Blob (#0f352d) */}
-              <div
-                ref={mainBlobRef}
-                style={{ width: 216, height: 40, bottom: 0, right: 0 }}
-                className="absolute bg-[#0f352d] shadow-[0_18px_45px_rgba(15,53,45,0.45)]"
-              />
-            </div>
-          </div>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#c99b53] text-[#0f352d] shadow-2xs">
+              <Zap className="h-3 w-3 fill-current" />
+            </span>
+            <span className="font-semibold tracking-wide">Demo Modes</span>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-[#f4d6a9]">
+              {roleLabels[viewer.role]}
+            </span>
+          </button>
         )}
-
-        {/* Morphing Menu Shell (Synchronized to Water Blob -> Transitions from #0f352d to #fffdfa Menu) */}
-        {isRendered && (
-          <div
-            ref={menuShellRef}
-            style={{ opacity: 0, width: 216, height: 40, bottom: 0, right: 0 }}
-            className="absolute z-20 flex flex-col items-end justify-end border border-[#c99b53]/45 bg-[#fffdfa]/96 backdrop-blur-xl shadow-[0_25px_60px_-15px_rgba(15,53,45,0.4)] overflow-hidden"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Demo Action Controls"
-          >
-            {/* Same-Color (#0f352d) Liquid Transition Overlay that blooms into the Menu */}
-            <div
-              ref={colorOverlayRef}
-              style={{ opacity: 1, background: "#0f352d" }}
-              className="pointer-events-none absolute inset-0 z-30"
-              aria-hidden="true"
-            />
-
-            {/* Measured Inner Menu Container (Constant Target Layout Width/Height) */}
-            <div
-              ref={menuMeasureRef}
-              style={{ opacity: 0 }}
-              className="w-[calc(100vw-2rem)] sm:w-[440px] max-h-[78vh] flex flex-col shrink-0 origin-bottom-right"
-            >
-              {/* Top Royal Ribbon Accent */}
+      >
+        {/* Top Royal Ribbon Accent */}
               <div className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#0f352d] via-[#c99b53] to-[#3b1747]" />
 
               {/* Header */}
@@ -1404,28 +1084,7 @@ export function DemoModeToolbar({ viewer }: DemoModeToolbarProps) {
                 <span>💡 Live PostgreSQL demo transactions</span>
                 <span className="text-[10px] text-[#9c8e7c]">Click outside to close</span>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Floating Trigger Pill (Source & Sink of the Water Blob) */}
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setMenuOpen(!isOpen)}
-          className="group relative z-30 flex items-center gap-2 rounded-full border border-[#c99b53]/60 bg-[#0f352d] px-4 py-2.5 text-xs font-bold text-[#faf7f2] shadow-[0_6px_24px_rgba(15,53,45,0.45)] transition-colors duration-300 hover:bg-[#14453a] hover:border-[#c99b53] focus:outline-none focus:ring-2 focus:ring-[#c99b53] focus:ring-offset-2"
-          aria-expanded={isOpen}
-          aria-label="Toggle Demo Action Menu"
-        >
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#c99b53] text-[#0f352d] shadow-2xs">
-            <Zap className="h-3 w-3 fill-current" />
-          </span>
-          <span className="font-semibold tracking-wide">Demo Modes</span>
-          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-[#f4d6a9]">
-            {roleLabels[viewer.role]}
-          </span>
-        </button>
-      </div>
+      </FloatingBlobModal>
 
       {/* CUSTOM LUXURY CONFIRMATION MODAL (NO BROWSER ALERT/CONFIRM) */}
       {showResetConfirmModal && (
