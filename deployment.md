@@ -4,11 +4,19 @@ This guide describes how to run and deploy the **Company A Direct Ordering & Rea
 
 * **GitHub Repository**: [https://github.com/KanishqxMehta/restraunt_system.git](https://github.com/KanishqxMehta/restraunt_system.git)
 
+> **Important Evaluation Note (Recommended Setup)**:  
+> **Initialization via Docker Compose in Demo Mode (`ENABLE_DEMO_DATA=true`) is strongly recommended** for evaluating this project. Running via Docker ensures an identical containerized environment with PostgreSQL 17 and Node.js 22 LTS, and running in Demo Mode provides instant access to pre-seeded Hyderabadi menus, outlets, interactive role-switching, sample historical orders, and the floating **Demo Testing Lab** without manual database configuration.
+
 ---
 
-## 1. Quickstart with Docker Compose (Recommended)
+## 1. Quickstart with Docker Compose (Recommended Setup)
 
 Docker Compose provides a single-command local development and evaluation environment. It automatically builds the multi-stage container, provisions PostgreSQL 17, applies all database migrations, seeds realistic data (17 Hyderabad outlets, 25+ menu dishes, city prices, promotional coupons, and accounts), and launches the Next.js application.
+
+> **Why Docker + Demo Mode is Recommended**:
+> 1. **Zero Configuration**: No need to install or configure local PostgreSQL 17, run manual migration commands, or generate cryptographic secrets.
+> 2. **Preset Defaults**: Docker Compose comes pre-configured with `ENABLE_DEMO_DATA=true`, instantly unlocking the 1-click **Demo Account Picker** on `/login`, the top **Demo Role Switcher**, and the floating **Demo Testing Lab**.
+> 3. **Isolation**: Isolates PostgreSQL data in dedicated Docker volumes (`postgres_data`, `auth_runtime`) so your host environment stays completely clean.
 
 ### Prerequisites
 * Docker 24+ and Docker Compose v2+
