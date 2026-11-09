@@ -10,3 +10,6 @@ test-results/
 src/generated/prisma/
 .runtime/
 submission_bundle/
+*.zip
+Technical_Design_Document.*
+docs/
